@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('postalcode', 8);
             $table->foreignId('city_id')->constrained();
-            $table->string('name', 255);
-            $table->string('name_kana', 255);
+            $table->string('name', 1000);
+            $table->string('name_kana', 1000);
             $table->timestamps();
         });
     }
