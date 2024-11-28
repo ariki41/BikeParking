@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Prefecture;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -19,7 +20,9 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        return view('auth.register');
+        $prefectures = Prefecture::pluck('name', 'id');
+
+        return view('auth.register', compact('prefectures'));
     }
 
     /**
@@ -30,14 +33,16 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'name' => ['required', 'string', 'max:16'],
+            'user_id' => ['required', 'string', 'lowercase', 'max:16', 'unique:'.User::class],
+            'prefecture' => ['required', 'string', 'exists:'.Prefecture::class.',id'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
         $user = User::create([
             'name' => $request->name,
-            'email' => $request->email,
+            'user_id' => $request->user_id,
+            'prefecture_id' => $request->prefecture,
             'password' => Hash::make($request->password),
         ]);
 
