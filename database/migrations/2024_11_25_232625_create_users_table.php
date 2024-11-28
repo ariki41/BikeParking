@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('user_id', 255)->unique();
+            $table->string('name', 255);
             $table->string('password');
             $table->foreignId('prefecture_id')->constrained();
             $table->rememberToken();
@@ -36,5 +37,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('users');
+        Schema::dropIfExists('sessions');
     }
 };
