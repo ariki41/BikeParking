@@ -7,10 +7,10 @@
 
         <!-- ユーザーID -->
         <div>
-            <x-input-label for="userid" :value="'ユーザーID'" />
-            <x-text-input class="mt-1 block w-full" id="userid" name="userid" type="text" :value="old('userid')" required
+            <x-input-label for="user_id" :value="'ユーザーID'" />
+            <x-text-input class="mt-1 block w-full" id="user_id" name="user_id" type="text" :value="old('user_id')" required
                 autofocus autocomplete="username" />
-            <x-input-error class="mt-2" :messages="$errors->get('userid')" />
+            <x-input-error class="mt-2" :messages="$errors->get('user_id')" />
         </div>
 
         <!-- パスワード -->
