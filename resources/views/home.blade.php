@@ -8,7 +8,7 @@
         </div>
     </form>
 
-    <section class="body-font text-gray-600">
+    <div class="body-font text-gray-600">
         <div class="container mx-auto px-4 py-10">
             <div class="mb-5 flex w-full flex-col text-center">
                 <h1 class="mb-1 text-left text-2xl font-medium tracking-widest text-gray-800">新着の駐車場</h1>
@@ -49,9 +49,9 @@
                 </div>
             </div>
         </div>
-    </section>
+    </div>
 
-    <section class="body-font text-gray-600">
+    <div class="body-font text-gray-600">
         <div class="container mx-auto px-4 py-10">
             <div class="mb-5 flex w-full flex-col text-center">
                 <h1 class="mb-1 text-left text-2xl font-medium tracking-widest text-gray-800">過去に利用した駐車場</h1>
@@ -92,5 +92,5 @@
                 </div>
             </div>
         </div>
-    </section>
+    </div>
 </x-app-layout>
