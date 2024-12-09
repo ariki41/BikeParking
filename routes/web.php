@@ -8,7 +8,7 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/search', function () {
-    return view('home');
+    return view('search');
 })->name('search');
 
 Route::get('/dashboard', function () {
