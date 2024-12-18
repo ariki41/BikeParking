@@ -27,6 +27,7 @@ services:
             - meilisearch
             - mailpit
             - selenium
+            - nominatim
     mysql:
         image: 'mysql/mysql-server:8.0'
         ports:
@@ -100,6 +101,19 @@ services:
             - '/dev/shm:/dev/shm'
         networks:
             - sail
+    nominatim:
+        image: mediagis/nominatim:4.5
+        ports:
+            - '8080:8080'
+        environment:
+            PBF_PATH: /nominatim/japan-latest.osm.pbf
+            REPLICATION_URL: https://download.geofabrik.de/asia/japan-updates/
+            NOMINATIM_PASSWORD: nominatim123
+        volumes:
+            - ./nominatim:/nominatim
+            - nominatim-data:/var/lib/postgresql/16/main
+        networks:
+            - sail
 networks:
     sail:
         driver: bridge
@@ -109,4 +123,6 @@ volumes:
     sail-redis:
         driver: local
     sail-meilisearch:
+        driver: local
+    nominatim-data:
         driver: local
