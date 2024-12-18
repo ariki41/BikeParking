@@ -109,6 +109,7 @@ services:
             PBF_PATH: /nominatim/japan-latest.osm.pbf
             REPLICATION_URL: https://download.geofabrik.de/asia/japan-updates/
             NOMINATIM_PASSWORD: nominatim123
+            IMPORT_WIKIPEDIA: 'true'
         volumes:
             - ./nominatim:/nominatim
             - nominatim-data:/var/lib/postgresql/16/main
