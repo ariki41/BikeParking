@@ -12,7 +12,8 @@
       <script>
           // 地図を初期化
           window.onload = function() {
-              const map = L.map('map').setView([{{ $nominatim[0]['lat'] }}, {{ $nominatim[0]['lon'] }}], 15); // 東京中心
+              const map = L.map('map').setView([{{ $yolpLocation['lat'] }}, {{ $yolpLocation['lon'] }}],
+                  15);
 
               // OpenStreetMapタイルレイヤーを追加
               L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -32,7 +33,14 @@
                               placeholder="駅名・地名を入力" :value="$keyword" />
                           <x-primary-button>検索</x-primary-button>
                       </div>
+                      @if (session('error'))
+                          <div class="mt-4 flex justify-center space-x-2">
+                              <p class="text-red-500">{{ session('error') }}</p>
+                          </div>
+                      @endif
                   </div>
+                  <input name="lat" type="hidden" value="{{ $yolpLocation['lat'] }}">
+                  <input name="lon" type="hidden" value="{{ $yolpLocation['lon'] }}">
               </form>
           </div>
 
