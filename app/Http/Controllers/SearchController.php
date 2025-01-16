@@ -18,10 +18,8 @@ class SearchController extends Controller
     {
         $keyword = $request->get('keyword');
 
-        $nominatim = $this->service->getNominatimJson($request);
+        $yolpLocation = $this->service->getYolpLocation($request);
 
-        dump($nominatim);
-
-        return view('search', compact('keyword', 'nominatim'));
+        return view('search', compact('keyword', 'yolpLocation'));
     }
 }
