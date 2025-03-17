@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Carbon\Carbon;
 
 class PrefectureSeeder extends Seeder
 {
@@ -73,7 +73,7 @@ class PrefectureSeeder extends Seeder
             ['name' => '沖縄県', 'name_kana' => 'オキナワケン'],
             ['name' => '海外', 'name_kana' => 'カイガイ'],
         ];
-        
+
         // created_atとupdated_atを追加
         $prefectures = array_map(function ($prefecture) use ($now) {
             return array_merge($prefecture, [
