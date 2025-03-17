@@ -16,7 +16,8 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained();
             $table->string('name', 255);
             $table->string('address', 255);
-            $table->geometry('location');
+            $table->double('longitude', 8, 6);
+            $table->double('latitude', 9, 6);
             $table->unsignedInteger('capacity')->nullable();
             $table->time('opening_time');
             $table->time('closing_time');
