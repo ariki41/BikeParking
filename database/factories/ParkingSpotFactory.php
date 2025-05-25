@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\PostalcodeLatLon;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use App\Models\PostalcodeLatLon;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ParkingSpot>
@@ -26,7 +26,7 @@ class ParkingSpotFactory extends Factory
         $prefecture = $postalcodes->prefecture;
         $city = $postalcodes->city;
         $town = $postalcodes->town;
-        $address = $prefecture . $city . $town;
+        $address = $prefecture.$city.$town;
         $latitude = $postalcodes->latitude;
         $longitude = $postalcodes->longitude;
 
@@ -45,8 +45,6 @@ class ParkingSpotFactory extends Factory
 
     /**
      * 郵便番号をランダムに取得する
-     * 
-     * @return PostalcodeLatLon
      */
     private function getRandomPostalCode(): PostalcodeLatLon
     {
@@ -54,7 +52,7 @@ class ParkingSpotFactory extends Factory
             ->select('postalcode_lat_lons.*', 'postalcodes.id as postalcode_id')
             ->inRandomOrder()
             ->first();
-        
+
         return $postalcode;
     }
 }
