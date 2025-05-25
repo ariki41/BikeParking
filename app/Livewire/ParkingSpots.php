@@ -2,8 +2,8 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
 use App\Models\ParkingSpot;
+use Livewire\Component;
 
 class ParkingSpots extends Component
 {
@@ -14,6 +14,7 @@ class ParkingSpots extends Component
     public function render()
     {
         $this->dispatch('displayMarkers', ['spots' => $this->spots]);
+
         return view('livewire.parking-spots', ['spots' => $this->spots]);
     }
 
