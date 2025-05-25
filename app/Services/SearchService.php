@@ -17,7 +17,7 @@ class SearchService
     {
         $keyword = $request->get('keyword');
 
-        if (! is_null($keyword)) {
+        if (!is_null($keyword)) {
             try {
                 // Yahoo!ローカルサーチAPIにリクエスト
                 $response = Http::timeout(5)
