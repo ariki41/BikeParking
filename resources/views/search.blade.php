@@ -20,17 +20,28 @@
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
 
+            // 地図が読み込まれた後に、表示されている範囲のマーカーを表示する
+            map.whenReady(function() {
+                getBoundsMap();
+            });
+
+            // 地図を動かしたときに、表示されている範囲のマーカーを更新する
             map.on('moveend', function() {
-                const bound = map.getBounds();
-                const bounds = {
-                    north: bound.getNorth(),
-                    east: bound.getEast(),
-                    south: bound.getSouth(),
-                    west: bound.getWest()
-                };
-                Livewire.dispatch('updateBounds', {
-                    bounds
-                });
+                getBoundsMap();
+            });
+        }
+
+        // 表示されている範囲を取得して、Livewireに送信する
+        function getBoundsMap() {
+            const bound = map.getBounds();
+            const bounds = {
+                north: bound.getNorth(),
+                east: bound.getEast(),
+                south: bound.getSouth(),
+                west: bound.getWest()
+            };
+            Livewire.dispatch('updateBounds', {
+                bounds
             });
         }
     </script>
