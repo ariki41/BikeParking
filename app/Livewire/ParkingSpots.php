@@ -22,7 +22,7 @@ class ParkingSpots extends Component
     {
         $this->spots = ParkingSpot::whereBetween('latitude', [$bounds['south'], $bounds['north']])
             ->whereBetween('longitude', [$bounds['west'], $bounds['east']])
-            ->limit(10)
+            ->limit(50)
             ->get();
     }
 }
