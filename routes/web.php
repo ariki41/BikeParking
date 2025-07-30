@@ -1,8 +1,8 @@
 <?php
 
+use App\Http\Controllers\ParkingSpotController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
-use App\Http\Controllers\ParkingSpotController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {

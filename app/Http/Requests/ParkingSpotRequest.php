@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Models\Postalcode;
+use Illuminate\Foundation\Http\FormRequest;
 
 class ParkingSpotRequest extends FormRequest
 {
@@ -25,15 +25,15 @@ class ParkingSpotRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'postalcode' => 'required|regex:/^\d{3}-?\d{4}$/',
-            'address1' => ['required', 'string', 'max:255', 
+            'address1' => ['required', 'string', 'max:255',
                 function ($attribute, $value, $fail) {
                     $postalcode = request()->input('postalcode');
                     $address = Postalcode::getAddress($postalcode)->first();
 
-                    if(!empty($address) && $address->prefecture . $address->city . $address->town != $value) {
+                    if (! empty($address) && $address->prefecture.$address->city.$address->town != $value) {
                         $fail('郵便番号と住所が一致しません。');
                     }
-                }
+                },
             ],
             'address2' => 'required|string|max:255',
             'capacity' => 'required|integer|min:1',

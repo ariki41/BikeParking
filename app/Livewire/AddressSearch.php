@@ -2,12 +2,13 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
 use App\Models\Postalcode;
+use Livewire\Component;
 
 class AddressSearch extends Component
 {
     public $postalcode;
+
     public $address1;
 
     protected $rules = [
@@ -29,7 +30,7 @@ class AddressSearch extends Component
         $addressSql = Postalcode::getAddress($normalizedPostalcode)->first();
 
         if ($addressSql) {
-            $this->address1 = $addressSql->prefecture . $addressSql->city . $addressSql->town;
+            $this->address1 = $addressSql->prefecture.$addressSql->city.$addressSql->town;
         } else {
             $this->addError('postalcode', '郵便番号に対応する住所が見つかりません。');
             $this->address1 = '';

@@ -10,13 +10,14 @@ class ParkingSpotController extends Controller
     public function create()
     {
         $capacity = config('categories.parking_spot_capacity');
+
         return view('parking_spot.create', compact('capacity'));
     }
 
     public function confirm(ParkingSpotRequest $request)
     {
         $validatedData = $request->validated();
-        $validatedData['address'] = $validatedData['address1'] . $validatedData['address2'];
+        $validatedData['address'] = $validatedData['address1'].$validatedData['address2'];
 
         $capacity = config('categories.parking_spot_capacity');
 
