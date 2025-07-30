@@ -37,7 +37,7 @@ class ParkingSpotFactory extends Factory
             'address' => $address,
             'longitude' => $longitude,
             'latitude' => $latitude,
-            'capacity' => fake()->numberBetween(1, 100),
+            'capacity' => fake()->numberBetween(1, 4),
             'opening_time' => fake()->randomElement($openingTime),
             'closing_time' => fake()->randomElement($closingTime),
         ];
