@@ -15,4 +15,10 @@ class Postalcode extends Model
             ->join('prefectures', 'cities.prefecture_id', '=', 'prefectures.id')
             ->select('prefectures.name as prefecture', 'cities.name as city', 'postalcodes.name as town');
     }
+
+    public function scopeGetPostalcodeId($query, $postalcode)
+    {
+        return $query->where('postalcode', $postalcode)
+            ->select('id');
+    }
 }

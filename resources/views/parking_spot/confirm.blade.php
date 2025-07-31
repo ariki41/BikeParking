@@ -29,6 +29,18 @@
                     <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900">
                         {{ $capacity[$validatedData['capacity']] ?? '' }}</td>
                 </tr>
+                <tr>
+                    <th class="w-1/4 whitespace-nowrap bg-gray-50 px-6 py-3 text-left text-sm font-bold text-gray-700">
+                        開場時間</th>
+                    <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900">
+                        {{ $validatedData['opening_time'] ?? '' }}</td>
+                </tr>
+                <tr>
+                    <th class="w-1/4 whitespace-nowrap bg-gray-50 px-6 py-3 text-left text-sm font-bold text-gray-700">
+                        閉場時間</th>
+                    <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900">
+                        {{ $validatedData['closing_time'] ?? '' }}</td>
+                </tr>
             </tbody>
         </table>
         <div class="flex gap-4">
