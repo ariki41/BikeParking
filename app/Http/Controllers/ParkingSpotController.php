@@ -44,6 +44,7 @@ class ParkingSpotController extends Controller
     public function store(ParkingSpotRequest $request)
     {
         $this->service->saveParkingSpot($request);
+        $request->session()->regenerateToken();
 
         return redirect()->route('home')->with('success', '駐車場を登録しました。');
     }

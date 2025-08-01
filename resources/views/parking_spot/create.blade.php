@@ -50,6 +50,6 @@
             @enderror
         </div>
 
-        <x-primary-button>登録</x-primary-button>
+        <x-primary-button>確認画面へ進む</x-primary-button>
     </form>
 </x-app-layout>
