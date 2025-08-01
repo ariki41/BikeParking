@@ -19,7 +19,7 @@
             <x-input-label for="address2">続きの住所</x-input-label>
             <input class="w-full rounded border p-2" id="address2" name="address2" type="text"
                 value="{{ old('address2') }}" required placeholder="例：1-2-3">
-            @error('name')
+            @error('address2')
                 <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
             @enderror
         </div>
