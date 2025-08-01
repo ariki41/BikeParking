@@ -50,7 +50,8 @@ class ParkingSpotService
 
         if (isset($yolp['Feature'][0])) {
             [$lon, $lat] = explode(',', $yolp['Feature'][0]['Geometry']['Coordinates']);
-            $yolpLocation = ['lon' => $lon, 'lat' => $lat];
+            $address = $yolp['Feature'][0]['Property']['Address'];
+            $yolpLocation = ['lon' => $lon, 'lat' => $lat, 'address' => $address];
 
             return $yolpLocation;
         }

@@ -23,7 +23,18 @@ class ParkingSpotController extends Controller
     public function confirm(ParkingSpotRequest $request)
     {
         $validatedData = $request->validated();
-        $validatedData['address'] = $validatedData['address1'].$validatedData['address2'];
+        $validatedData['address'] = mb_convert_kana($validatedData['address1'].$validatedData['address2'], 'rn');
+        $validatedData['postalcode'] = mb_convert_kana(str_replace('-', '', $validatedData['postalcode']), 'rn');
+
+        $yolpLocation = $this->service->getYolpLonLat($validatedData['address']);
+
+        if (is_null($yolpLocation)) {
+            return redirect()->route('parking_spot.create')->withErrors(['address2' => '住所が見つかりません。'])->withInput();
+        }
+
+        $validatedData['longitude'] = $yolpLocation['lon'];
+        $validatedData['latitude'] = $yolpLocation['lat'];
+        $validatedData['address'] = $yolpLocation['address'];
 
         $capacity = config('categories.parking_spot_capacity');
 
@@ -32,19 +43,12 @@ class ParkingSpotController extends Controller
 
     public function store(ParkingSpotRequest $request)
     {
-        $yolpLocation = $this->service->getYolpLonLat($request->input('address'));
-
-        $request->merge([
-            'longitude' => $yolpLocation['lon'],
-            'latitude' => $yolpLocation['lat'],
-        ]);
-
         $this->service->saveParkingSpot($request);
 
         return redirect()->route('home')->with('success', '駐車場を登録しました。');
     }
 
-    public function createBack(Request $request)
+    public function createBack(ParkingSpotRequest $request)
     {
         return redirect()->route('parking_spot.create')->withInput();
     }
