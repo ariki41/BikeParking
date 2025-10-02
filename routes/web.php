@@ -23,7 +23,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/parking-spot/create', [ParkingSpotController::class, 'create'])->name('parking_spot.create');
     Route::post('/parking-spot/store', [ParkingSpotController::class, 'store'])->name('parking_spot.store');
     Route::post('/parking-spot/confirm', [ParkingSpotController::class, 'confirm'])->name('parking_spot.confirm');
-    Route::post('/parking-spot/create', [ParkingSpotController::class, 'createBack'])->name('parking_spot.create_back');
+    Route::get('/parking-spot/edit/{id}', [ParkingSpotController::class, 'edit'])->name('parking_spot.edit');
+    Route::post('/parking-spot/update', [ParkingSpotController::class, 'update'])->name('parking_spot.update');
 });
 
 require __DIR__.'/auth.php';
