@@ -8,26 +8,49 @@ use Illuminate\Support\Facades\Http;
 
 class ParkingSpotService
 {
-    public function saveParkingSpot($request)
+    public function saveParkingSpot($input)
     {
-        $postalcode = Postalcode::getPostalcodeId($request->postalcode)->first()->id ?? null;
-        if (! $postalcode) {
+        $postalcodeId = Postalcode::getPostalcodeId($input['postalcode'])->first()->id ?? null;
+        if (! $postalcodeId) {
             return redirect()->route('parking_spot.create')->withErrors(['postalcode' => '郵便番号に対応する住所が見つかりません。']);
         }
-        $request->merge(['postalcode' => $postalcode]);
 
         $parkingSpot = new ParkingSpot;
         $parkingSpot->user_id = auth()->id();
-        $parkingSpot->name = $request->input('name');
-        $parkingSpot->postalcode = $request->input('postalcode');
-        $parkingSpot->address = $request->input('address');
-        $parkingSpot->longitude = $request->input('longitude');
-        $parkingSpot->latitude = $request->input('latitude');
-        $parkingSpot->opening_time = $request->input('opening_time');
-        $parkingSpot->closing_time = $request->input('closing_time');
-        $parkingSpot->capacity = $request->input('capacity');
+        $parkingSpot->name = $input['name'];
+        $parkingSpot->postalcode = $postalcodeId;
+        $parkingSpot->address = $input['address'];
+        $parkingSpot->longitude = $input['longitude'];
+        $parkingSpot->latitude = $input['latitude'];
+        $parkingSpot->opening_time = $input['opening_time'];
+        $parkingSpot->closing_time = $input['closing_time'];
+        $parkingSpot->capacity = $input['capacity'];
 
         $parkingSpot->save();
+    }
+
+    public function updateParkingSpot($input)
+    {
+        $id = $input['id'];
+        $parkingSpot = ParkingSpot::findOrFail($id);
+
+        $postalcode = Postalcode::getPostalcodeId($input['postalcode'])->first()->id ?? null;
+        if (! $postalcode) {
+            return redirect()->route('parking_spot.edit', ['id' => $id])->withErrors(['postalcode' => '郵便番号に対応する住所が見つかりません。']);
+        }
+
+        $parkingSpot->name = $input['name'];
+        $parkingSpot->postalcode = $postalcode;
+        $parkingSpot->address = $input['address'];
+        $parkingSpot->longitude = $input['longitude'];
+        $parkingSpot->latitude = $input['latitude'];
+        $parkingSpot->opening_time = $input['opening_time'];
+        $parkingSpot->closing_time = $input['closing_time'];
+        $parkingSpot->capacity = $input['capacity'];
+
+        $parkingSpot->save();
+
+        session()->forget('parking_spot_form');
     }
 
     public function getYolpLonLat($address)

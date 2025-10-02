@@ -21,4 +21,9 @@ class Postalcode extends Model
         return $query->where('postalcode', $postalcode)
             ->select('id');
     }
+
+    public function scopeGetPostalcode($query, $id)
+    {
+        return $query->findOrFail($id);
+    }
 }
