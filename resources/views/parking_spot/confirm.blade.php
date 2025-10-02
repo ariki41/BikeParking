@@ -87,16 +87,20 @@
                 </tbody>
             </table>
             <div class="flex gap-4">
-                <form id="parkingSpotConfirmForm" method="POST" action="{{ route('parking_spot.store') }}">
+                <form id="parkingSpotConfirmForm" method="POST" action="">
                     @csrf
-                    @foreach ($validatedData as $key => $value)
-                        <input name="{{ $key }}" type="hidden" value="{{ $value }}">
-                    @endforeach
                     <div class="flex gap-4">
-                        <x-primary-button type="submit"
-                            onclick="setFormAction('{{ route('parking_spot.store') }}')">登録</x-primary-button>
-                        <x-primary-button type="submit"
-                            onclick="setFormAction('{{ route('parking_spot.create_back') }}')">戻る</x-primary-button>
+                        @if ($validatedData['id'])
+                            <x-primary-button
+                                onclick="setFormAction('{{ route('parking_spot.update') }}')">更新</x-primary-button>
+                            <x-primary-button name="back" value="back"
+                                onclick="setFormAction('{{ route('parking_spot.update') }}')">戻る</x-primary-button>
+                        @else
+                            <x-primary-button
+                                onclick="setFormAction('{{ route('parking_spot.store') }}')">登録</x-primary-button>
+                            <x-primary-button name="back" value="back"
+                                onclick="setFormAction('{{ route('parking_spot.store') }}')">戻る</x-primary-button>
+                        @endif
                     </div>
                 </form>
             </div>

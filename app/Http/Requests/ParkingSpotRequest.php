@@ -4,6 +4,8 @@ namespace App\Http\Requests;
 
 use App\Models\Postalcode;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ParkingSpotRequest extends FormRequest
 {
