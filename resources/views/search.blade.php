@@ -73,37 +73,6 @@
 
         <div class="col-span-2 row-span-5 row-start-2 overflow-y-auto border border-gray-400" id="parking-spots">
             @livewire('parking-spots')
-            {{-- @for ($i = 0; $i < 10; $i++)
-                <div class="bg-gray-100 p-4">
-                    <div class="mx-auto max-w-xl rounded-md bg-white p-4 shadow-lg">
-                        <div class="flex flex-col gap-4 md:flex-row">
-                            <div class="flex-shrink-0">
-                                <img class="h-auto w-full rounded-md md:w-64" src="image.png" alt="駐車場画像">
-                            </div>
-
-                            <div class="flex-1">
-                                <h2 class="mb-1 text-lg font-bold text-gray-700">駐車場1</h2>
-                                <p class="mb-4 text-sm text-gray-600">
-                                    住所
-                                </p>
-
-                                <div class="flex items-center">
-                                    <div class="flex items-center">
-                                        <span class="text-2xl font-bold text-red-500">¥300</span>
-                                        <span class="ml-2 text-gray-600">/</span>
-                                        <span class="ml-2 text-gray-600">24h</span>
-                                    </div>
-                                    <div class="ml-auto">
-                                        <span class="text-sm text-gray-600">0:00</span>
-                                        <span class="text-sm text-gray-600">～</span>
-                                        <span class="text-sm text-gray-600">24:00</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            @endfor --}}
         </div>
     </div>
 </x-app-layout>
