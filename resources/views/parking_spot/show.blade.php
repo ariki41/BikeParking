@@ -65,6 +65,15 @@
                         </tr>
                     </tbody>
                 </table>
+                <div class="mt-5 text-xs text-gray-500">
+                    <p>作成日: {{ optional($parkingSpot->created_at)->format('Y-m-d') }}</p>
+                    <p>更新日: {{ optional($parkingSpot->updated_at)->format('Y-m-d') }}</p>
+                </div>
+            </div>
+            <div class="flex justify-end xl:col-span-5">
+                <a href="{{ route('parking_spot.edit', ['id' => $parkingSpot->id]) }}">
+                    <x-primary-button tag="a">編集</x-primary-button>
+                </a>
             </div>
         </div>
     </div>
