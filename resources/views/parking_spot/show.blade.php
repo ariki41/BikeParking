@@ -33,7 +33,7 @@
 
         <div class="mx-7 grid grid-cols-1 gap-4 xl:grid-cols-5">
             <div class="xl:col-span-5">
-                <img class="h-64 w-full rounded-lg object-cover shadow" src="/images/parking-sample.jpg" alt="駐車場の写真">
+                <img class="h-64 rounded-lg object-cover shadow" src="/images/noimage.jpg" alt="駐車場の写真">
             </div>
 
             <div class="h-96 w-full rounded bg-gray-200 xl:col-span-3" id="map">
@@ -53,6 +53,10 @@
                         <tr class="border-b">
                             <th class="w-1/3 px-4 py-2 text-left text-sm font-semibold text-gray-600">料金</th>
                             <td class="px-4 py-2 text-sm text-gray-800"></td>
+                        </tr>
+                        <tr class="border-b">
+                            <th class="w-1/3 px-4 py-2 text-left text-sm font-semibold text-gray-600">駐車場台数</th>
+                            <td class="px-4 py-2 text-sm text-gray-800">{{ $parkingSpot->capacity }}</td>
                         </tr>
                         <tr class="border-b">
                             <th class="w-1/3 px-4 py-2 text-left text-sm font-semibold text-gray-600">営業時間</th>
