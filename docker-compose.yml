@@ -110,3 +110,5 @@ volumes:
         driver: local
     sail-meilisearch:
         driver: local
+    nominatim-data:
+        driver: local
