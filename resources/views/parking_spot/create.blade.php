@@ -50,6 +50,58 @@
             @enderror
         </div>
 
+        <div class="mb-4 border-t pt-4">
+            <h2 class="mb-4 text-xl font-semibold text-gray-800">料金</h2>
+
+            <div class="mb-4">
+                <x-input-label for="rate_day_type">料金区分</x-input-label>
+                <x-select-list :name="'rate_day_type'" :options="$rateDayTypes" :selected="old('rate_day_type', '全日')" :default="'料金区分を選択'" />
+                @error('rate_day_type')
+                    <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                    <x-input-label for="rate_start_time">料金開始時間</x-input-label>
+                    <input class="w-full rounded border p-2" id="rate_start_time" name="rate_start_time" type="time"
+                        value="{{ old('rate_start_time', '00:00') }}" required>
+                    @error('rate_start_time')
+                        <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div>
+                    <x-input-label for="rate_end_time">料金終了時間</x-input-label>
+                    <input class="w-full rounded border p-2" id="rate_end_time" name="rate_end_time" type="time"
+                        value="{{ old('rate_end_time', '00:00') }}" required>
+                    @error('rate_end_time')
+                        <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                    <x-input-label for="rate">料金（円）</x-input-label>
+                    <input class="w-full rounded border p-2" id="rate" name="rate" type="number"
+                        value="{{ old('rate') }}" min="0" required placeholder="例：100">
+                    @error('rate')
+                        <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div>
+                    <x-input-label for="max_rate">最大料金（円）</x-input-label>
+                    <input class="w-full rounded border p-2" id="max_rate" name="max_rate" type="number"
+                        value="{{ old('max_rate') }}" min="0" placeholder="例：1200">
+                    @error('max_rate')
+                        <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+        </div>
+
         <x-primary-button>確認画面へ進む</x-primary-button>
     </form>
 </x-app-layout>
