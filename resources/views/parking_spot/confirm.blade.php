@@ -85,6 +85,20 @@
                             {{ $validatedData['closing_time'] === '00:00' ? '24:00' : $validatedData['closing_time'] ?? '' }}
                         </td>
                     </tr>
+                    <tr>
+                        <th
+                            class="w-1/4 whitespace-nowrap bg-gray-50 px-6 py-3 text-left text-sm font-bold text-gray-700">
+                            料金</th>
+                        <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900">
+                            {{ $validatedData['rate_day_type'] ?? '' }}
+                            {{ $validatedData['rate_start_time'] ?? '' }} ～
+                            {{ ($validatedData['rate_end_time'] ?? '') === '00:00' ? '24:00' : $validatedData['rate_end_time'] ?? '' }}
+                            {{ number_format($validatedData['rate'] ?? 0) }}円
+                            @if (($validatedData['max_rate'] ?? null) !== null && $validatedData['max_rate'] !== '')
+                                / 最大 {{ number_format($validatedData['max_rate']) }}円
+                            @endif
+                        </td>
+                    </tr>
                 </tbody>
             </table>
             <div class="flex gap-4">

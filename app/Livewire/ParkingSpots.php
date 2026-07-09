@@ -20,7 +20,8 @@ class ParkingSpots extends Component
 
     public function updateBounds($bounds)
     {
-        $this->spots = ParkingSpot::whereBetween('latitude', [$bounds['south'], $bounds['north']])
+        $this->spots = ParkingSpot::with('rates')
+            ->whereBetween('latitude', [$bounds['south'], $bounds['north']])
             ->whereBetween('longitude', [$bounds['west'], $bounds['east']])
             ->limit(50)
             ->get();

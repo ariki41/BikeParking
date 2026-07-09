@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ParkingSpot;
+use App\Models\ParkingSpotRates;
 use App\Models\Postalcode;
 use Illuminate\Support\Facades\Http;
 
@@ -27,6 +28,8 @@ class ParkingSpotService
         $parkingSpot->capacity = $input['capacity'];
 
         $parkingSpot->save();
+
+        $this->saveParkingSpotRate($parkingSpot, $input);
     }
 
     public function updateParkingSpot($input)
@@ -50,7 +53,22 @@ class ParkingSpotService
 
         $parkingSpot->save();
 
+        $parkingSpot->rates()->delete();
+        $this->saveParkingSpotRate($parkingSpot, $input);
+
         session()->forget('parking_spot_form');
+    }
+
+    private function saveParkingSpotRate(ParkingSpot $parkingSpot, array $input): void
+    {
+        ParkingSpotRates::create([
+            'parking_spot_id' => $parkingSpot->id,
+            'day_type' => $input['rate_day_type'],
+            'start_time' => $input['rate_start_time'],
+            'end_time' => $input['rate_end_time'],
+            'rate' => $input['rate'],
+            'max_rate' => $input['max_rate'] ?? 0,
+        ]);
     }
 
     public function getYolpLonLat($address)
