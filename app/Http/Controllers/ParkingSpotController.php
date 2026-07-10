@@ -35,9 +35,10 @@ class ParkingSpotController extends Controller
     {
         $capacity = config('categories.parking_spot_capacity');
         $rateDayTypes = config('categories.parking_spot_rate_day_types');
+        $rateUnitMinutes = config('categories.parking_spot_rate_unit_minutes');
         $ratesInput = old('rates', [$this->defaultRateInput()]);
 
-        return view('parking_spot.create', compact('capacity', 'rateDayTypes', 'ratesInput'));
+        return view('parking_spot.create', compact('capacity', 'rateDayTypes', 'rateUnitMinutes', 'ratesInput'));
     }
 
     public function confirm(ParkingSpotRequest $request)
@@ -88,6 +89,7 @@ class ParkingSpotController extends Controller
         $parkingSpot = ParkingSpot::with('rates')->findOrFail($id);
         $capacity = config('categories.parking_spot_capacity');
         $rateDayTypes = config('categories.parking_spot_rate_day_types');
+        $rateUnitMinutes = config('categories.parking_spot_rate_unit_minutes');
 
         $postalcode = Postalcode::getPostalcode($parkingSpot->postalcode)->postalcode;
         $address1Sql = Postalcode::getAddress($postalcode)->first();
@@ -110,7 +112,7 @@ class ParkingSpotController extends Controller
             'no_max_rate' => $rate->max_rate === null ? '1' : '0',
         ])->values()->all() ?: [$this->defaultRateInput()]);
 
-        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'rateDayTypes', 'postalcode', 'address1', 'address2', 'session', 'ratesInput'));
+        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'rateDayTypes', 'rateUnitMinutes', 'postalcode', 'address1', 'address2', 'session', 'ratesInput'));
     }
 
     public function update(Request $request)
