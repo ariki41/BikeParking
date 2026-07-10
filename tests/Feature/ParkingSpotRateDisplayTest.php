@@ -67,6 +67,28 @@ class ParkingSpotRateDisplayTest extends TestCase
         $response->assertDontSee('以降30分 100円');
     }
 
+    public function test_parking_spot_detail_displays_overnight_rate_end_time_as_next_day(): void
+    {
+        [$parkingSpot, $user] = $this->createParkingSpot();
+
+        ParkingSpotRates::create([
+            'parking_spot_id' => $parkingSpot->id,
+            'day_type' => '夜間',
+            'start_time' => '22:00:00',
+            'end_time' => '06:00:00',
+            'unit_minutes' => 60,
+            'rate' => 200,
+            'free_minutes' => 0,
+            'max_rate' => 800,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->get(route('parking_spot.show', $parkingSpot->id));
+
+        $response->assertOk();
+        $response->assertSee('22:00 ～ 翌06:00');
+    }
+
     public function test_parking_spot_detail_displays_placeholder_without_rates(): void
     {
         [$parkingSpot, $user] = $this->createParkingSpot();
@@ -200,6 +222,37 @@ class ParkingSpotRateDisplayTest extends TestCase
         $response->assertDontSee('最初の30分無料');
         $response->assertDontSee('最初の0分無料');
         $response->assertSee('30分 100円');
+    }
+
+    public function test_overnight_rate_end_time_is_displayed_as_next_day_on_confirm(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+        Http::fake([
+            '*' => Http::response([
+                'Feature' => [
+                    [
+                        'Geometry' => ['Coordinates' => '139.753000,35.685000'],
+                        'Property' => ['Address' => '東京都千代田区千代田1-2'],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'rates' => [
+                    $this->validRateInput([
+                        'day_type' => '夜間',
+                        'start_time' => '22:00',
+                        'end_time' => '06:00',
+                    ]),
+                ],
+            ]));
+
+        $response->assertOk();
+        $response->assertSessionMissing('errors');
+        $response->assertSee('22:00 ～ 翌06:00');
     }
 
     public function test_parking_spot_can_save_rate_without_max_rate(): void
