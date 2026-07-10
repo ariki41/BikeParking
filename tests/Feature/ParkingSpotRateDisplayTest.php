@@ -25,7 +25,9 @@ class ParkingSpotRateDisplayTest extends TestCase
             'day_type' => '平日',
             'start_time' => '08:00:00',
             'end_time' => '20:00:00',
+            'unit_minutes' => 30,
             'rate' => 100,
+            'free_minutes' => 30,
             'max_rate' => 1200,
         ]);
 
@@ -36,8 +38,7 @@ class ParkingSpotRateDisplayTest extends TestCase
         $response->assertSee('平日');
         $response->assertSee('08:00');
         $response->assertSee('20:00');
-        $response->assertSee('100円');
-        $response->assertSee('最大 1,200円');
+        $response->assertSee('最初の30分無料 / 以降30分 100円 / 最大 1,200円');
     }
 
     public function test_parking_spot_detail_displays_placeholder_without_rates(): void
