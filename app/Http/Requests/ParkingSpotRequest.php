@@ -3,9 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Models\Postalcode;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\Rule;
 
 class ParkingSpotRequest extends FormRequest
 {
@@ -20,7 +20,7 @@ class ParkingSpotRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -41,6 +41,14 @@ class ParkingSpotRequest extends FormRequest
             'capacity' => 'required|integer|min:1',
             'opening_time' => 'required|date_format:H:i',
             'closing_time' => 'required|date_format:H:i',
+            'rates' => 'required|array|min:1|max:4',
+            'rates.*.day_type' => ['required', 'string', Rule::in(array_keys(config('categories.parking_spot_rate_day_types')))],
+            'rates.*.start_time' => 'required|date_format:H:i',
+            'rates.*.end_time' => 'required|date_format:H:i',
+            'rates.*.unit_minutes' => 'required|integer|min:1',
+            'rates.*.rate' => 'required|integer|min:0',
+            'rates.*.free_minutes' => 'nullable|integer|min:0',
+            'rates.*.max_rate' => 'nullable|integer|min:0',
         ];
     }
 
@@ -76,6 +84,35 @@ class ParkingSpotRequest extends FormRequest
 
             'closing_time.required' => '閉場時間は必須です。',
             'closing_time.date_format' => '閉場時間の形式が正しくありません。例: 22:00',
+
+            'rates.required' => '料金は必須です。',
+            'rates.array' => '料金の形式が正しくありません。',
+            'rates.min' => '料金は1件以上入力してください。',
+            'rates.max' => '料金帯は4件まで入力できます。',
+
+            'rates.*.day_type.required' => '料金区分は必須です。',
+            'rates.*.day_type.string' => '料金区分は文字列で入力してください。',
+            'rates.*.day_type.in' => '料金区分を選択してください。',
+
+            'rates.*.start_time.required' => '料金開始時間は必須です。',
+            'rates.*.start_time.date_format' => '料金開始時間の形式が正しくありません。例: 08:00',
+
+            'rates.*.end_time.required' => '料金終了時間は必須です。',
+            'rates.*.end_time.date_format' => '料金終了時間の形式が正しくありません。例: 20:00',
+
+            'rates.*.unit_minutes.required' => '料金単位は必須です。',
+            'rates.*.unit_minutes.integer' => '料金単位は整数で入力してください。',
+            'rates.*.unit_minutes.min' => '料金単位は1分以上で入力してください。',
+
+            'rates.*.rate.required' => '料金は必須です。',
+            'rates.*.rate.integer' => '料金は整数で入力してください。',
+            'rates.*.rate.min' => '料金は0円以上で入力してください。',
+
+            'rates.*.free_minutes.integer' => '無料時間は整数で入力してください。',
+            'rates.*.free_minutes.min' => '無料時間は0分以上で入力してください。',
+
+            'rates.*.max_rate.integer' => '最大料金は整数で入力してください。',
+            'rates.*.max_rate.min' => '最大料金は0円以上で入力してください。',
         ];
     }
 }

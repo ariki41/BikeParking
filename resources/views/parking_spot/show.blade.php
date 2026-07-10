@@ -52,7 +52,22 @@
                         </tr>
                         <tr class="border-b">
                             <th class="w-1/3 px-4 py-2 text-left text-sm font-semibold text-gray-600">料金</th>
-                            <td class="px-4 py-2 text-sm text-gray-800"></td>
+                            <td class="px-4 py-2 text-sm text-gray-800">
+                                @forelse ($parkingSpot->rates as $rate)
+                                    <div class="mb-2 last:mb-0">
+                                        <div class="font-semibold">{{ $rate->day_type }}</div>
+                                        <div>
+                                            {{ date('H:i', strtotime($rate->start_time)) }} ～
+                                            {{ $rate->end_time === '00:00:00' ? '24:00' : date('H:i', strtotime($rate->end_time)) }}
+                                        </div>
+                                        <div>
+                                            {{ $rate->rate_label }}
+                                        </div>
+                                    </div>
+                                @empty
+                                    <span class="text-gray-500">料金未登録</span>
+                                @endforelse
+                            </td>
                         </tr>
                         <tr class="border-b">
                             <th class="w-1/3 px-4 py-2 text-left text-sm font-semibold text-gray-600">駐車場台数</th>
