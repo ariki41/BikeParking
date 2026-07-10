@@ -43,9 +43,51 @@ class ParkingSpotRates extends Model
         return $label;
     }
 
+    public function getTimeRangeLabelAttribute(): string
+    {
+        return self::formatTimeRange($this->start_time, $this->end_time);
+    }
+
+    public static function formatTimeRange(?string $startTime, ?string $endTime): string
+    {
+        $startLabel = self::formatTimeLabel($startTime);
+        $endLabel = self::formatTimeLabel($endTime, self::isOvernight($startTime, $endTime));
+
+        return "{$startLabel} ～ {$endLabel}";
+    }
+
     public function parkingSpot(): BelongsTo
     {
         return $this->belongsTo(ParkingSpot::class);
+    }
+
+    private static function isOvernight(?string $startTime, ?string $endTime): bool
+    {
+        if ($startTime === null || $endTime === null) {
+            return false;
+        }
+
+        return self::normalizeTime($startTime) > self::normalizeTime($endTime);
+    }
+
+    private static function formatTimeLabel(?string $time, bool $isNextDay = false): string
+    {
+        if ($time === null || $time === '') {
+            return '';
+        }
+
+        $label = self::normalizeTime($time);
+
+        if (! $isNextDay && $label === '00:00') {
+            return '24:00';
+        }
+
+        return $isNextDay ? "翌{$label}" : $label;
+    }
+
+    private static function normalizeTime(string $time): string
+    {
+        return date('H:i', strtotime($time));
     }
 
     private function formatMinutes(int $minutes): string
