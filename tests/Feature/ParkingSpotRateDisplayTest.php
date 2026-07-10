@@ -238,39 +238,22 @@ class ParkingSpotRateDisplayTest extends TestCase
         ]);
     }
 
-    public function test_zero_yen_max_rate_is_saved_distinctly(): void
+    public function test_parking_spot_rate_validation_rejects_zero_yen_max_rate(): void
     {
         [, $user, $postalcode] = $this->createParkingSpot();
 
-        $this->actingAs($user);
-
-        app(ParkingSpotService::class)->saveParkingSpot([
-            'name' => '最大料金0円テスト駐車場',
-            'postalcode' => $postalcode->postalcode,
-            'address' => '東京都千代田区千代田1-2',
-            'longitude' => 139.753000,
-            'latitude' => 35.685000,
-            'capacity' => 1,
-            'opening_time' => '00:00',
-            'closing_time' => '00:00',
-            'rates' => [
-                [
-                    'day_type' => '全日',
-                    'start_time' => '00:00',
-                    'end_time' => '00:00',
-                    'unit_minutes' => 30,
-                    'rate' => 100,
-                    'free_minutes' => 0,
-                    'max_rate' => 0,
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'rates' => [
+                    $this->validRateInput([
+                        'max_rate' => 0,
+                    ]),
                 ],
-            ],
-        ]);
+            ]));
 
-        $this->assertDatabaseHas('parking_spot_rates', [
-            'day_type' => '全日',
-            'rate' => 100,
-            'max_rate' => 0,
-        ]);
+        $response->assertRedirect(route('parking_spot.create'));
+        $response->assertSessionHasErrors(['rates.0.max_rate']);
     }
 
     public function test_parking_spot_can_replace_rates_on_update(): void
@@ -315,7 +298,7 @@ class ParkingSpotRateDisplayTest extends TestCase
                     'unit_minutes' => 15,
                     'rate' => 50,
                     'free_minutes' => 0,
-                    'max_rate' => 0,
+                    'max_rate' => 500,
                 ],
             ],
         ]);

@@ -102,7 +102,7 @@
                         <x-input-label>最大料金（円）</x-input-label>
                         <input class="max-rate-input w-full rounded border p-2"
                             name="rates[{{ $index }}][max_rate]" data-rate-field="max_rate" type="number"
-                            value="{{ $rate['max_rate'] ?? '' }}" min="0" placeholder="例：1200">
+                            value="{{ $rate['max_rate'] ?? '' }}" min="1" placeholder="例：1200">
                         <label
                             class="mt-2 flex items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
                             <input
@@ -186,7 +186,7 @@
                 <div>
                     <x-input-label>最大料金（円）</x-input-label>
                     <input class="max-rate-input w-full rounded border p-2" data-rate-field="max_rate" type="number"
-                        min="0" placeholder="例：1200">
+                        min="1" placeholder="例：1200">
                     <label
                         class="mt-2 flex items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
                         <input
