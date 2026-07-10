@@ -37,10 +37,15 @@ class ParkingSpotRateDisplayTest extends TestCase
             ->get(route('parking_spot.show', $parkingSpot->id));
 
         $response->assertOk();
+        $response->assertSee('区分');
+        $response->assertSee('時間帯');
+        $response->assertSee('料金');
+        $response->assertSee('最大料金');
         $response->assertSee('平日');
         $response->assertSee('08:00');
         $response->assertSee('20:00');
-        $response->assertSee('最初の30分無料 / 以降30分 100円 / 最大 1,200円');
+        $response->assertSee('最初の30分無料 / 以降30分 100円');
+        $response->assertSee('1,200円');
     }
 
     public function test_parking_spot_detail_displays_no_max_rate_label(): void
@@ -62,7 +67,8 @@ class ParkingSpotRateDisplayTest extends TestCase
             ->get(route('parking_spot.show', $parkingSpot->id));
 
         $response->assertOk();
-        $response->assertSee('30分 100円 / 最大料金なし');
+        $response->assertSee('30分 100円');
+        $response->assertSee('最大料金なし');
         $response->assertDontSee('最初の0分無料');
         $response->assertDontSee('以降30分 100円');
     }
