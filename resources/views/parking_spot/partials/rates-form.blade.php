@@ -1,8 +1,7 @@
 <div class="mb-4 border-t pt-4" id="parking-spot-rates">
     <div class="mb-4 flex items-center justify-between gap-4">
         <h2 class="text-xl font-semibold text-gray-800">料金</h2>
-        <button class="rounded bg-gray-800 px-3 py-2 text-sm font-semibold text-white" id="add-rate-button"
-            type="button">
+        <button class="rounded bg-gray-800 px-3 py-2 text-sm font-semibold text-white" id="add-rate-button" type="button">
             料金帯を追加
         </button>
     </div>
@@ -11,7 +10,9 @@
         <div class="mb-4 text-sm text-red-600">{{ $message }}</div>
     @enderror
     @php
-        $rateErrors = collect($errors->getMessages())->filter(fn ($messages, $field) => str_starts_with($field, 'rates.'));
+        $rateErrors = collect($errors->getMessages())->filter(
+            fn($messages, $field) => str_starts_with($field, 'rates.'),
+        );
     @endphp
     @if ($rateErrors->isNotEmpty())
         <div class="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-600">
@@ -37,9 +38,10 @@
                     <x-input-label>料金区分</x-input-label>
                     <select
                         class="form-control rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:border-indigo-600 dark:focus:ring-indigo-600"
-                        data-rate-field="day_type" name="rates[{{ $index }}][day_type]">
+                        name="rates[{{ $index }}][day_type]" data-rate-field="day_type">
                         @foreach ($rateDayTypes as $key => $value)
-                            <option value="{{ $key }}" @selected(($rate['day_type'] ?? '') === $key)>{{ $value }}</option>
+                            <option value="{{ $key }}" @selected(($rate['day_type'] ?? '') === $key)>{{ $value }}
+                            </option>
                         @endforeach
                     </select>
                 </div>
@@ -47,52 +49,57 @@
                 <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                         <x-input-label>料金開始時間</x-input-label>
-                        <input class="w-full rounded border p-2" data-rate-field="start_time"
-                            name="rates[{{ $index }}][start_time]" type="time"
-                            value="{{ $rate['start_time'] ?? '00:00' }}" required>
+                        <input class="w-full rounded border p-2" name="rates[{{ $index }}][start_time]"
+                            data-rate-field="start_time" type="time" value="{{ $rate['start_time'] ?? '00:00' }}"
+                            required>
                     </div>
 
                     <div>
                         <x-input-label>料金終了時間</x-input-label>
-                        <input class="w-full rounded border p-2" data-rate-field="end_time"
-                            name="rates[{{ $index }}][end_time]" type="time"
-                            value="{{ $rate['end_time'] ?? '00:00' }}" required>
+                        <input class="w-full rounded border p-2" name="rates[{{ $index }}][end_time]"
+                            data-rate-field="end_time" type="time" value="{{ $rate['end_time'] ?? '00:00' }}"
+                            required>
                     </div>
                 </div>
 
                 <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
-                        <x-input-label>料金単位（分）</x-input-label>
-                        <input class="w-full rounded border p-2" data-rate-field="unit_minutes"
-                            name="rates[{{ $index }}][unit_minutes]" type="number"
-                            value="{{ $rate['unit_minutes'] ?? 30 }}" min="1" required placeholder="例：30">
+                        <x-input-label>料金単位</x-input-label>
+                        <select class="w-full rounded border p-2" name="rates[{{ $index }}][unit_minutes]"
+                            data-rate-field="unit_minutes" required>
+                            @foreach ($rateUnitMinutes as $minutes => $label)
+                                <option value="{{ $minutes }}" @selected((int) ($rate['unit_minutes'] ?? 30) === $minutes)>{{ $label }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div>
                         <x-input-label>料金（円）</x-input-label>
-                        <input class="w-full rounded border p-2" data-rate-field="rate"
-                            name="rates[{{ $index }}][rate]" type="number" value="{{ $rate['rate'] ?? '' }}"
-                            min="0" required placeholder="例：100">
+                        <input class="w-full rounded border p-2" name="rates[{{ $index }}][rate]"
+                            data-rate-field="rate" type="number" value="{{ $rate['rate'] ?? '' }}" min="0"
+                            required placeholder="例：100">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                         <x-input-label>最初の無料時間（分）</x-input-label>
-                        <input class="w-full rounded border p-2" data-rate-field="free_minutes"
-                            name="rates[{{ $index }}][free_minutes]" type="number"
-                            value="{{ $rate['free_minutes'] ?? 0 }}" min="0" placeholder="例：30">
+                        <input class="w-full rounded border p-2" name="rates[{{ $index }}][free_minutes]"
+                            data-rate-field="free_minutes" type="number" value="{{ $rate['free_minutes'] ?? 0 }}"
+                            min="0" placeholder="例：30">
                     </div>
 
                     <div>
                         <x-input-label>最大料金（円）</x-input-label>
-                        <input class="max-rate-input w-full rounded border p-2" data-rate-field="max_rate"
-                            name="rates[{{ $index }}][max_rate]" type="number"
+                        <input class="max-rate-input w-full rounded border p-2"
+                            name="rates[{{ $index }}][max_rate]" data-rate-field="max_rate" type="number"
                             value="{{ $rate['max_rate'] ?? '' }}" min="0" placeholder="例：1200">
                         <label
                             class="mt-2 flex items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
-                            <input class="no-max-rate-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
-                                data-rate-field="no_max_rate" name="rates[{{ $index }}][no_max_rate]"
+                            <input
+                                class="no-max-rate-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                name="rates[{{ $index }}][no_max_rate]" data-rate-field="no_max_rate"
                                 type="checkbox" value="1" @checked($rate['no_max_rate'] ?? false)>
                             <span>最大料金なし</span>
                         </label>
@@ -139,8 +146,12 @@
             <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                     <x-input-label>料金単位（分）</x-input-label>
-                    <input class="w-full rounded border p-2" data-rate-field="unit_minutes" type="number"
-                        value="30" min="1" required placeholder="例：30">
+                    <select class="w-full rounded border p-2" data-rate-field="unit_minutes" required>
+                        @foreach ($rateUnitMinutes as $minutes => $label)
+                            <option value="{{ $minutes }}" @selected($minutes === 30)>{{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <div>
@@ -163,7 +174,8 @@
                         min="0" placeholder="例：1200">
                     <label
                         class="mt-2 flex items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
-                        <input class="no-max-rate-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                        <input
+                            class="no-max-rate-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
                             data-rate-field="no_max_rate" type="checkbox" value="1">
                         <span>最大料金なし</span>
                     </label>

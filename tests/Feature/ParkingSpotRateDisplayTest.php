@@ -126,6 +126,33 @@ class ParkingSpotRateDisplayTest extends TestCase
         $this->assertDatabaseCount('parking_spot_rates', 2);
     }
 
+    public function test_parking_spot_create_form_displays_rate_unit_select(): void
+    {
+        [, $user] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)
+            ->get(route('parking_spot.create'));
+
+        $response->assertOk();
+        $response->assertSee('name="rates[0][unit_minutes]"', false);
+        $response->assertSee('<option value="12"', false);
+        $response->assertSee('<option value="15"', false);
+        $response->assertSee('<option value="30" selected', false);
+        $response->assertSee('<option value="60"', false);
+        $response->assertSee('<option value="120"', false);
+        $response->assertSeeText('2時間');
+        $response->assertSee('<option value="180"', false);
+        $response->assertSeeText('3時間');
+        $response->assertSee('<option value="240"', false);
+        $response->assertSeeText('4時間');
+        $response->assertSee('<option value="300"', false);
+        $response->assertSeeText('5時間');
+        $response->assertSee('<option value="720"', false);
+        $response->assertSeeText('12時間');
+        $response->assertSee('<option value="1440"', false);
+        $response->assertSeeText('24時間');
+    }
+
     public function test_parking_spot_can_save_rate_without_max_rate(): void
     {
         [, $user, $postalcode] = $this->createParkingSpot();
@@ -355,6 +382,24 @@ class ParkingSpotRateDisplayTest extends TestCase
             'rates.0.free_minutes',
             'rates.0.max_rate',
         ]);
+    }
+
+    public function test_parking_spot_rate_validation_rejects_unconfigured_unit_minutes(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'rates' => [
+                    $this->validRateInput([
+                        'unit_minutes' => 7,
+                    ]),
+                ],
+            ]));
+
+        $response->assertRedirect(route('parking_spot.create'));
+        $response->assertSessionHasErrors(['rates.0.unit_minutes']);
     }
 
     private function createParkingSpot(): array

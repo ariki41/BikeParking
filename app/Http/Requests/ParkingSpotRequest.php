@@ -45,7 +45,7 @@ class ParkingSpotRequest extends FormRequest
             'rates.*.day_type' => ['required', 'string', Rule::in(array_keys(config('categories.parking_spot_rate_day_types')))],
             'rates.*.start_time' => 'required|date_format:H:i',
             'rates.*.end_time' => 'required|date_format:H:i',
-            'rates.*.unit_minutes' => 'required|integer|min:1',
+            'rates.*.unit_minutes' => ['required', 'integer', Rule::in(array_keys(config('categories.parking_spot_rate_unit_minutes')))],
             'rates.*.rate' => 'required|integer|min:0',
             'rates.*.free_minutes' => 'nullable|integer|min:0',
             'rates.*.no_max_rate' => 'nullable|boolean',
@@ -103,7 +103,7 @@ class ParkingSpotRequest extends FormRequest
 
             'rates.*.unit_minutes.required' => '料金単位は必須です。',
             'rates.*.unit_minutes.integer' => '料金単位は整数で入力してください。',
-            'rates.*.unit_minutes.min' => '料金単位は1分以上で入力してください。',
+            'rates.*.unit_minutes.in' => '料金単位を選択してください。',
 
             'rates.*.rate.required' => '料金は必須です。',
             'rates.*.rate.integer' => '料金は整数で入力してください。',
