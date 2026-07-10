@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\ParkingSpotService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class ParkingSpotRateDisplayTest extends TestCase
@@ -62,6 +63,8 @@ class ParkingSpotRateDisplayTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('30分 100円 / 最大料金なし');
+        $response->assertDontSee('最初の0分無料');
+        $response->assertDontSee('以降30分 100円');
     }
 
     public function test_parking_spot_detail_displays_placeholder_without_rates(): void
@@ -151,6 +154,52 @@ class ParkingSpotRateDisplayTest extends TestCase
         $response->assertSeeText('12時間');
         $response->assertSee('<option value="1440"', false);
         $response->assertSeeText('24時間');
+    }
+
+    public function test_parking_spot_create_form_can_select_no_free_minutes(): void
+    {
+        [, $user] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)
+            ->get(route('parking_spot.create'));
+
+        $response->assertOk();
+        $response->assertSeeText('無料時間なし');
+        $response->assertSee('name="rates[0][no_free_minutes]"', false);
+        $response->assertSee('data-rate-field="no_free_minutes"', false);
+    }
+
+    public function test_no_free_minutes_input_is_normalized_on_confirm(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+        Http::fake([
+            '*' => Http::response([
+                'Feature' => [
+                    [
+                        'Geometry' => ['Coordinates' => '139.753000,35.685000'],
+                        'Property' => ['Address' => '東京都千代田区千代田1-2'],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'rates' => [
+                    $this->validRateInput([
+                        'free_minutes' => 30,
+                        'no_free_minutes' => '1',
+                    ]),
+                ],
+            ]));
+
+        $response->assertOk();
+        $response->assertSessionMissing('errors');
+        $response->assertSessionHas('create_parking_spot_form.rates.0.free_minutes', 0);
+        $response->assertDontSee('最初の30分無料');
+        $response->assertDontSee('最初の0分無料');
+        $response->assertSee('30分 100円');
     }
 
     public function test_parking_spot_can_save_rate_without_max_rate(): void
