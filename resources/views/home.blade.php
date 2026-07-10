@@ -1,79 +1,47 @@
 <x-app-layout>
-    <form method="GET" action="{{ route('search') }}">
-        <div class="py-12">
-            <div class="flex items-center justify-center space-x-5">
-                <x-text-input class="w-3/5 max-w-3xl" id="keyword" name="keyword" type="text" :value="old('keyword')" />
-                <x-primary-button>検索</x-primary-button>
+    <div class="bp-shell">
+        <section class="mb-8 rounded-lg border border-emerald-100 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-8">
+            <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-900 sm:text-4xl">近くの駐輪場をすばやく探す</h1>
+                    <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                        駅名や地名から、料金・営業時間・場所を確認できる駐輪場検索サービスです。
+                    </p>
+                </div>
+                <form class="rounded-lg border border-slate-200 bg-slate-50 p-4" method="GET" action="{{ route('search') }}">
+                    <div class="flex flex-col gap-3 sm:flex-row">
+                        <x-text-input class="w-full" id="keyword" name="keyword" type="text" :value="old('keyword')"
+                            placeholder="駅名・地名を入力" />
+                        <x-primary-button class="shrink-0">検索</x-primary-button>
+                    </div>
+                </form>
             </div>
-        </div>
-    </form>
+        </section>
 
-    <div class="body-font text-gray-600">
-        <div class="container mx-auto px-4 py-10">
-            <div class="mb-5 flex w-full flex-col text-center">
-                <h1 class="mb-1 text-left text-2xl font-medium tracking-widest text-gray-800">新着の駐車場</h1>
+        <section>
+            <div class="mb-5 flex items-end justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">新着の駐車場</h2>
+                    <p class="bp-muted mt-1">最近登録された駐輪場を確認できます。</p>
+                </div>
             </div>
-            <div class="flex w-full gap-4">
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 @foreach ($parkingSpots as $parkingSpot)
-                    <div class="w-1/3 rounded border border-gray-400">
-                        <div class="flex h-full flex-col rounded-lg bg-gray-100 p-8">
-                            <div class="mb-3 flex items-center">
-                                <h2 class="title-font text-lg font-medium text-gray-900">{{ $parkingSpot->name }}</h2>
+                    <a class="bp-card-link" href="{{ route('parking_spot.show', ['id' => $parkingSpot->id]) }}">
+                        <img class="h-40 w-full rounded-t-lg object-cover" src="/images/noimage.jpg" alt="駐車場画像">
+                        <div class="space-y-3 p-4">
+                            <div>
+                                <h3 class="text-lg font-semibold text-slate-900">{{ $parkingSpot->name }}</h3>
+                                <p class="mt-1 text-sm leading-6 text-slate-600">{{ $parkingSpot->address }}</p>
                             </div>
-                            <div class="flex-grow">
-                                <p class="text-base leading-relaxed">駐車場名1</p>
-                            </div>
-                            <div class="flex">
-                                <a class="mt-4 inline-block w-1/2 items-center rounded-md border border-transparent bg-gray-800 px-4 py-2 text-center text-xs font-semibold tracking-widest text-white duration-150 ease-in-out hover:bg-gray-700 focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:bg-gray-900"
-                                    href="{{ route('parking_spot.show', ['id' => $parkingSpot->id]) }}">詳細</a>
+                            <div class="flex items-center justify-between border-t border-slate-100 pt-3">
+                                <span class="text-sm font-semibold text-emerald-700">詳細を見る</span>
+                                <span class="text-xs text-slate-500">{{ $parkingSpot->capacity }}台</span>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 @endforeach
             </div>
-        </div>
-    </div>
-
-    <div class="body-font text-gray-600">
-        <div class="container mx-auto px-4 py-10">
-            <div class="mb-5 flex w-full flex-col text-center">
-                <h1 class="mb-1 text-left text-2xl font-medium tracking-widest text-gray-800">過去に利用した駐車場</h1>
-            </div>
-            <div class="flex w-full gap-4">
-                <div class="w-1/3 rounded border border-gray-400">
-                    <div class="flex h-full flex-col rounded-lg bg-gray-100 p-8">
-                        <div class="mb-3 flex items-center">
-                            <h2 class="title-font text-lg font-medium text-gray-900">駐車場1</h2>
-                        </div>
-                        <div class="flex-grow">
-                            <p class="text-base leading-relaxed">駐車場名1</p>
-                        </div>
-                        <x-primary-button class="mt-4">詳細</x-primary-button>
-                    </div>
-                </div>
-                <div class="w-1/3 rounded border border-gray-400">
-                    <div class="flex h-full flex-col rounded-lg bg-gray-100 p-8">
-                        <div class="mb-3 flex items-center">
-                            <h2 class="title-font text-lg font-medium text-gray-900">駐車場2</h2>
-                        </div>
-                        <div class="flex-grow">
-                            <p class="text-base leading-relaxed">駐車場名2</p>
-                        </div>
-                        <x-primary-button class="mt-4">詳細</x-primary-button>
-                    </div>
-                </div>
-                <div class="w-1/3 rounded border border-gray-400">
-                    <div class="flex h-full flex-col rounded-lg bg-gray-100 p-8">
-                        <div class="mb-3 flex items-center">
-                            <h2 class="title-font text-lg font-medium text-gray-900">駐車場3</h2>
-                        </div>
-                        <div class="flex-grow">
-                            <p class="text-base leading-relaxed">駐車場名3</p>
-                        </div>
-                        <x-primary-button class="mt-4">詳細</x-primary-button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        </section>
     </div>
 </x-app-layout>

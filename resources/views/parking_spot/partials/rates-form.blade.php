@@ -1,7 +1,12 @@
-<div class="mb-4 border-t pt-4" id="parking-spot-rates">
+<div class="border-t border-slate-200 pt-6" id="parking-spot-rates">
     <div class="mb-4 flex items-center justify-between gap-4">
-        <h2 class="text-xl font-semibold text-gray-800">料金</h2>
-        <button class="rounded bg-gray-800 px-3 py-2 text-sm font-semibold text-white" id="add-rate-button" type="button">
+        <div>
+            <h2 class="bp-section-title">料金</h2>
+            <p class="bp-muted mt-1">時間帯ごとの料金を最大4件まで設定できます。</p>
+        </div>
+        <button
+            class="inline-flex items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+            id="add-rate-button" type="button">
             料金帯を追加
         </button>
     </div>
@@ -15,7 +20,7 @@
         );
     @endphp
     @if ($rateErrors->isNotEmpty())
-        <div class="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+        <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
             @foreach ($rateErrors as $messages)
                 @foreach ($messages as $message)
                     <div>{{ $message }}</div>
@@ -26,10 +31,10 @@
 
     <div id="rate-list">
         @foreach ($ratesInput as $index => $rate)
-            <div class="rate-item mb-4 rounded border border-gray-200 p-4">
+            <div class="rate-item mb-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
                 <div class="mb-4 flex items-center justify-between gap-4">
-                    <h3 class="font-semibold text-gray-700">料金帯<span class="rate-number">{{ $index + 1 }}</span></h3>
-                    <button class="delete-rate-button text-sm font-semibold text-red-600" type="button">
+                    <h3 class="font-semibold text-slate-800">料金帯<span class="rate-number">{{ $index + 1 }}</span></h3>
+                    <button class="delete-rate-button bp-danger-link" type="button">
                         削除
                     </button>
                 </div>
@@ -37,7 +42,7 @@
                 <div class="mb-4">
                     <x-input-label>料金区分</x-input-label>
                     <select
-                        class="form-control rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:border-indigo-600 dark:focus:ring-indigo-600"
+                        class="bp-select"
                         name="rates[{{ $index }}][day_type]" data-rate-field="day_type">
                         @foreach ($rateDayTypes as $key => $value)
                             <option value="{{ $key }}" @selected(($rate['day_type'] ?? '') === $key)>{{ $value }}
@@ -49,14 +54,14 @@
                 <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                         <x-input-label>料金開始時間</x-input-label>
-                        <input class="w-full rounded border p-2" name="rates[{{ $index }}][start_time]"
+                        <input class="bp-input" name="rates[{{ $index }}][start_time]"
                             data-rate-field="start_time" type="time" value="{{ $rate['start_time'] ?? '00:00' }}"
                             required>
                     </div>
 
                     <div>
                         <x-input-label>料金終了時間</x-input-label>
-                        <input class="w-full rounded border p-2" name="rates[{{ $index }}][end_time]"
+                        <input class="bp-input" name="rates[{{ $index }}][end_time]"
                             data-rate-field="end_time" type="time" value="{{ $rate['end_time'] ?? '00:00' }}"
                             required>
                     </div>
@@ -65,7 +70,7 @@
                 <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                         <x-input-label>料金単位</x-input-label>
-                        <select class="w-full rounded border p-2" name="rates[{{ $index }}][unit_minutes]"
+                        <select class="bp-select" name="rates[{{ $index }}][unit_minutes]"
                             data-rate-field="unit_minutes" required>
                             @foreach ($rateUnitMinutes as $minutes => $label)
                                 <option value="{{ $minutes }}" @selected((int) ($rate['unit_minutes'] ?? 30) === $minutes)>{{ $label }}
@@ -76,7 +81,7 @@
 
                     <div>
                         <x-input-label>料金（円）</x-input-label>
-                        <input class="w-full rounded border p-2" name="rates[{{ $index }}][rate]"
+                        <input class="bp-input" name="rates[{{ $index }}][rate]"
                             data-rate-field="rate" type="number" value="{{ $rate['rate'] ?? '' }}" min="0"
                             required placeholder="例：100">
                     </div>
@@ -85,13 +90,13 @@
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                         <x-input-label>最初の無料時間（分）</x-input-label>
-                        <input class="free-minutes-input w-full rounded border p-2" name="rates[{{ $index }}][free_minutes]"
+                        <input class="free-minutes-input bp-input" name="rates[{{ $index }}][free_minutes]"
                             data-rate-field="free_minutes" type="number" value="{{ $rate['free_minutes'] ?? 0 }}"
                             min="0" placeholder="例：30">
                         <label
-                            class="mt-2 flex items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                            class="mt-2 flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                             <input
-                                class="no-free-minutes-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                class="no-free-minutes-checkbox rounded border-slate-300 text-emerald-600 shadow-sm focus:ring-emerald-500"
                                 name="rates[{{ $index }}][no_free_minutes]" data-rate-field="no_free_minutes"
                                 type="checkbox" value="1" @checked($rate['no_free_minutes'] ?? ((int) ($rate['free_minutes'] ?? 0) === 0))>
                             <span>無料時間なし</span>
@@ -100,13 +105,13 @@
 
                     <div>
                         <x-input-label>最大料金（円）</x-input-label>
-                        <input class="max-rate-input w-full rounded border p-2"
+                        <input class="max-rate-input bp-input"
                             name="rates[{{ $index }}][max_rate]" data-rate-field="max_rate" type="number"
                             value="{{ $rate['max_rate'] ?? '' }}" min="1" placeholder="例：1200">
                         <label
-                            class="mt-2 flex items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                            class="mt-2 flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                             <input
-                                class="no-max-rate-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                class="no-max-rate-checkbox rounded border-slate-300 text-emerald-600 shadow-sm focus:ring-emerald-500"
                                 name="rates[{{ $index }}][no_max_rate]" data-rate-field="no_max_rate"
                                 type="checkbox" value="1" @checked($rate['no_max_rate'] ?? false)>
                             <span>最大料金なし</span>
@@ -118,10 +123,10 @@
     </div>
 
     <template id="rate-template">
-        <div class="rate-item mb-4 rounded border border-gray-200 p-4">
+        <div class="rate-item mb-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div class="mb-4 flex items-center justify-between gap-4">
-                <h3 class="font-semibold text-gray-700">料金帯<span class="rate-number"></span></h3>
-                <button class="delete-rate-button text-sm font-semibold text-red-600" type="button">
+                <h3 class="font-semibold text-slate-800">料金帯<span class="rate-number"></span></h3>
+                <button class="delete-rate-button bp-danger-link" type="button">
                     削除
                 </button>
             </div>
@@ -129,7 +134,7 @@
             <div class="mb-4">
                 <x-input-label>料金区分</x-input-label>
                 <select
-                    class="form-control rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus:border-indigo-600 dark:focus:ring-indigo-600"
+                    class="bp-select"
                     data-rate-field="day_type">
                     @foreach ($rateDayTypes as $key => $value)
                         <option value="{{ $key }}" @selected($key === '全日')>{{ $value }}</option>
@@ -140,13 +145,13 @@
             <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                     <x-input-label>料金開始時間</x-input-label>
-                    <input class="w-full rounded border p-2" data-rate-field="start_time" type="time" value="00:00"
+                    <input class="bp-input" data-rate-field="start_time" type="time" value="00:00"
                         required>
                 </div>
 
                 <div>
                     <x-input-label>料金終了時間</x-input-label>
-                    <input class="w-full rounded border p-2" data-rate-field="end_time" type="time" value="00:00"
+                    <input class="bp-input" data-rate-field="end_time" type="time" value="00:00"
                         required>
                 </div>
             </div>
@@ -154,7 +159,7 @@
             <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                     <x-input-label>料金単位（分）</x-input-label>
-                    <select class="w-full rounded border p-2" data-rate-field="unit_minutes" required>
+                    <select class="bp-select" data-rate-field="unit_minutes" required>
                         @foreach ($rateUnitMinutes as $minutes => $label)
                             <option value="{{ $minutes }}" @selected($minutes === 30)>{{ $label }}
                             </option>
@@ -164,7 +169,7 @@
 
                 <div>
                     <x-input-label>料金（円）</x-input-label>
-                    <input class="w-full rounded border p-2" data-rate-field="rate" type="number" min="0"
+                    <input class="bp-input" data-rate-field="rate" type="number" min="0"
                         required placeholder="例：100">
                 </div>
             </div>
@@ -172,12 +177,12 @@
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                     <x-input-label>最初の無料時間（分）</x-input-label>
-                    <input class="free-minutes-input w-full rounded border p-2" data-rate-field="free_minutes" type="number"
+                    <input class="free-minutes-input bp-input" data-rate-field="free_minutes" type="number"
                         value="0" min="0" placeholder="例：30">
                     <label
-                        class="mt-2 flex items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                        class="mt-2 flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                         <input
-                            class="no-free-minutes-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                            class="no-free-minutes-checkbox rounded border-slate-300 text-emerald-600 shadow-sm focus:ring-emerald-500"
                             data-rate-field="no_free_minutes" type="checkbox" value="1" checked>
                         <span>無料時間なし</span>
                     </label>
@@ -185,12 +190,12 @@
 
                 <div>
                     <x-input-label>最大料金（円）</x-input-label>
-                    <input class="max-rate-input w-full rounded border p-2" data-rate-field="max_rate" type="number"
+                    <input class="max-rate-input bp-input" data-rate-field="max_rate" type="number"
                         min="1" placeholder="例：1200">
                     <label
-                        class="mt-2 flex items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                        class="mt-2 flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                         <input
-                            class="no-max-rate-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                            class="no-max-rate-checkbox rounded border-slate-300 text-emerald-600 shadow-sm focus:ring-emerald-500"
                             data-rate-field="no_max_rate" type="checkbox" value="1">
                         <span>最大料金なし</span>
                     </label>
@@ -223,8 +228,8 @@
                     }
 
                     input.readOnly = checkbox.checked;
-                    input.classList.toggle('bg-gray-200', checkbox.checked);
-                    input.classList.toggle('text-gray-500', checkbox.checked);
+                    input.classList.toggle('bg-slate-100', checkbox.checked);
+                    input.classList.toggle('text-slate-500', checkbox.checked);
                     input.classList.toggle('cursor-not-allowed', checkbox.checked);
                     input.classList.toggle('bg-white', !checkbox.checked);
 
@@ -242,11 +247,11 @@
                     }
 
                     input.disabled = checkbox.checked;
-                    input.classList.toggle('border-gray-300', checkbox.checked);
-                    input.classList.toggle('bg-gray-200', checkbox.checked);
-                    input.classList.toggle('text-gray-500', checkbox.checked);
+                    input.classList.toggle('border-slate-300', checkbox.checked);
+                    input.classList.toggle('bg-slate-100', checkbox.checked);
+                    input.classList.toggle('text-slate-500', checkbox.checked);
                     input.classList.toggle('cursor-not-allowed', checkbox.checked);
-                    input.classList.toggle('border-gray-300', !checkbox.checked);
+                    input.classList.toggle('border-slate-300', !checkbox.checked);
                     input.classList.toggle('bg-white', !checkbox.checked);
 
                     if (checkbox.checked) {
