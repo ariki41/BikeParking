@@ -25,6 +25,9 @@
         </script>
     @endscript
     @foreach ($spots as $spot)
+        @php
+            $rate = $spot->rates->first();
+        @endphp
         <a href="{{ route('parking_spot.show', $spot->id) }}">
             <div class="bg-gray-100 p-4">
                 <div class="mx-auto max-w-xl rounded-md bg-white p-4 shadow-lg">
@@ -40,16 +43,20 @@
                             <p class="mb-4 text-sm text-gray-600">{{ $spot->address }}</p>
 
                             <div class="flex items-center">
-                                <div class="flex items-center">
-                                    <span class="text-2xl font-bold text-red-500">¥{{ $spot->price }}</span>
-                                    <span class="ml-2 text-gray-600">/</span>
-                                    <span class="ml-2 text-gray-600">24h</span>
-                                </div>
-                                <div class="ml-auto">
-                                    <span class="text-sm text-gray-600">{{ $spot->start_time }}</span>
-                                    <span class="text-sm text-gray-600">～</span>
-                                    <span class="text-sm text-gray-600">{{ $spot->end_time }}</span>
-                                </div>
+                                @if ($rate)
+                                    <div class="flex items-center">
+                                        <span class="text-2xl font-bold text-red-500">{{ $rate->rate_label }}</span>
+                                        <span class="ml-2 text-gray-600">/</span>
+                                        <span class="ml-2 text-gray-600">{{ $rate->day_type }}</span>
+                                    </div>
+                                    <div class="ml-auto">
+                                        <span class="text-sm text-gray-600">{{ date('H:i', strtotime($rate->start_time)) }}</span>
+                                        <span class="text-sm text-gray-600">～</span>
+                                        <span class="text-sm text-gray-600">{{ $rate->end_time === '00:00:00' ? '24:00' : date('H:i', strtotime($rate->end_time)) }}</span>
+                                    </div>
+                                @else
+                                    <span class="text-sm font-semibold text-gray-500">料金未登録</span>
+                                @endif
                             </div>
                         </div>
                     </div>

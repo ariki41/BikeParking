@@ -50,6 +50,8 @@
             @enderror
         </div>
 
+        @include('parking_spot.partials.rates-form')
+
         <x-primary-button>確認画面へ進む</x-primary-button>
     </form>
 </x-app-layout>

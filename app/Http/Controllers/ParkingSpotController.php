@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ParkingSpotRequest;
-use App\Services\ParkingSpotService;
 use App\Models\ParkingSpot;
 use App\Models\Postalcode;
+use App\Services\ParkingSpotService;
 use Illuminate\Http\Request;
 
 class ParkingSpotController extends Controller
@@ -17,26 +17,27 @@ class ParkingSpotController extends Controller
 
     public function show($id)
     {
-        $parkingSpot = ParkingSpot::findOrFail($id);
+        $parkingSpot = ParkingSpot::with('rates')->findOrFail($id);
 
         $postalcode = Postalcode::getPostalcode($parkingSpot->postalcode)->postalcode;
         $capacity = config('categories.parking_spot_capacity');
 
         $parkingSpot['postalcode'] = $postalcode;
         $parkingSpot['capacity'] = $capacity[$parkingSpot['capacity']];
-        $parkingSpot['opening_time'] = date("H:i", strtotime($parkingSpot['opening_time']));
-        $parkingSpot['closing_time'] = $parkingSpot['closing_time'] === '00:00:00' ? '24:00' : date("H:i", strtotime($parkingSpot['closing_time']));
+        $parkingSpot['opening_time'] = date('H:i', strtotime($parkingSpot['opening_time']));
+        $parkingSpot['closing_time'] = $parkingSpot['closing_time'] === '00:00:00' ? '24:00' : date('H:i', strtotime($parkingSpot['closing_time']));
 
-        
         return view('parking_spot.show', compact('parkingSpot'));
-        
+
     }
 
     public function create()
     {
         $capacity = config('categories.parking_spot_capacity');
+        $rateDayTypes = config('categories.parking_spot_rate_day_types');
+        $ratesInput = old('rates', [$this->defaultRateInput()]);
 
-        return view('parking_spot.create', compact('capacity'));
+        return view('parking_spot.create', compact('capacity', 'rateDayTypes', 'ratesInput'));
     }
 
     public function confirm(ParkingSpotRequest $request)
@@ -84,28 +85,38 @@ class ParkingSpotController extends Controller
 
     public function edit($id)
     {
-        $parkingSpot = ParkingSpot::findOrFail($id);
+        $parkingSpot = ParkingSpot::with('rates')->findOrFail($id);
         $capacity = config('categories.parking_spot_capacity');
-        
+        $rateDayTypes = config('categories.parking_spot_rate_day_types');
+
         $postalcode = Postalcode::getPostalcode($parkingSpot->postalcode)->postalcode;
         $address1Sql = Postalcode::getAddress($postalcode)->first();
         $address1 = $address1Sql->prefecture.$address1Sql->city.$address1Sql->town;
         $address2 = str_replace($address1, '', $parkingSpot->address);
 
         // 時間フォーマット変換
-        $parkingSpot['opening_time'] = date("H:i", strtotime($parkingSpot['opening_time']));
-        $parkingSpot['closing_time'] = date("H:i", strtotime($parkingSpot['closing_time']));
+        $parkingSpot['opening_time'] = date('H:i', strtotime($parkingSpot['opening_time']));
+        $parkingSpot['closing_time'] = date('H:i', strtotime($parkingSpot['closing_time']));
 
         $session = session('edit_parking_spot_form') ?? [];
+        $ratesInput = old('rates', $parkingSpot->rates->map(fn ($rate) => [
+            'day_type' => $rate->day_type,
+            'start_time' => date('H:i', strtotime($rate->start_time)),
+            'end_time' => date('H:i', strtotime($rate->end_time)),
+            'unit_minutes' => $rate->unit_minutes,
+            'rate' => $rate->rate,
+            'free_minutes' => $rate->free_minutes,
+            'max_rate' => $rate->max_rate,
+        ])->values()->all() ?: [$this->defaultRateInput()]);
 
-        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'postalcode', 'address1', 'address2', 'session'));
+        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'rateDayTypes', 'postalcode', 'address1', 'address2', 'session', 'ratesInput'));
     }
 
     public function update(Request $request)
     {
         $input = $request->session()->get('edit_parking_spot_form');
         $request->session()->forget('edit_parking_spot_form');
-        
+
         if ($request->input('back') === 'back') {
             return redirect()->route('parking_spot.edit', ['id' => $input['id']])->withInput($input);
         }
@@ -113,6 +124,20 @@ class ParkingSpotController extends Controller
         $this->service->updateParkingSpot($input);
 
         $request->session()->regenerateToken();
+
         return redirect()->route('home')->with('success', '駐車場情報を更新しました。');
+    }
+
+    private function defaultRateInput(): array
+    {
+        return [
+            'day_type' => '全日',
+            'start_time' => '00:00',
+            'end_time' => '00:00',
+            'unit_minutes' => 30,
+            'rate' => '',
+            'free_minutes' => 0,
+            'max_rate' => '',
+        ];
     }
 }
