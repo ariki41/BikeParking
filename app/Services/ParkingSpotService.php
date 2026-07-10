@@ -70,7 +70,7 @@ class ParkingSpotService
                 'unit_minutes' => $rate['unit_minutes'],
                 'rate' => $rate['rate'],
                 'free_minutes' => $rate['free_minutes'] ?? 0,
-                'max_rate' => $rate['max_rate'] ?? 0,
+                'max_rate' => ($rate['no_max_rate'] ?? false) ? null : ($rate['max_rate'] ?? null),
             ]);
         }
     }

@@ -48,7 +48,8 @@ class ParkingSpotRequest extends FormRequest
             'rates.*.unit_minutes' => 'required|integer|min:1',
             'rates.*.rate' => 'required|integer|min:0',
             'rates.*.free_minutes' => 'nullable|integer|min:0',
-            'rates.*.max_rate' => 'nullable|integer|min:0',
+            'rates.*.no_max_rate' => 'nullable|boolean',
+            'rates.*.max_rate' => 'required_unless:rates.*.no_max_rate,1|nullable|integer|min:0',
         ];
     }
 
@@ -113,6 +114,7 @@ class ParkingSpotRequest extends FormRequest
 
             'rates.*.max_rate.integer' => '最大料金は整数で入力してください。',
             'rates.*.max_rate.min' => '最大料金は0円以上で入力してください。',
+            'rates.*.max_rate.required_unless' => '最大料金なしを選択しない場合、最大料金は必須です。',
         ];
     }
 }
