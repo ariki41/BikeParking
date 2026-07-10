@@ -57,8 +57,7 @@
                                     <div class="mb-2 last:mb-0">
                                         <div class="font-semibold">{{ $rate->day_type }}</div>
                                         <div>
-                                            {{ date('H:i', strtotime($rate->start_time)) }} ～
-                                            {{ $rate->end_time === '00:00:00' ? '24:00' : date('H:i', strtotime($rate->end_time)) }}
+                                            {{ $rate->time_range_label }}
                                         </div>
                                         <div>
                                             {{ $rate->rate_label }}

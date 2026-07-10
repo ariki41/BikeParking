@@ -50,9 +50,7 @@
                                         <span class="ml-2 text-gray-600">{{ $rate->day_type }}</span>
                                     </div>
                                     <div class="ml-auto">
-                                        <span class="text-sm text-gray-600">{{ date('H:i', strtotime($rate->start_time)) }}</span>
-                                        <span class="text-sm text-gray-600">～</span>
-                                        <span class="text-sm text-gray-600">{{ $rate->end_time === '00:00:00' ? '24:00' : date('H:i', strtotime($rate->end_time)) }}</span>
+                                        <span class="text-sm text-gray-600">{{ $rate->time_range_label }}</span>
                                     </div>
                                 @else
                                     <span class="text-sm font-semibold text-gray-500">料金未登録</span>
