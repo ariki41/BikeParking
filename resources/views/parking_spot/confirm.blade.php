@@ -105,7 +105,9 @@
                                         最初の{{ $freeLabel }}無料 /
                                     @endif
                                     {{ $unitLabel }} {{ number_format($rate['rate'] ?? 0) }}円
-                                    @if (($rate['max_rate'] ?? null) !== null && $rate['max_rate'] !== '')
+                                    @if ($rate['no_max_rate'] ?? false)
+                                        / 最大料金なし
+                                    @elseif (($rate['max_rate'] ?? null) !== null && $rate['max_rate'] !== '')
                                         / 最大 {{ number_format($rate['max_rate']) }}円
                                     @endif
                                 </div>

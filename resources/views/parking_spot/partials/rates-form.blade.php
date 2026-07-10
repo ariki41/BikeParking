@@ -86,9 +86,16 @@
 
                     <div>
                         <x-input-label>最大料金（円）</x-input-label>
-                        <input class="w-full rounded border p-2" data-rate-field="max_rate"
+                        <input class="max-rate-input w-full rounded border p-2" data-rate-field="max_rate"
                             name="rates[{{ $index }}][max_rate]" type="number"
                             value="{{ $rate['max_rate'] ?? '' }}" min="0" placeholder="例：1200">
+                        <label
+                            class="mt-2 flex items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                            <input class="no-max-rate-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                data-rate-field="no_max_rate" name="rates[{{ $index }}][no_max_rate]"
+                                type="checkbox" value="1" @checked($rate['no_max_rate'] ?? false)>
+                            <span>最大料金なし</span>
+                        </label>
                     </div>
                 </div>
             </div>
@@ -152,8 +159,14 @@
 
                 <div>
                     <x-input-label>最大料金（円）</x-input-label>
-                    <input class="w-full rounded border p-2" data-rate-field="max_rate" type="number" min="0"
-                        placeholder="例：1200">
+                    <input class="max-rate-input w-full rounded border p-2" data-rate-field="max_rate" type="number"
+                        min="0" placeholder="例：1200">
+                    <label
+                        class="mt-2 flex items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                        <input class="no-max-rate-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                            data-rate-field="no_max_rate" type="checkbox" value="1">
+                        <span>最大料金なし</span>
+                    </label>
                 </div>
             </div>
         </div>
@@ -174,6 +187,27 @@
                 const addButton = root.querySelector('#add-rate-button');
                 const maxRates = 4;
 
+                const syncMaxRateState = (item) => {
+                    const checkbox = item.querySelector('.no-max-rate-checkbox');
+                    const input = item.querySelector('.max-rate-input');
+
+                    if (!checkbox || !input) {
+                        return;
+                    }
+
+                    input.disabled = checkbox.checked;
+                    input.classList.toggle('border-gray-300', checkbox.checked);
+                    input.classList.toggle('bg-gray-200', checkbox.checked);
+                    input.classList.toggle('text-gray-500', checkbox.checked);
+                    input.classList.toggle('cursor-not-allowed', checkbox.checked);
+                    input.classList.toggle('border-gray-300', !checkbox.checked);
+                    input.classList.toggle('bg-white', !checkbox.checked);
+
+                    if (checkbox.checked) {
+                        input.value = '';
+                    }
+                };
+
                 const renumberRates = () => {
                     const items = list.querySelectorAll('.rate-item');
 
@@ -182,6 +216,7 @@
                         item.querySelectorAll('[data-rate-field]').forEach((field) => {
                             field.name = `rates[${index}][${field.dataset.rateField}]`;
                         });
+                        syncMaxRateState(item);
                     });
 
                     list.querySelectorAll('.delete-rate-button').forEach((button) => {
@@ -207,6 +242,14 @@
 
                     event.target.closest('.rate-item').remove();
                     renumberRates();
+                });
+
+                list.addEventListener('change', (event) => {
+                    if (!event.target.classList.contains('no-max-rate-checkbox')) {
+                        return;
+                    }
+
+                    syncMaxRateState(event.target.closest('.rate-item'));
                 });
 
                 renumberRates();

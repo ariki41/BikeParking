@@ -34,8 +34,10 @@ class ParkingSpotRates extends Model
             $label = "最初の{$this->formatMinutes($this->free_minutes)}無料 / 以降{$label}";
         }
 
-        if ($this->max_rate) {
+        if ($this->max_rate !== null) {
             $label .= ' / 最大 '.number_format($this->max_rate).'円';
+        } else {
+            $label .= ' / 最大料金なし';
         }
 
         return $label;
