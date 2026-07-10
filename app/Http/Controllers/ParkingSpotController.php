@@ -107,6 +107,7 @@ class ParkingSpotController extends Controller
             'rate' => $rate->rate,
             'free_minutes' => $rate->free_minutes,
             'max_rate' => $rate->max_rate,
+            'no_max_rate' => $rate->max_rate === null ? '1' : '0',
         ])->values()->all() ?: [$this->defaultRateInput()]);
 
         return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'rateDayTypes', 'postalcode', 'address1', 'address2', 'session', 'ratesInput'));
@@ -138,6 +139,7 @@ class ParkingSpotController extends Controller
             'rate' => '',
             'free_minutes' => 0,
             'max_rate' => '',
+            'no_max_rate' => '0',
         ];
     }
 }
