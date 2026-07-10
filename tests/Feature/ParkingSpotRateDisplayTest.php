@@ -42,6 +42,28 @@ class ParkingSpotRateDisplayTest extends TestCase
         $response->assertSee('最初の30分無料 / 以降30分 100円 / 最大 1,200円');
     }
 
+    public function test_parking_spot_detail_displays_no_max_rate_label(): void
+    {
+        [$parkingSpot, $user] = $this->createParkingSpot();
+
+        ParkingSpotRates::create([
+            'parking_spot_id' => $parkingSpot->id,
+            'day_type' => '全日',
+            'start_time' => '00:00:00',
+            'end_time' => '00:00:00',
+            'unit_minutes' => 30,
+            'rate' => 100,
+            'free_minutes' => 0,
+            'max_rate' => null,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->get(route('parking_spot.show', $parkingSpot->id));
+
+        $response->assertOk();
+        $response->assertSee('30分 100円 / 最大料金なし');
+    }
+
     public function test_parking_spot_detail_displays_placeholder_without_rates(): void
     {
         [$parkingSpot, $user] = $this->createParkingSpot();
@@ -102,6 +124,77 @@ class ParkingSpotRateDisplayTest extends TestCase
             'free_minutes' => 30,
         ]);
         $this->assertDatabaseCount('parking_spot_rates', 2);
+    }
+
+    public function test_parking_spot_can_save_rate_without_max_rate(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+
+        $this->actingAs($user);
+
+        app(ParkingSpotService::class)->saveParkingSpot([
+            'name' => '最大料金なしテスト駐車場',
+            'postalcode' => $postalcode->postalcode,
+            'address' => '東京都千代田区千代田1-2',
+            'longitude' => 139.753000,
+            'latitude' => 35.685000,
+            'capacity' => 1,
+            'opening_time' => '00:00',
+            'closing_time' => '00:00',
+            'rates' => [
+                [
+                    'day_type' => '全日',
+                    'start_time' => '00:00',
+                    'end_time' => '00:00',
+                    'unit_minutes' => 30,
+                    'rate' => 100,
+                    'free_minutes' => 0,
+                    'max_rate' => '',
+                    'no_max_rate' => '1',
+                ],
+            ],
+        ]);
+
+        $this->assertDatabaseHas('parking_spot_rates', [
+            'day_type' => '全日',
+            'rate' => 100,
+            'max_rate' => null,
+        ]);
+    }
+
+    public function test_zero_yen_max_rate_is_saved_distinctly(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+
+        $this->actingAs($user);
+
+        app(ParkingSpotService::class)->saveParkingSpot([
+            'name' => '最大料金0円テスト駐車場',
+            'postalcode' => $postalcode->postalcode,
+            'address' => '東京都千代田区千代田1-2',
+            'longitude' => 139.753000,
+            'latitude' => 35.685000,
+            'capacity' => 1,
+            'opening_time' => '00:00',
+            'closing_time' => '00:00',
+            'rates' => [
+                [
+                    'day_type' => '全日',
+                    'start_time' => '00:00',
+                    'end_time' => '00:00',
+                    'unit_minutes' => 30,
+                    'rate' => 100,
+                    'free_minutes' => 0,
+                    'max_rate' => 0,
+                ],
+            ],
+        ]);
+
+        $this->assertDatabaseHas('parking_spot_rates', [
+            'day_type' => '全日',
+            'rate' => 100,
+            'max_rate' => 0,
+        ]);
     }
 
     public function test_parking_spot_can_replace_rates_on_update(): void
@@ -194,6 +287,43 @@ class ParkingSpotRateDisplayTest extends TestCase
 
         $response->assertRedirect(route('parking_spot.create'));
         $response->assertSessionHasErrors(['rates']);
+    }
+
+    public function test_parking_spot_rate_validation_requires_max_rate_when_no_max_rate_is_off(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'rates' => [
+                    $this->validRateInput([
+                        'max_rate' => '',
+                    ]),
+                ],
+            ]));
+
+        $response->assertRedirect(route('parking_spot.create'));
+        $response->assertSessionHasErrors(['rates.0.max_rate']);
+    }
+
+    public function test_parking_spot_rate_validation_allows_empty_max_rate_when_no_max_rate_is_on(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'rates' => [
+                    $this->validRateInput([
+                        'max_rate' => '',
+                        'no_max_rate' => '1',
+                    ]),
+                ],
+            ]));
+
+        $response->assertOk();
+        $response->assertSessionMissing('errors');
     }
 
     public function test_parking_spot_rate_validation_rejects_invalid_rate_fields(): void
