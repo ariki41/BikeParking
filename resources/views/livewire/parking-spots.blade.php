@@ -45,7 +45,7 @@
                             <div class="flex items-center">
                                 @if ($rate)
                                     <div class="flex items-center">
-                                        <span class="text-2xl font-bold text-red-500">{{ number_format($rate->rate) }}円</span>
+                                        <span class="text-2xl font-bold text-red-500">{{ $rate->rate_label }}</span>
                                         <span class="ml-2 text-gray-600">/</span>
                                         <span class="ml-2 text-gray-600">{{ $rate->day_type }}</span>
                                     </div>

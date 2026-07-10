@@ -44,7 +44,9 @@ class ParkingSpotRequest extends FormRequest
             'rate_day_type' => ['required', 'string', Rule::in(array_keys(config('categories.parking_spot_rate_day_types')))],
             'rate_start_time' => 'required|date_format:H:i',
             'rate_end_time' => 'required|date_format:H:i',
+            'unit_minutes' => 'required|integer|min:1',
             'rate' => 'required|integer|min:0',
+            'free_minutes' => 'nullable|integer|min:0',
             'max_rate' => 'nullable|integer|min:0',
         ];
     }
@@ -92,9 +94,16 @@ class ParkingSpotRequest extends FormRequest
             'rate_end_time.required' => '料金終了時間は必須です。',
             'rate_end_time.date_format' => '料金終了時間の形式が正しくありません。例: 20:00',
 
+            'unit_minutes.required' => '料金単位は必須です。',
+            'unit_minutes.integer' => '料金単位は整数で入力してください。',
+            'unit_minutes.min' => '料金単位は1分以上で入力してください。',
+
             'rate.required' => '料金は必須です。',
             'rate.integer' => '料金は整数で入力してください。',
             'rate.min' => '料金は0円以上で入力してください。',
+
+            'free_minutes.integer' => '無料時間は整数で入力してください。',
+            'free_minutes.min' => '無料時間は0分以上で入力してください。',
 
             'max_rate.integer' => '最大料金は整数で入力してください。',
             'max_rate.min' => '最大料金は0円以上で入力してください。',

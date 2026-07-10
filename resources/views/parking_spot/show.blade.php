@@ -61,10 +61,7 @@
                                             {{ $rate->end_time === '00:00:00' ? '24:00' : date('H:i', strtotime($rate->end_time)) }}
                                         </div>
                                         <div>
-                                            {{ number_format($rate->rate) }}円
-                                            @if ($rate->max_rate)
-                                                <span class="text-gray-500">最大 {{ number_format($rate->max_rate) }}円</span>
-                                            @endif
+                                            {{ $rate->rate_label }}
                                         </div>
                                     </div>
                                 @empty

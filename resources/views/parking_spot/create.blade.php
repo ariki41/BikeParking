@@ -83,10 +83,30 @@
 
             <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
+                    <x-input-label for="unit_minutes">料金単位（分）</x-input-label>
+                    <input class="w-full rounded border p-2" id="unit_minutes" name="unit_minutes" type="number"
+                        value="{{ old('unit_minutes', 30) }}" min="1" required placeholder="例：30">
+                    @error('unit_minutes')
+                        <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div>
                     <x-input-label for="rate">料金（円）</x-input-label>
                     <input class="w-full rounded border p-2" id="rate" name="rate" type="number"
                         value="{{ old('rate') }}" min="0" required placeholder="例：100">
                     @error('rate')
+                        <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                    <x-input-label for="free_minutes">最初の無料時間（分）</x-input-label>
+                    <input class="w-full rounded border p-2" id="free_minutes" name="free_minutes" type="number"
+                        value="{{ old('free_minutes', 0) }}" min="0" placeholder="例：30">
+                    @error('free_minutes')
                         <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
                     @enderror
                 </div>

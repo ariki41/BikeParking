@@ -66,7 +66,9 @@ class ParkingSpotService
             'day_type' => $input['rate_day_type'],
             'start_time' => $input['rate_start_time'],
             'end_time' => $input['rate_end_time'],
+            'unit_minutes' => $input['unit_minutes'],
             'rate' => $input['rate'],
+            'free_minutes' => $input['free_minutes'] ?? 0,
             'max_rate' => $input['max_rate'] ?? 0,
         ]);
     }
