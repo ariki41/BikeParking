@@ -8,6 +8,7 @@ use App\Models\ParkingSpotRates;
 use App\Models\Postalcode;
 use App\Models\Prefecture;
 use App\Models\User;
+use App\Services\ParkingSpotService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -52,6 +53,121 @@ class ParkingSpotRateDisplayTest extends TestCase
         $response->assertSee('料金未登録');
     }
 
+    public function test_parking_spot_can_save_multiple_rates(): void
+    {
+        [$parkingSpot, $user, $postalcode] = $this->createParkingSpot();
+
+        $this->actingAs($user);
+
+        app(ParkingSpotService::class)->saveParkingSpot([
+            'name' => '複数料金テスト駐車場',
+            'postalcode' => $postalcode->postalcode,
+            'address' => '東京都千代田区千代田1-2',
+            'longitude' => 139.753000,
+            'latitude' => 35.685000,
+            'capacity' => 1,
+            'opening_time' => '00:00',
+            'closing_time' => '00:00',
+            'rates' => [
+                [
+                    'day_type' => '平日',
+                    'start_time' => '08:00',
+                    'end_time' => '20:00',
+                    'unit_minutes' => 30,
+                    'rate' => 100,
+                    'free_minutes' => 0,
+                    'max_rate' => 1200,
+                ],
+                [
+                    'day_type' => '土日祝',
+                    'start_time' => '08:00',
+                    'end_time' => '20:00',
+                    'unit_minutes' => 60,
+                    'rate' => 300,
+                    'free_minutes' => 30,
+                    'max_rate' => 1800,
+                ],
+            ],
+        ]);
+
+        $this->assertDatabaseHas('parking_spot_rates', [
+            'day_type' => '平日',
+            'unit_minutes' => 30,
+            'rate' => 100,
+        ]);
+        $this->assertDatabaseHas('parking_spot_rates', [
+            'day_type' => '土日祝',
+            'unit_minutes' => 60,
+            'rate' => 300,
+            'free_minutes' => 30,
+        ]);
+        $this->assertDatabaseCount('parking_spot_rates', 2);
+    }
+
+    public function test_parking_spot_can_replace_rates_on_update(): void
+    {
+        [$parkingSpot] = $this->createParkingSpot();
+
+        ParkingSpotRates::create([
+            'parking_spot_id' => $parkingSpot->id,
+            'day_type' => '平日',
+            'start_time' => '08:00:00',
+            'end_time' => '20:00:00',
+            'unit_minutes' => 30,
+            'rate' => 100,
+            'free_minutes' => 0,
+            'max_rate' => 1200,
+        ]);
+
+        app(ParkingSpotService::class)->updateParkingSpot([
+            'id' => $parkingSpot->id,
+            'name' => $parkingSpot->name,
+            'postalcode' => '1000001',
+            'address' => $parkingSpot->address,
+            'longitude' => $parkingSpot->longitude,
+            'latitude' => $parkingSpot->latitude,
+            'capacity' => $parkingSpot->capacity,
+            'opening_time' => '00:00',
+            'closing_time' => '00:00',
+            'rates' => [
+                [
+                    'day_type' => '夜間',
+                    'start_time' => '20:00',
+                    'end_time' => '08:00',
+                    'unit_minutes' => 60,
+                    'rate' => 200,
+                    'free_minutes' => 0,
+                    'max_rate' => 800,
+                ],
+                [
+                    'day_type' => '全日',
+                    'start_time' => '00:00',
+                    'end_time' => '00:00',
+                    'unit_minutes' => 15,
+                    'rate' => 50,
+                    'free_minutes' => 0,
+                    'max_rate' => 0,
+                ],
+            ],
+        ]);
+
+        $this->assertDatabaseMissing('parking_spot_rates', [
+            'parking_spot_id' => $parkingSpot->id,
+            'day_type' => '平日',
+        ]);
+        $this->assertDatabaseHas('parking_spot_rates', [
+            'parking_spot_id' => $parkingSpot->id,
+            'day_type' => '夜間',
+            'rate' => 200,
+        ]);
+        $this->assertDatabaseHas('parking_spot_rates', [
+            'parking_spot_id' => $parkingSpot->id,
+            'day_type' => '全日',
+            'rate' => 50,
+        ]);
+        $this->assertDatabaseCount('parking_spot_rates', 2);
+    }
+
     private function createParkingSpot(): array
     {
         $prefecture = Prefecture::create([
@@ -91,6 +207,6 @@ class ParkingSpotRateDisplayTest extends TestCase
             'closing_time' => '00:00:00',
         ]);
 
-        return [$parkingSpot, $user];
+        return [$parkingSpot, $user, $postalcode];
     }
 }

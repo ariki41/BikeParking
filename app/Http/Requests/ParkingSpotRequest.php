@@ -41,13 +41,14 @@ class ParkingSpotRequest extends FormRequest
             'capacity' => 'required|integer|min:1',
             'opening_time' => 'required|date_format:H:i',
             'closing_time' => 'required|date_format:H:i',
-            'rate_day_type' => ['required', 'string', Rule::in(array_keys(config('categories.parking_spot_rate_day_types')))],
-            'rate_start_time' => 'required|date_format:H:i',
-            'rate_end_time' => 'required|date_format:H:i',
-            'unit_minutes' => 'required|integer|min:1',
-            'rate' => 'required|integer|min:0',
-            'free_minutes' => 'nullable|integer|min:0',
-            'max_rate' => 'nullable|integer|min:0',
+            'rates' => 'required|array|min:1|max:4',
+            'rates.*.day_type' => ['required', 'string', Rule::in(array_keys(config('categories.parking_spot_rate_day_types')))],
+            'rates.*.start_time' => 'required|date_format:H:i',
+            'rates.*.end_time' => 'required|date_format:H:i',
+            'rates.*.unit_minutes' => 'required|integer|min:1',
+            'rates.*.rate' => 'required|integer|min:0',
+            'rates.*.free_minutes' => 'nullable|integer|min:0',
+            'rates.*.max_rate' => 'nullable|integer|min:0',
         ];
     }
 
@@ -84,29 +85,34 @@ class ParkingSpotRequest extends FormRequest
             'closing_time.required' => '閉場時間は必須です。',
             'closing_time.date_format' => '閉場時間の形式が正しくありません。例: 22:00',
 
-            'rate_day_type.required' => '料金区分は必須です。',
-            'rate_day_type.string' => '料金区分は文字列で入力してください。',
-            'rate_day_type.in' => '料金区分を選択してください。',
+            'rates.required' => '料金は必須です。',
+            'rates.array' => '料金の形式が正しくありません。',
+            'rates.min' => '料金は1件以上入力してください。',
+            'rates.max' => '料金帯は4件まで入力できます。',
 
-            'rate_start_time.required' => '料金開始時間は必須です。',
-            'rate_start_time.date_format' => '料金開始時間の形式が正しくありません。例: 08:00',
+            'rates.*.day_type.required' => '料金区分は必須です。',
+            'rates.*.day_type.string' => '料金区分は文字列で入力してください。',
+            'rates.*.day_type.in' => '料金区分を選択してください。',
 
-            'rate_end_time.required' => '料金終了時間は必須です。',
-            'rate_end_time.date_format' => '料金終了時間の形式が正しくありません。例: 20:00',
+            'rates.*.start_time.required' => '料金開始時間は必須です。',
+            'rates.*.start_time.date_format' => '料金開始時間の形式が正しくありません。例: 08:00',
 
-            'unit_minutes.required' => '料金単位は必須です。',
-            'unit_minutes.integer' => '料金単位は整数で入力してください。',
-            'unit_minutes.min' => '料金単位は1分以上で入力してください。',
+            'rates.*.end_time.required' => '料金終了時間は必須です。',
+            'rates.*.end_time.date_format' => '料金終了時間の形式が正しくありません。例: 20:00',
 
-            'rate.required' => '料金は必須です。',
-            'rate.integer' => '料金は整数で入力してください。',
-            'rate.min' => '料金は0円以上で入力してください。',
+            'rates.*.unit_minutes.required' => '料金単位は必須です。',
+            'rates.*.unit_minutes.integer' => '料金単位は整数で入力してください。',
+            'rates.*.unit_minutes.min' => '料金単位は1分以上で入力してください。',
 
-            'free_minutes.integer' => '無料時間は整数で入力してください。',
-            'free_minutes.min' => '無料時間は0分以上で入力してください。',
+            'rates.*.rate.required' => '料金は必須です。',
+            'rates.*.rate.integer' => '料金は整数で入力してください。',
+            'rates.*.rate.min' => '料金は0円以上で入力してください。',
 
-            'max_rate.integer' => '最大料金は整数で入力してください。',
-            'max_rate.min' => '最大料金は0円以上で入力してください。',
+            'rates.*.free_minutes.integer' => '無料時間は整数で入力してください。',
+            'rates.*.free_minutes.min' => '無料時間は0分以上で入力してください。',
+
+            'rates.*.max_rate.integer' => '最大料金は整数で入力してください。',
+            'rates.*.max_rate.min' => '最大料金は0円以上で入力してください。',
         ];
     }
 }
