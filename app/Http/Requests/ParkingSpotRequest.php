@@ -17,6 +17,21 @@ class ParkingSpotRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $rates = collect($this->input('rates', []))
+            ->map(function ($rate) {
+                if (($rate['no_free_minutes'] ?? false)) {
+                    $rate['free_minutes'] = 0;
+                }
+
+                return $rate;
+            })
+            ->all();
+
+        $this->merge(['rates' => $rates]);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -48,6 +63,7 @@ class ParkingSpotRequest extends FormRequest
             'rates.*.unit_minutes' => ['required', 'integer', Rule::in(array_keys(config('categories.parking_spot_rate_unit_minutes')))],
             'rates.*.rate' => 'required|integer|min:0',
             'rates.*.free_minutes' => 'nullable|integer|min:0',
+            'rates.*.no_free_minutes' => 'nullable|boolean',
             'rates.*.no_max_rate' => 'nullable|boolean',
             'rates.*.max_rate' => 'required_unless:rates.*.no_max_rate,1|nullable|integer|min:0',
         ];

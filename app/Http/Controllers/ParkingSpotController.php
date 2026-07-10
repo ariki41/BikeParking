@@ -108,6 +108,7 @@ class ParkingSpotController extends Controller
             'unit_minutes' => $rate->unit_minutes,
             'rate' => $rate->rate,
             'free_minutes' => $rate->free_minutes,
+            'no_free_minutes' => $rate->free_minutes === 0 ? '1' : '0',
             'max_rate' => $rate->max_rate,
             'no_max_rate' => $rate->max_rate === null ? '1' : '0',
         ])->values()->all() ?: [$this->defaultRateInput()]);
@@ -140,6 +141,7 @@ class ParkingSpotController extends Controller
             'unit_minutes' => 30,
             'rate' => '',
             'free_minutes' => 0,
+            'no_free_minutes' => '1',
             'max_rate' => '',
             'no_max_rate' => '0',
         ];
