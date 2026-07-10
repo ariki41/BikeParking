@@ -157,6 +157,52 @@ class ParkingSpotRateDisplayTest extends TestCase
         $this->assertDatabaseCount('parking_spot_rates', 2);
     }
 
+    public function test_parking_spot_store_creates_rates_from_confirmed_form(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+
+        $input = [
+            'name' => '登録Featureテスト駐車場',
+            'postalcode' => $postalcode->postalcode,
+            'address' => '東京都千代田区千代田1-2',
+            'longitude' => 139.753000,
+            'latitude' => 35.685000,
+            'capacity' => 1,
+            'opening_time' => '00:00',
+            'closing_time' => '00:00',
+            'rates' => [
+                $this->validRateInput([
+                    'day_type' => '平日',
+                    'start_time' => '08:00',
+                    'end_time' => '20:00',
+                    'unit_minutes' => 30,
+                    'rate' => 100,
+                    'free_minutes' => 0,
+                    'max_rate' => 1200,
+                ]),
+            ],
+        ];
+
+        $response = $this->actingAs($user)
+            ->withSession(['create_parking_spot_form' => $input])
+            ->post(route('parking_spot.store'));
+
+        $response->assertRedirect(route('home'));
+        $this->assertDatabaseHas('parking_spots', [
+            'name' => '登録Featureテスト駐車場',
+            'user_id' => $user->id,
+        ]);
+        $this->assertDatabaseHas('parking_spot_rates', [
+            'day_type' => '平日',
+            'start_time' => '08:00',
+            'end_time' => '20:00',
+            'unit_minutes' => 30,
+            'rate' => 100,
+            'free_minutes' => 0,
+            'max_rate' => 1200,
+        ]);
+    }
+
     public function test_parking_spot_create_form_displays_rate_unit_select(): void
     {
         [, $user] = $this->createParkingSpot();
@@ -377,6 +423,66 @@ class ParkingSpotRateDisplayTest extends TestCase
             'rate' => 50,
         ]);
         $this->assertDatabaseCount('parking_spot_rates', 2);
+    }
+
+    public function test_parking_spot_update_replaces_rates_from_confirmed_form(): void
+    {
+        [$parkingSpot, $user, $postalcode] = $this->createParkingSpot();
+
+        ParkingSpotRates::create([
+            'parking_spot_id' => $parkingSpot->id,
+            'day_type' => '平日',
+            'start_time' => '08:00:00',
+            'end_time' => '20:00:00',
+            'unit_minutes' => 30,
+            'rate' => 100,
+            'free_minutes' => 0,
+            'max_rate' => 1200,
+        ]);
+
+        $input = [
+            'id' => $parkingSpot->id,
+            'name' => '更新Featureテスト駐車場',
+            'postalcode' => $postalcode->postalcode,
+            'address' => '東京都千代田区千代田1-3',
+            'longitude' => 139.754000,
+            'latitude' => 35.686000,
+            'capacity' => 1,
+            'opening_time' => '00:00',
+            'closing_time' => '00:00',
+            'rates' => [
+                $this->validRateInput([
+                    'day_type' => '土日祝',
+                    'start_time' => '09:00',
+                    'end_time' => '18:00',
+                    'unit_minutes' => 60,
+                    'rate' => 300,
+                    'free_minutes' => 30,
+                    'max_rate' => 1800,
+                ]),
+            ],
+        ];
+
+        $response = $this->actingAs($user)
+            ->withSession(['edit_parking_spot_form' => $input])
+            ->post(route('parking_spot.update'));
+
+        $response->assertRedirect(route('home'));
+        $this->assertDatabaseMissing('parking_spot_rates', [
+            'parking_spot_id' => $parkingSpot->id,
+            'day_type' => '平日',
+        ]);
+        $this->assertDatabaseHas('parking_spot_rates', [
+            'parking_spot_id' => $parkingSpot->id,
+            'day_type' => '土日祝',
+            'start_time' => '09:00',
+            'end_time' => '18:00',
+            'unit_minutes' => 60,
+            'rate' => 300,
+            'free_minutes' => 30,
+            'max_rate' => 1800,
+        ]);
+        $this->assertDatabaseCount('parking_spot_rates', 1);
     }
 
     public function test_parking_spot_rate_validation_requires_at_least_one_rate(): void
