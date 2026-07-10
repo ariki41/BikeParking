@@ -168,6 +168,65 @@ class ParkingSpotRateDisplayTest extends TestCase
         $this->assertDatabaseCount('parking_spot_rates', 2);
     }
 
+    public function test_parking_spot_rate_validation_requires_at_least_one_rate(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'rates' => [],
+            ]));
+
+        $response->assertRedirect(route('parking_spot.create'));
+        $response->assertSessionHasErrors(['rates']);
+    }
+
+    public function test_parking_spot_rate_validation_limits_rates_to_four(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'rates' => array_fill(0, 5, $this->validRateInput()),
+            ]));
+
+        $response->assertRedirect(route('parking_spot.create'));
+        $response->assertSessionHasErrors(['rates']);
+    }
+
+    public function test_parking_spot_rate_validation_rejects_invalid_rate_fields(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'rates' => [
+                    [
+                        'day_type' => '祝前日',
+                        'start_time' => '8時',
+                        'end_time' => '20:00',
+                        'unit_minutes' => 0,
+                        'rate' => -1,
+                        'free_minutes' => -1,
+                        'max_rate' => -1,
+                    ],
+                ],
+            ]));
+
+        $response->assertRedirect(route('parking_spot.create'));
+        $response->assertSessionHasErrors([
+            'rates.0.day_type',
+            'rates.0.start_time',
+            'rates.0.unit_minutes',
+            'rates.0.rate',
+            'rates.0.free_minutes',
+            'rates.0.max_rate',
+        ]);
+    }
+
     private function createParkingSpot(): array
     {
         $prefecture = Prefecture::create([
@@ -208,5 +267,34 @@ class ParkingSpotRateDisplayTest extends TestCase
         ]);
 
         return [$parkingSpot, $user, $postalcode];
+    }
+
+    private function validParkingSpotInput(Postalcode $postalcode, array $overrides = []): array
+    {
+        $input = [
+            'name' => '料金バリデーションテスト駐車場',
+            'postalcode' => $postalcode->postalcode,
+            'address1' => '東京都千代田区千代田',
+            'address2' => '1-2',
+            'capacity' => 1,
+            'opening_time' => '00:00',
+            'closing_time' => '00:00',
+            'rates' => [$this->validRateInput()],
+        ];
+
+        return array_replace($input, $overrides);
+    }
+
+    private function validRateInput(array $overrides = []): array
+    {
+        return array_replace([
+            'day_type' => '全日',
+            'start_time' => '00:00',
+            'end_time' => '00:00',
+            'unit_minutes' => 30,
+            'rate' => 100,
+            'free_minutes' => 0,
+            'max_rate' => 1200,
+        ], $overrides);
     }
 }
