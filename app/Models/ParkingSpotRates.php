@@ -27,12 +27,7 @@ class ParkingSpotRates extends Model
 
     public function getRateLabelAttribute(): string
     {
-        $unit = $this->formatMinutes($this->unit_minutes);
-        $label = "{$unit} ".number_format($this->rate).'円';
-
-        if ($this->free_minutes > 0) {
-            $label = "最初の{$this->formatMinutes($this->free_minutes)}無料 / 以降{$label}";
-        }
+        $label = $this->base_rate_label;
 
         if ($this->max_rate !== null) {
             $label .= ' / 最大 '.number_format($this->max_rate).'円';
@@ -41,6 +36,27 @@ class ParkingSpotRates extends Model
         }
 
         return $label;
+    }
+
+    public function getBaseRateLabelAttribute(): string
+    {
+        $unit = $this->formatMinutes($this->unit_minutes);
+        $label = "{$unit} ".number_format($this->rate).'円';
+
+        if ($this->free_minutes > 0) {
+            return "最初の{$this->formatMinutes($this->free_minutes)}無料 / 以降{$label}";
+        }
+
+        return $label;
+    }
+
+    public function getMaxRateLabelAttribute(): string
+    {
+        if ($this->max_rate === null) {
+            return '最大料金なし';
+        }
+
+        return number_format($this->max_rate).'円';
     }
 
     public function getTimeRangeLabelAttribute(): string
