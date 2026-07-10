@@ -99,8 +99,7 @@
                                 @endphp
                                 <div class="mb-2 last:mb-0">
                                     {{ $rate['day_type'] ?? '' }}
-                                    {{ $rate['start_time'] ?? '' }} ～
-                                    {{ ($rate['end_time'] ?? '') === '00:00' ? '24:00' : $rate['end_time'] ?? '' }}
+                                    {{ \App\Models\ParkingSpotRates::formatTimeRange($rate['start_time'] ?? null, $rate['end_time'] ?? null) }}
                                     @if ($freeMinutes > 0)
                                         最初の{{ $freeLabel }}無料 /
                                     @endif
