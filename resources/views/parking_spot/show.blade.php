@@ -31,15 +31,15 @@
             {{ $parkingSpot->name }}
         </h1>
 
-        <div class="mx-7 grid grid-cols-1 gap-4 xl:grid-cols-5">
-            <div class="xl:col-span-5">
+        <div class="mx-7 space-y-4">
+            <div>
                 <img class="h-64 rounded-lg object-cover shadow" src="/images/noimage.jpg" alt="駐車場の写真">
             </div>
 
-            <div class="h-96 w-full rounded bg-gray-200 xl:col-span-3" id="map">
+            <div class="h-96 w-full rounded bg-gray-200" id="map">
             </div>
 
-            <div class="min-w-0 rounded-lg bg-white p-4 shadow xl:col-span-2">
+            <div class="min-w-0 rounded-lg bg-white p-4 shadow">
                 <table class="w-full table-fixed">
                     <tbody>
                         <tr class="border-b">
@@ -105,7 +105,7 @@
                     <p>更新日: {{ optional($parkingSpot->updated_at)->format('Y-m-d') }}</p>
                 </div>
             </div>
-            <div class="flex justify-end xl:col-span-5">
+            <div class="flex justify-end">
                 <a href="{{ route('parking_spot.edit', ['id' => $parkingSpot->id]) }}">
                     <x-primary-button tag="a">編集</x-primary-button>
                 </a>
