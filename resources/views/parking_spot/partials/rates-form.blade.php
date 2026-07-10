@@ -85,16 +85,24 @@
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                         <x-input-label>最初の無料時間（分）</x-input-label>
-                        <input class="w-full rounded border p-2" name="rates[{{ $index }}][free_minutes]"
+                        <input class="free-minutes-input w-full rounded border p-2" name="rates[{{ $index }}][free_minutes]"
                             data-rate-field="free_minutes" type="number" value="{{ $rate['free_minutes'] ?? 0 }}"
                             min="0" placeholder="例：30">
+                        <label
+                            class="mt-2 flex items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                            <input
+                                class="no-free-minutes-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                                name="rates[{{ $index }}][no_free_minutes]" data-rate-field="no_free_minutes"
+                                type="checkbox" value="1" @checked($rate['no_free_minutes'] ?? ((int) ($rate['free_minutes'] ?? 0) === 0))>
+                            <span>無料時間なし</span>
+                        </label>
                     </div>
 
                     <div>
                         <x-input-label>最大料金（円）</x-input-label>
                         <input class="max-rate-input w-full rounded border p-2"
                             name="rates[{{ $index }}][max_rate]" data-rate-field="max_rate" type="number"
-                            value="{{ $rate['max_rate'] ?? '' }}" min="0" placeholder="例：1200">
+                            value="{{ $rate['max_rate'] ?? '' }}" min="1" placeholder="例：1200">
                         <label
                             class="mt-2 flex items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
                             <input
@@ -164,14 +172,21 @@
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                     <x-input-label>最初の無料時間（分）</x-input-label>
-                    <input class="w-full rounded border p-2" data-rate-field="free_minutes" type="number"
+                    <input class="free-minutes-input w-full rounded border p-2" data-rate-field="free_minutes" type="number"
                         value="0" min="0" placeholder="例：30">
+                    <label
+                        class="mt-2 flex items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                        <input
+                            class="no-free-minutes-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                            data-rate-field="no_free_minutes" type="checkbox" value="1" checked>
+                        <span>無料時間なし</span>
+                    </label>
                 </div>
 
                 <div>
                     <x-input-label>最大料金（円）</x-input-label>
                     <input class="max-rate-input w-full rounded border p-2" data-rate-field="max_rate" type="number"
-                        min="0" placeholder="例：1200">
+                        min="1" placeholder="例：1200">
                     <label
                         class="mt-2 flex items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
                         <input
@@ -198,6 +213,25 @@
                 const template = root.querySelector('#rate-template');
                 const addButton = root.querySelector('#add-rate-button');
                 const maxRates = 4;
+
+                const syncFreeMinutesState = (item) => {
+                    const checkbox = item.querySelector('.no-free-minutes-checkbox');
+                    const input = item.querySelector('.free-minutes-input');
+
+                    if (!checkbox || !input) {
+                        return;
+                    }
+
+                    input.readOnly = checkbox.checked;
+                    input.classList.toggle('bg-gray-200', checkbox.checked);
+                    input.classList.toggle('text-gray-500', checkbox.checked);
+                    input.classList.toggle('cursor-not-allowed', checkbox.checked);
+                    input.classList.toggle('bg-white', !checkbox.checked);
+
+                    if (checkbox.checked) {
+                        input.value = '0';
+                    }
+                };
 
                 const syncMaxRateState = (item) => {
                     const checkbox = item.querySelector('.no-max-rate-checkbox');
@@ -228,6 +262,7 @@
                         item.querySelectorAll('[data-rate-field]').forEach((field) => {
                             field.name = `rates[${index}][${field.dataset.rateField}]`;
                         });
+                        syncFreeMinutesState(item);
                         syncMaxRateState(item);
                     });
 
@@ -257,11 +292,14 @@
                 });
 
                 list.addEventListener('change', (event) => {
-                    if (!event.target.classList.contains('no-max-rate-checkbox')) {
+                    if (!event.target.classList.contains('no-max-rate-checkbox') &&
+                        !event.target.classList.contains('no-free-minutes-checkbox')) {
                         return;
                     }
 
-                    syncMaxRateState(event.target.closest('.rate-item'));
+                    const item = event.target.closest('.rate-item');
+                    syncFreeMinutesState(item);
+                    syncMaxRateState(item);
                 });
 
                 renumberRates();
