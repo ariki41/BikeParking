@@ -39,42 +39,63 @@
             <div class="h-96 w-full rounded bg-gray-200 xl:col-span-3" id="map">
             </div>
 
-            <div class="rounded-lg bg-white p-4 shadow xl:col-span-2">
-                <table class="w-full table-auto">
+            <div class="min-w-0 rounded-lg bg-white p-4 shadow xl:col-span-2">
+                <table class="w-full table-fixed">
                     <tbody>
                         <tr class="border-b">
-                            <th class="w-1/3 px-4 py-2 text-left text-sm font-semibold text-gray-600">駐車場名</th>
-                            <td class="px-4 py-2 text-sm text-gray-800">{{ $parkingSpot->name }}</td>
+                            <th class="w-24 px-3 py-2 text-left text-sm font-semibold text-gray-600 xl:w-28">駐車場名</th>
+                            <td class="break-words px-3 py-2 text-sm text-gray-800">{{ $parkingSpot->name }}</td>
                         </tr>
                         <tr class="border-b">
-                            <th class="w-1/3 px-4 py-2 text-left text-sm font-semibold text-gray-600">住所</th>
-                            <td class="px-4 py-2 text-sm text-gray-800">{{ $parkingSpot->address }}</td>
+                            <th class="w-24 px-3 py-2 text-left text-sm font-semibold text-gray-600 xl:w-28">住所</th>
+                            <td class="break-words px-3 py-2 text-sm text-gray-800">{{ $parkingSpot->address }}</td>
                         </tr>
                         <tr class="border-b">
-                            <th class="w-1/3 px-4 py-2 text-left text-sm font-semibold text-gray-600">料金</th>
-                            <td class="px-4 py-2 text-sm text-gray-800">
-                                @forelse ($parkingSpot->rates as $rate)
-                                    <div class="mb-2 last:mb-0">
-                                        <div class="font-semibold">{{ $rate->day_type }}</div>
-                                        <div>
-                                            {{ $rate->time_range_label }}
-                                        </div>
-                                        <div>
-                                            {{ $rate->rate_label }}
-                                        </div>
-                                    </div>
-                                @empty
+                            <th class="w-24 px-3 py-2 text-left text-sm font-semibold text-gray-600 xl:w-28">料金</th>
+                            <td class="min-w-0 px-3 py-2 text-sm text-gray-800">
+                                @if ($parkingSpot->rates->isEmpty())
                                     <span class="text-gray-500">料金未登録</span>
-                                @endforelse
+                                @else
+                                    <div class="max-w-full overflow-x-auto">
+                                        <table class="w-max min-w-full table-auto border-collapse text-left text-sm">
+                                            <thead>
+                                                <tr class="border-b border-gray-200 bg-gray-50 text-xs font-semibold text-gray-600">
+                                                    <th class="whitespace-nowrap px-3 py-2">区分</th>
+                                                    <th class="whitespace-nowrap px-3 py-2">時間帯</th>
+                                                    <th class="whitespace-nowrap px-3 py-2">料金</th>
+                                                    <th class="whitespace-nowrap px-3 py-2">最大料金</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-gray-100">
+                                                @foreach ($parkingSpot->rates as $rate)
+                                                    <tr>
+                                                        <td class="whitespace-nowrap px-3 py-2 font-semibold text-gray-700">
+                                                            {{ $rate->day_type }}
+                                                        </td>
+                                                        <td class="whitespace-nowrap px-3 py-2">
+                                                            {{ $rate->time_range_label }}
+                                                        </td>
+                                                        <td class="min-w-40 px-3 py-2">
+                                                            {{ $rate->base_rate_label }}
+                                                        </td>
+                                                        <td class="whitespace-nowrap px-3 py-2">
+                                                            {{ $rate->max_rate_label }}
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @endif
                             </td>
                         </tr>
                         <tr class="border-b">
-                            <th class="w-1/3 px-4 py-2 text-left text-sm font-semibold text-gray-600">駐車場台数</th>
-                            <td class="px-4 py-2 text-sm text-gray-800">{{ $parkingSpot->capacity }}</td>
+                            <th class="w-24 px-3 py-2 text-left text-sm font-semibold text-gray-600 xl:w-28">駐車場台数</th>
+                            <td class="px-3 py-2 text-sm text-gray-800">{{ $parkingSpot->capacity }}</td>
                         </tr>
                         <tr class="border-b">
-                            <th class="w-1/3 px-4 py-2 text-left text-sm font-semibold text-gray-600">営業時間</th>
-                            <td class="px-4 py-2 text-sm text-gray-800">{{ $parkingSpot->opening_time }} ～
+                            <th class="w-24 px-3 py-2 text-left text-sm font-semibold text-gray-600 xl:w-28">営業時間</th>
+                            <td class="px-3 py-2 text-sm text-gray-800">{{ $parkingSpot->opening_time }} ～
                                 {{ $parkingSpot->closing_time }}</td>
                         </tr>
                     </tbody>
