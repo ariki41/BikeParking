@@ -94,19 +94,18 @@
                             <dt class="font-semibold text-slate-500">収容台数</dt>
                             <dd class="text-slate-900">{{ $parkingSpot->capacity }}</dd>
                         </div>
-                        <div class="grid grid-cols-[96px_1fr] gap-3 py-3">
+                        <div class="grid grid-cols-[96px_1fr] gap-3 pb-2 pt-3">
                             <dt class="font-semibold text-slate-500">営業時間</dt>
                             <dd class="text-slate-900">{{ $parkingSpot->opening_time }} ～ {{ $parkingSpot->closing_time }}</dd>
                         </div>
-                        <div class="grid grid-cols-[96px_1fr] gap-3 py-3">
-                            <dt class="font-semibold text-slate-500">作成日</dt>
-                            <dd class="text-slate-900">{{ optional($parkingSpot->created_at)->format('Y-m-d') }}</dd>
-                        </div>
-                        <div class="grid grid-cols-[96px_1fr] gap-3 py-3 last:pb-0">
-                            <dt class="font-semibold text-slate-500">更新日</dt>
-                            <dd class="text-slate-900">{{ optional($parkingSpot->updated_at)->format('Y-m-d') }}</dd>
-                        </div>
                     </dl>
+                    <div class="px-5 pb-3 pt-1 text-[11px] text-slate-400">
+                        <div class="flex items-center justify-end gap-2">
+                            <span>作成日 {{ optional($parkingSpot->created_at)->format('Y-m-d') }}</span>
+                            <span class="text-slate-300">/</span>
+                            <span>更新日 {{ optional($parkingSpot->updated_at)->format('Y-m-d') }}</span>
+                        </div>
+                    </div>
                 </div>
             </aside>
         </div>
