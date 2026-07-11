@@ -26,90 +26,88 @@
 @endpush
 
 <x-app-layout>
-    <div class="container mx-auto space-y-6 p-4">
-        <h1 class="text-3xl font-bold text-gray-800">
-            {{ $parkingSpot->name }}
-        </h1>
-
-        <div class="mx-7 space-y-4">
+    <div class="bp-shell">
+        <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-                <img class="h-64 rounded-lg object-cover shadow" src="/images/noimage.jpg" alt="駐車場の写真">
+                <h1 class="text-3xl font-bold text-slate-900">{{ $parkingSpot->name }}</h1>
+                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{{ $parkingSpot->address }}</p>
             </div>
+            <a href="{{ route('parking_spot.edit', ['id' => $parkingSpot->id]) }}">
+                <x-primary-button tag="a">編集</x-primary-button>
+            </a>
+        </div>
 
-            <div class="h-96 w-full rounded bg-gray-200" id="map">
-            </div>
+        <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+            <div class="space-y-6">
+                <div class="bp-panel">
+                    <img class="h-72 w-full object-cover" src="/images/noimage.jpg" alt="駐車場の写真">
+                </div>
 
-            <div class="min-w-0 rounded-lg bg-white p-4 shadow">
-                <table class="w-full table-fixed">
-                    <tbody>
-                        <tr class="border-b">
-                            <th class="w-24 px-3 py-2 text-left text-sm font-semibold text-gray-600 xl:w-28">駐車場名</th>
-                            <td class="break-words px-3 py-2 text-sm text-gray-800">{{ $parkingSpot->name }}</td>
-                        </tr>
-                        <tr class="border-b">
-                            <th class="w-24 px-3 py-2 text-left text-sm font-semibold text-gray-600 xl:w-28">住所</th>
-                            <td class="break-words px-3 py-2 text-sm text-gray-800">{{ $parkingSpot->address }}</td>
-                        </tr>
-                        <tr class="border-b">
-                            <th class="w-24 px-3 py-2 text-left text-sm font-semibold text-gray-600 xl:w-28">料金</th>
-                            <td class="min-w-0 px-3 py-2 text-sm text-gray-800">
-                                @if ($parkingSpot->rates->isEmpty())
-                                    <span class="text-gray-500">料金未登録</span>
-                                @else
-                                    <div class="max-w-full overflow-x-auto">
-                                        <table class="w-max min-w-full table-auto border-collapse text-left text-sm">
-                                            <thead>
-                                                <tr class="border-b border-gray-200 bg-gray-50 text-xs font-semibold text-gray-600">
-                                                    <th class="whitespace-nowrap px-3 py-2">区分</th>
-                                                    <th class="whitespace-nowrap px-3 py-2">時間帯</th>
-                                                    <th class="whitespace-nowrap px-3 py-2">料金</th>
-                                                    <th class="whitespace-nowrap px-3 py-2">最大料金</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="divide-y divide-gray-100">
-                                                @foreach ($parkingSpot->rates as $rate)
-                                                    <tr>
-                                                        <td class="whitespace-nowrap px-3 py-2 font-semibold text-gray-700">
-                                                            {{ $rate->day_type }}
-                                                        </td>
-                                                        <td class="whitespace-nowrap px-3 py-2">
-                                                            {{ $rate->time_range_label }}
-                                                        </td>
-                                                        <td class="min-w-40 px-3 py-2">
-                                                            {{ $rate->base_rate_label }}
-                                                        </td>
-                                                        <td class="whitespace-nowrap px-3 py-2">
-                                                            {{ $rate->max_rate_label }}
-                                                        </td>
-                                                    </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                @endif
-                            </td>
-                        </tr>
-                        <tr class="border-b">
-                            <th class="w-24 px-3 py-2 text-left text-sm font-semibold text-gray-600 xl:w-28">駐車場台数</th>
-                            <td class="px-3 py-2 text-sm text-gray-800">{{ $parkingSpot->capacity }}</td>
-                        </tr>
-                        <tr class="border-b">
-                            <th class="w-24 px-3 py-2 text-left text-sm font-semibold text-gray-600 xl:w-28">営業時間</th>
-                            <td class="px-3 py-2 text-sm text-gray-800">{{ $parkingSpot->opening_time }} ～
-                                {{ $parkingSpot->closing_time }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div class="mt-5 text-xs text-gray-500">
-                    <p>作成日: {{ optional($parkingSpot->created_at)->format('Y-m-d') }}</p>
-                    <p>更新日: {{ optional($parkingSpot->updated_at)->format('Y-m-d') }}</p>
+                <div class="bp-panel">
+                    <div class="bp-panel-header">
+                        <h2 class="bp-section-title">料金</h2>
+                    </div>
+                    <div class="p-5">
+                        @if ($parkingSpot->rates->isEmpty())
+                            <span class="text-sm text-slate-500">料金未登録</span>
+                        @else
+                            <div class="max-w-full overflow-x-auto">
+                                <table class="min-w-full table-auto border-collapse text-left text-sm">
+                                    <thead>
+                                        <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
+                                            <th class="whitespace-nowrap px-3 py-3">区分</th>
+                                            <th class="whitespace-nowrap px-3 py-3">時間帯</th>
+                                            <th class="whitespace-nowrap px-3 py-3">料金</th>
+                                            <th class="whitespace-nowrap px-3 py-3">最大料金</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        @foreach ($parkingSpot->rates as $rate)
+                                            <tr class="text-slate-700">
+                                                <td class="whitespace-nowrap px-3 py-3 font-semibold">{{ $rate->day_type }}</td>
+                                                <td class="whitespace-nowrap px-3 py-3">{{ $rate->time_range_label }}</td>
+                                                <td class="min-w-40 px-3 py-3 font-semibold text-emerald-700">
+                                                    {{ $rate->base_rate_label }}
+                                                </td>
+                                                <td class="whitespace-nowrap px-3 py-3">{{ $rate->max_rate_label }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
-            <div class="flex justify-end">
-                <a href="{{ route('parking_spot.edit', ['id' => $parkingSpot->id]) }}">
-                    <x-primary-button tag="a">編集</x-primary-button>
-                </a>
-            </div>
+
+            <aside class="space-y-6">
+                <div class="bp-panel">
+                    <div class="h-80 w-full bg-slate-100" id="map"></div>
+                </div>
+
+                <div class="bp-panel">
+                    <div class="bp-panel-header">
+                        <h2 class="bp-section-title">基本情報</h2>
+                    </div>
+                    <dl class="divide-y divide-slate-100 p-5 text-sm">
+                        <div class="grid grid-cols-[96px_1fr] gap-3 py-3 first:pt-0">
+                            <dt class="font-semibold text-slate-500">収容台数</dt>
+                            <dd class="text-slate-900">{{ $parkingSpot->capacity }}</dd>
+                        </div>
+                        <div class="grid grid-cols-[96px_1fr] gap-3 pb-2 pt-3">
+                            <dt class="font-semibold text-slate-500">営業時間</dt>
+                            <dd class="text-slate-900">{{ $parkingSpot->opening_time }} ～ {{ $parkingSpot->closing_time }}</dd>
+                        </div>
+                    </dl>
+                    <div class="px-5 pb-3 pt-1 text-[11px] text-slate-400">
+                        <div class="flex items-center justify-end gap-2">
+                            <span>作成日 {{ optional($parkingSpot->created_at)->format('Y-m-d') }}</span>
+                            <span class="text-slate-300">/</span>
+                            <span>更新日 {{ optional($parkingSpot->updated_at)->format('Y-m-d') }}</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
         </div>
     </div>
 </x-app-layout>

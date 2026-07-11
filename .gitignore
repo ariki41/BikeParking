@@ -3,6 +3,9 @@
 /public/build
 /public/hot
 /public/storage
+/public/images/bike-parking-logo.png
+/public/images/bike-parking-logo.webp
+/public/images/bike-parking.webp
 /storage/*.key
 /storage/debugbar
 /storage/pail

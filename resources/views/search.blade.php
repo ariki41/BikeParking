@@ -48,31 +48,32 @@
 @endpush
 
 <x-app-layout>
-    <div class="grid h-[calc(100vh-4rem)] grid-cols-5">
-        <div class="col-span-2 row-span-1 border border-gray-400">
+    <div class="grid min-h-[calc(100vh-4rem)] grid-cols-1 bg-stone-50 lg:grid-cols-[420px_minmax(0,1fr)]">
+        <div class="border-b border-slate-200 bg-white p-4 lg:border-b-0 lg:border-r">
             <form method="GET" action="{{ route('search') }}">
-                <div class="py-6">
-                    <div class="flex items-center justify-center space-x-2">
-                        <x-text-input class="w-3/5 max-w-3xl" id="keyword" name="keyword" type="text"
+                <div class="space-y-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-slate-900">駐輪場を探す</h1>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <x-text-input class="w-full" id="keyword" name="keyword" type="text"
                             placeholder="駅名・地名を入力" :value="$keyword" />
-                        <x-primary-button>検索</x-primary-button>
+                        <x-primary-button class="shrink-0">検索</x-primary-button>
                     </div>
                     @if (session('error'))
-                        <div class="mt-4 flex justify-center space-x-2">
-                            <p class="text-red-500">{{ session('error') }}</p>
+                        <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2">
+                            <p class="text-sm text-red-600">{{ session('error') }}</p>
                         </div>
                     @endif
                 </div>
                 <input name="lat" type="hidden" value="{{ $yolpLocation['lat'] }}">
                 <input name="lon" type="hidden" value="{{ $yolpLocation['lon'] }}">
             </form>
+            <div class="mt-5 h-[calc(100vh-17rem)] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50" id="parking-spots">
+                @livewire('parking-spots')
+            </div>
         </div>
 
-        <div class="col-span-3 row-span-6 border border-gray-400" id="map">
-        </div>
-
-        <div class="col-span-2 row-span-5 row-start-2 overflow-y-auto border border-gray-400" id="parking-spots">
-            @livewire('parking-spots')
-        </div>
+        <div class="h-[60vh] min-h-96 bg-slate-100 lg:h-[calc(100vh-4rem)]" id="map"></div>
     </div>
 </x-app-layout>
