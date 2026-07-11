@@ -14,20 +14,6 @@
     @error('rates')
         <div class="mb-4 text-sm text-red-600">{{ $message }}</div>
     @enderror
-    @php
-        $rateErrors = collect($errors->getMessages())->filter(
-            fn($messages, $field) => str_starts_with($field, 'rates.'),
-        );
-    @endphp
-    @if ($rateErrors->isNotEmpty())
-        <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
-            @foreach ($rateErrors as $messages)
-                @foreach ($messages as $message)
-                    <div>{{ $message }}</div>
-                @endforeach
-            @endforeach
-        </div>
-    @endif
 
     <div id="rate-list">
         @foreach ($ratesInput as $index => $rate)
@@ -38,6 +24,21 @@
                         削除
                     </button>
                 </div>
+
+                @php
+                    $itemErrors = collect($errors->getMessages())->filter(
+                        fn($messages, $field) => str_starts_with($field, "rates.{$index}."),
+                    );
+                @endphp
+                @if ($itemErrors->isNotEmpty())
+                    <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+                        @foreach ($itemErrors as $messages)
+                            @foreach ($messages as $message)
+                                <div>{{ $message }}</div>
+                            @endforeach
+                        @endforeach
+                    </div>
+                @endif
 
                 <div class="mb-4">
                     <x-input-label>料金区分</x-input-label>

@@ -513,6 +513,96 @@ class ParkingSpotRateDisplayTest extends TestCase
         $response->assertSessionHasErrors(['rates']);
     }
 
+    public function test_parking_spot_rate_validation_rejects_overlapping_ranges_with_same_day_type(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)
+            ->followingRedirects()
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'rates' => [
+                    $this->validRateInput([
+                        'day_type' => '平日',
+                        'start_time' => '08:00',
+                        'end_time' => '12:00',
+                    ]),
+                    $this->validRateInput([
+                        'day_type' => '平日',
+                        'start_time' => '11:00',
+                        'end_time' => '15:00',
+                    ]),
+                ],
+            ]));
+
+        $response->assertOk();
+        $response->assertSee('料金帯1と料金帯2の「平日」の時間帯が重複しています。');
+    }
+
+    public function test_parking_spot_rate_validation_rejects_overnight_overlap_on_edit_flow(): void
+    {
+        [$parkingSpot, $user, $postalcode] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)
+            ->followingRedirects()
+            ->from(route('parking_spot.edit', $parkingSpot->id))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'id' => $parkingSpot->id,
+                'rates' => [
+                    $this->validRateInput([
+                        'day_type' => '夜間',
+                        'start_time' => '22:00',
+                        'end_time' => '06:00',
+                    ]),
+                    $this->validRateInput([
+                        'day_type' => '夜間',
+                        'start_time' => '05:30',
+                        'end_time' => '09:00',
+                    ]),
+                ],
+            ]));
+
+        $response->assertOk();
+        $response->assertSee('料金帯1と料金帯2の「夜間」の時間帯が重複しています。');
+    }
+
+    public function test_parking_spot_rate_validation_allows_adjacent_ranges_with_same_day_type(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+        Http::fake([
+            '*' => Http::response([
+                'Feature' => [
+                    [
+                        'Geometry' => ['Coordinates' => '139.753000,35.685000'],
+                        'Property' => ['Address' => '東京都千代田区千代田1-2'],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'rates' => [
+                    $this->validRateInput([
+                        'day_type' => '平日',
+                        'start_time' => '08:00',
+                        'end_time' => '12:00',
+                    ]),
+                    $this->validRateInput([
+                        'day_type' => '平日',
+                        'start_time' => '12:00',
+                        'end_time' => '18:00',
+                    ]),
+                ],
+            ]));
+
+        $response->assertOk();
+        $response->assertSessionMissing('errors');
+        $response->assertSee('08:00 ～ 12:00');
+        $response->assertSee('12:00 ～ 18:00');
+    }
+
     public function test_parking_spot_rate_validation_requires_max_rate_when_no_max_rate_is_off(): void
     {
         [, $user, $postalcode] = $this->createParkingSpot();
