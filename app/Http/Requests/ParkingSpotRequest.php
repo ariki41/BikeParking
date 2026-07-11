@@ -6,6 +6,7 @@ use App\Models\Postalcode;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class ParkingSpotRequest extends FormRequest
 {
@@ -30,6 +31,13 @@ class ParkingSpotRequest extends FormRequest
             ->all();
 
         $this->merge(['rates' => $rates]);
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $this->validateRateTimeConflicts($validator);
+        });
     }
 
     /**
@@ -132,5 +140,127 @@ class ParkingSpotRequest extends FormRequest
             'rates.*.max_rate.min' => '最大料金は1円以上で入力してください。',
             'rates.*.max_rate.required_unless' => '最大料金なしを選択しない場合、最大料金は必須です。',
         ];
+    }
+
+    private function validateRateTimeConflicts(Validator $validator): void
+    {
+        $rates = $this->input('rates');
+
+        if (! is_array($rates) || $validator->errors()->has('rates')) {
+            return;
+        }
+
+        $validatedRates = collect($rates)
+            ->map(fn ($rate, $index) => ['index' => $index, 'rate' => $rate])
+            ->filter(fn (array $item) => $this->isReadyForTimeConflictCheck($item['rate'], $item['index'], $validator))
+            ->values();
+
+        for ($left = 0; $left < $validatedRates->count(); $left++) {
+            for ($right = $left + 1; $right < $validatedRates->count(); $right++) {
+                $leftRate = $validatedRates[$left];
+                $rightRate = $validatedRates[$right];
+
+                if (! $this->hasDayTypeOverlap($leftRate['rate']['day_type'], $rightRate['rate']['day_type'])) {
+                    continue;
+                }
+
+                if (! $this->hasTimeOverlap($leftRate['rate'], $rightRate['rate'])) {
+                    continue;
+                }
+
+                $message = $this->buildTimeConflictMessage(
+                    $leftRate['index'],
+                    $leftRate['rate']['day_type'],
+                    $rightRate['index'],
+                    $rightRate['rate']['day_type'],
+                );
+
+                $validator->errors()->add("rates.{$leftRate['index']}.time_conflict", $message);
+                $validator->errors()->add("rates.{$rightRate['index']}.time_conflict", $message);
+            }
+        }
+    }
+
+    private function isReadyForTimeConflictCheck(array $rate, int $index, Validator $validator): bool
+    {
+        $fields = ['day_type', 'start_time', 'end_time'];
+
+        foreach ($fields as $field) {
+            if ($validator->errors()->has("rates.{$index}.{$field}")) {
+                return false;
+            }
+        }
+
+        if (! isset($rate['day_type'], $rate['start_time'], $rate['end_time'])) {
+            return false;
+        }
+
+        return in_array($rate['day_type'], array_keys(config('categories.parking_spot_rate_day_types')), true)
+            && preg_match('/^\d{2}:\d{2}$/', $rate['start_time']) === 1
+            && preg_match('/^\d{2}:\d{2}$/', $rate['end_time']) === 1;
+    }
+
+    private function hasTimeOverlap(array $leftRate, array $rightRate): bool
+    {
+        foreach ($this->expandTimeRanges($leftRate['start_time'], $leftRate['end_time']) as [$leftStart, $leftEnd]) {
+            foreach ($this->expandTimeRanges($rightRate['start_time'], $rightRate['end_time']) as [$rightStart, $rightEnd]) {
+                if (max($leftStart, $rightStart) < min($leftEnd, $rightEnd)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private function hasDayTypeOverlap(string $leftDayType, string $rightDayType): bool
+    {
+        return count(array_intersect(
+            $this->dayTypeScopes($leftDayType),
+            $this->dayTypeScopes($rightDayType),
+        )) > 0;
+    }
+
+    private function dayTypeScopes(string $dayType): array
+    {
+        return match ($dayType) {
+            '平日' => ['weekday'],
+            '土日祝' => ['holiday'],
+            default => ['weekday', 'holiday'],
+        };
+    }
+
+    private function expandTimeRanges(string $startTime, string $endTime): array
+    {
+        $start = $this->timeToMinutes($startTime);
+        $end = $this->timeToMinutes($endTime);
+
+        if ($start === $end) {
+            return [[0, 1440]];
+        }
+
+        if ($start < $end) {
+            return [[$start, $end]];
+        }
+
+        return [
+            [$start, 1440],
+            [0, $end],
+        ];
+    }
+
+    private function timeToMinutes(string $time): int
+    {
+        [$hours, $minutes] = array_map('intval', explode(':', $time));
+
+        return ($hours * 60) + $minutes;
+    }
+
+    private function buildTimeConflictMessage(int $leftIndex, string $leftDayType, int $rightIndex, string $rightDayType): string
+    {
+        $leftNumber = $leftIndex + 1;
+        $rightNumber = $rightIndex + 1;
+
+        return "料金帯{$leftNumber}の「{$leftDayType}」と料金帯{$rightNumber}の「{$rightDayType}」は適用条件が重複しています。";
     }
 }

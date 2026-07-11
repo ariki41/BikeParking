@@ -66,6 +66,10 @@ class ParkingSpotRates extends Model
 
     public static function formatTimeRange(?string $startTime, ?string $endTime): string
     {
+        if (self::isFullDayRange($startTime, $endTime)) {
+            return '00:00 ～ 24:00';
+        }
+
         $startLabel = self::formatTimeLabel($startTime);
         $endLabel = self::formatTimeLabel($endTime, self::isOvernight($startTime, $endTime));
 
@@ -84,6 +88,16 @@ class ParkingSpotRates extends Model
         }
 
         return self::normalizeTime($startTime) > self::normalizeTime($endTime);
+    }
+
+    private static function isFullDayRange(?string $startTime, ?string $endTime): bool
+    {
+        if ($startTime === null || $endTime === null) {
+            return false;
+        }
+
+        return self::normalizeTime($startTime) === '00:00'
+            && self::normalizeTime($endTime) === '00:00';
     }
 
     private static function formatTimeLabel(?string $time, bool $isNextDay = false): string
