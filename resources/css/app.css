@@ -1,3 +1,49 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+    .bp-page {
+        @apply min-h-screen bg-stone-50 text-slate-900;
+    }
+
+    .bp-shell {
+        @apply mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8;
+    }
+
+    .bp-panel {
+        @apply overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/70;
+    }
+
+    .bp-panel-header {
+        @apply border-b border-slate-100 bg-white px-5 py-4;
+    }
+
+    .bp-section-title {
+        @apply text-lg font-semibold text-slate-900;
+    }
+
+    .bp-muted {
+        @apply text-sm text-slate-500;
+    }
+
+    .bp-input {
+        @apply w-full rounded-md border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-emerald-500 focus:ring-emerald-500;
+    }
+
+    .bp-select {
+        @apply w-full rounded-md border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm transition focus:border-emerald-500 focus:ring-emerald-500;
+    }
+
+    .bp-card-link {
+        @apply block rounded-lg border border-slate-200 bg-white shadow-sm shadow-slate-200/70 transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md hover:shadow-emerald-900/10;
+    }
+
+    .bp-badge {
+        @apply inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700;
+    }
+
+    .bp-danger-link {
+        @apply text-sm font-semibold text-rose-600 transition hover:text-rose-700;
+    }
+}

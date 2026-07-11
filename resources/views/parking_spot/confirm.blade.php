@@ -33,63 +33,40 @@
 @endpush
 
 <x-app-layout>
-    <div class="m-5 grid grid-cols-2">
-        <div class="col-span-2 mx-auto mb-4 max-w-lg rounded bg-white p-6 shadow lg:col-span-1">
-            <table class="mb-4 min-w-full divide-y divide-gray-200 border">
-                <tbody class="divide-y divide-gray-200 bg-white">
-                    <tr>
-                        <th
-                            class="w-1/4 whitespace-nowrap bg-gray-50 px-6 py-3 text-left text-sm font-bold text-gray-700">
-                            駐車場名
-                        </th>
-                        <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900">{{ $validatedData['name'] ?? '' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <th
-                            class="w-1/4 whitespace-nowrap bg-gray-50 px-6 py-3 text-left text-sm font-bold text-gray-700">
-                            郵便番号
-                        </th>
-                        <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900">
+    <div class="bp-shell">
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-slate-900">登録内容の確認</h1>
+            <p class="bp-muted mt-2">内容に問題がなければ登録・更新します。</p>
+        </div>
+
+        <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+            <div class="bp-panel">
+                <div class="bp-panel-header">
+                    <h2 class="bp-section-title">{{ $validatedData['name'] ?? '' }}</h2>
+                    <p class="bp-muted mt-1">{{ $validatedData['address'] ?? '' }}</p>
+                </div>
+
+                <dl class="grid gap-0 divide-y divide-slate-100 p-5 text-sm">
+                    <div class="grid gap-1 py-3 sm:grid-cols-[140px_1fr] sm:gap-4 sm:first:pt-0">
+                        <dt class="font-semibold text-slate-500">郵便番号</dt>
+                        <dd class="text-slate-900">
                             {{ substr($validatedData['postalcode'], 0, 3) . '-' . substr($validatedData['postalcode'], 3, 4) ?? '' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <th
-                            class="w-1/4 whitespace-nowrap bg-gray-50 px-6 py-3 text-left text-sm font-bold text-gray-700">
-                            住所
-                        </th>
-                        <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900">
-                            {{ $validatedData['address'] ?? '' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <th
-                            class="w-1/4 whitespace-nowrap bg-gray-50 px-6 py-3 text-left text-sm font-bold text-gray-700">
-                            収容台数</th>
-                        <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900">
-                            {{ $capacity[$validatedData['capacity']] ?? '' }}</td>
-                    </tr>
-                    <tr>
-                        <th
-                            class="w-1/4 whitespace-nowrap bg-gray-50 px-6 py-3 text-left text-sm font-bold text-gray-700">
-                            開場時間</th>
-                        <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900">
-                            {{ $validatedData['opening_time'] ?? '' }}</td>
-                    </tr>
-                    <tr>
-                        <th
-                            class="w-1/4 whitespace-nowrap bg-gray-50 px-6 py-3 text-left text-sm font-bold text-gray-700">
-                            閉場時間</th>
-                        <td class="whitespace-nowrap px-6 py-3 text-sm text-gray-900">
+                        </dd>
+                    </div>
+                    <div class="grid gap-1 py-3 sm:grid-cols-[140px_1fr] sm:gap-4">
+                        <dt class="font-semibold text-slate-500">収容台数</dt>
+                        <dd class="text-slate-900">{{ $capacity[$validatedData['capacity']] ?? '' }}</dd>
+                    </div>
+                    <div class="grid gap-1 py-3 sm:grid-cols-[140px_1fr] sm:gap-4">
+                        <dt class="font-semibold text-slate-500">営業時間</dt>
+                        <dd class="text-slate-900">
+                            {{ $validatedData['opening_time'] ?? '' }} ～
                             {{ $validatedData['closing_time'] === '00:00' ? '24:00' : $validatedData['closing_time'] ?? '' }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <th
-                            class="w-1/4 whitespace-nowrap bg-gray-50 px-6 py-3 text-left text-sm font-bold text-gray-700">
-                            料金</th>
-                        <td class="px-6 py-3 text-sm text-gray-900">
+                        </dd>
+                    </div>
+                    <div class="grid gap-3 py-3 sm:grid-cols-[140px_1fr] sm:gap-4 sm:last:pb-0">
+                        <dt class="font-semibold text-slate-500">料金</dt>
+                        <dd class="space-y-3 text-slate-900">
                             @foreach ($validatedData['rates'] as $rate)
                                 @php
                                     $unitMinutes = (int) ($rate['unit_minutes'] ?? 0);
@@ -97,44 +74,49 @@
                                     $unitLabel = $unitMinutes >= 60 && $unitMinutes % 60 === 0 ? $unitMinutes / 60 . '時間' : $unitMinutes . '分';
                                     $freeLabel = $freeMinutes >= 60 && $freeMinutes % 60 === 0 ? $freeMinutes / 60 . '時間' : $freeMinutes . '分';
                                 @endphp
-                                <div class="mb-2 last:mb-0">
-                                    {{ $rate['day_type'] ?? '' }}
-                                    {{ \App\Models\ParkingSpotRates::formatTimeRange($rate['start_time'] ?? null, $rate['end_time'] ?? null) }}
-                                    @if ($freeMinutes > 0)
-                                        最初の{{ $freeLabel }}無料 /
-                                    @endif
-                                    {{ $unitLabel }} {{ number_format($rate['rate'] ?? 0) }}円
-                                    @if ($rate['no_max_rate'] ?? false)
-                                        / 最大料金なし
-                                    @elseif (($rate['max_rate'] ?? null) !== null && $rate['max_rate'] !== '')
-                                        / 最大 {{ number_format($rate['max_rate']) }}円
-                                    @endif
+                                <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="bp-badge">{{ $rate['day_type'] ?? '' }}</span>
+                                        <span class="text-sm font-semibold text-slate-700">
+                                            {{ \App\Models\ParkingSpotRates::formatTimeRange($rate['start_time'] ?? null, $rate['end_time'] ?? null) }}
+                                        </span>
+                                    </div>
+                                    <p class="mt-2 text-sm text-slate-700">
+                                        @if ($freeMinutes > 0)
+                                            最初の{{ $freeLabel }}無料 /
+                                        @endif
+                                        {{ $unitLabel }} {{ number_format($rate['rate'] ?? 0) }}円
+                                        @if ($rate['no_max_rate'] ?? false)
+                                            / 最大料金なし
+                                        @elseif (($rate['max_rate'] ?? null) !== null && $rate['max_rate'] !== '')
+                                            / 最大 {{ number_format($rate['max_rate']) }}円
+                                        @endif
+                                    </p>
                                 </div>
                             @endforeach
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <div class="flex gap-4">
-                <form id="parkingSpotConfirmForm" method="POST" action="">
+                        </dd>
+                    </div>
+                </dl>
+
+                <form class="border-t border-slate-100 p-5" id="parkingSpotConfirmForm" method="POST" action="">
                     @csrf
-                    <div class="flex gap-4">
+                    <div class="flex flex-wrap gap-3">
                         @if ($validatedData['id'])
-                            <x-primary-button
-                                onclick="setFormAction('{{ route('parking_spot.update') }}')">更新</x-primary-button>
-                            <x-primary-button name="back" value="back"
-                                onclick="setFormAction('{{ route('parking_spot.update') }}')">戻る</x-primary-button>
+                            <x-primary-button onclick="setFormAction('{{ route('parking_spot.update') }}')">更新</x-primary-button>
+                            <x-secondary-button name="back" type="submit" value="back"
+                                onclick="setFormAction('{{ route('parking_spot.update') }}')">戻る</x-secondary-button>
                         @else
-                            <x-primary-button
-                                onclick="setFormAction('{{ route('parking_spot.store') }}')">登録</x-primary-button>
-                            <x-primary-button name="back" value="back"
-                                onclick="setFormAction('{{ route('parking_spot.store') }}')">戻る</x-primary-button>
+                            <x-primary-button onclick="setFormAction('{{ route('parking_spot.store') }}')">登録</x-primary-button>
+                            <x-secondary-button name="back" type="submit" value="back"
+                                onclick="setFormAction('{{ route('parking_spot.store') }}')">戻る</x-secondary-button>
                         @endif
                     </div>
                 </form>
             </div>
-        </div>
-        <div class="col-span-2 h-96 lg:col-span-1" id="map">
+
+            <div class="bp-panel">
+                <div class="h-[28rem] w-full bg-slate-100" id="map"></div>
+            </div>
         </div>
     </div>
 </x-app-layout>
