@@ -153,25 +153,30 @@ class ParkingSpotRequest extends FormRequest
         $validatedRates = collect($rates)
             ->map(fn ($rate, $index) => ['index' => $index, 'rate' => $rate])
             ->filter(fn (array $item) => $this->isReadyForTimeConflictCheck($item['rate'], $item['index'], $validator))
-            ->groupBy(fn (array $item) => $item['rate']['day_type']);
+            ->values();
 
-        foreach ($validatedRates as $dayType => $groupedRates) {
-            $groupedRates = $groupedRates->values();
+        for ($left = 0; $left < $validatedRates->count(); $left++) {
+            for ($right = $left + 1; $right < $validatedRates->count(); $right++) {
+                $leftRate = $validatedRates[$left];
+                $rightRate = $validatedRates[$right];
 
-            for ($left = 0; $left < $groupedRates->count(); $left++) {
-                for ($right = $left + 1; $right < $groupedRates->count(); $right++) {
-                    $leftRate = $groupedRates[$left];
-                    $rightRate = $groupedRates[$right];
-
-                    if (! $this->hasTimeOverlap($leftRate['rate'], $rightRate['rate'])) {
-                        continue;
-                    }
-
-                    $message = $this->buildTimeConflictMessage($leftRate['index'], $rightRate['index'], $dayType);
-
-                    $validator->errors()->add("rates.{$leftRate['index']}.time_conflict", $message);
-                    $validator->errors()->add("rates.{$rightRate['index']}.time_conflict", $message);
+                if (! $this->hasDayTypeOverlap($leftRate['rate']['day_type'], $rightRate['rate']['day_type'])) {
+                    continue;
                 }
+
+                if (! $this->hasTimeOverlap($leftRate['rate'], $rightRate['rate'])) {
+                    continue;
+                }
+
+                $message = $this->buildTimeConflictMessage(
+                    $leftRate['index'],
+                    $leftRate['rate']['day_type'],
+                    $rightRate['index'],
+                    $rightRate['rate']['day_type'],
+                );
+
+                $validator->errors()->add("rates.{$leftRate['index']}.time_conflict", $message);
+                $validator->errors()->add("rates.{$rightRate['index']}.time_conflict", $message);
             }
         }
     }
@@ -208,6 +213,23 @@ class ParkingSpotRequest extends FormRequest
         return false;
     }
 
+    private function hasDayTypeOverlap(string $leftDayType, string $rightDayType): bool
+    {
+        return count(array_intersect(
+            $this->dayTypeScopes($leftDayType),
+            $this->dayTypeScopes($rightDayType),
+        )) > 0;
+    }
+
+    private function dayTypeScopes(string $dayType): array
+    {
+        return match ($dayType) {
+            '平日' => ['weekday'],
+            '土日祝' => ['holiday'],
+            default => ['weekday', 'holiday'],
+        };
+    }
+
     private function expandTimeRanges(string $startTime, string $endTime): array
     {
         $start = $this->timeToMinutes($startTime);
@@ -234,11 +256,11 @@ class ParkingSpotRequest extends FormRequest
         return ($hours * 60) + $minutes;
     }
 
-    private function buildTimeConflictMessage(int $leftIndex, int $rightIndex, string $dayType): string
+    private function buildTimeConflictMessage(int $leftIndex, string $leftDayType, int $rightIndex, string $rightDayType): string
     {
         $leftNumber = $leftIndex + 1;
         $rightNumber = $rightIndex + 1;
 
-        return "料金帯{$leftNumber}と料金帯{$rightNumber}の「{$dayType}」の時間帯が重複しています。同じ区分では重複しないように設定してください。";
+        return "料金帯{$leftNumber}の「{$leftDayType}」と料金帯{$rightNumber}の「{$rightDayType}」は適用条件が重複しています。";
     }
 }
