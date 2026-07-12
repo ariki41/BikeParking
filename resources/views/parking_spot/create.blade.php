@@ -48,6 +48,22 @@
                                     <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
                                 @enderror
                             </div>
+
+                            <div class="md:col-span-2">
+                                <x-input-label for="image">駐輪場画像</x-input-label>
+                                <input class="bp-input" id="image" name="image" type="file" accept="image/*">
+                                <input name="image_path" type="hidden" value="{{ old('image_path') }}">
+                                @if (old('image_path'))
+                                    <img class="mt-3 h-40 w-full rounded-lg object-cover sm:w-72"
+                                        src="{{ \App\Models\ParkingSpot::imageUrlForPath(old('image_path')) }}" alt="アップロード画像プレビュー">
+                                @endif
+                                @error('image')
+                                    <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
+                                @enderror
+                                @error('image_path')
+                                    <div class="mt-1 text-sm text-red-600">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
                     </section>
 

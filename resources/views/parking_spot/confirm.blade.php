@@ -41,6 +41,11 @@
 
         <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
             <div class="bp-panel">
+                <div class="overflow-hidden border-b border-slate-100">
+                    <img class="h-72 w-full object-cover"
+                        src="{{ \App\Models\ParkingSpot::imageUrlForPath($validatedData['image_path'] ?? null) }}"
+                        alt="駐輪場画像">
+                </div>
                 <div class="bp-panel-header">
                     <h2 class="bp-section-title">{{ $validatedData['name'] ?? '' }}</h2>
                     <p class="bp-muted mt-1">{{ $validatedData['address'] ?? '' }}</p>
@@ -56,6 +61,10 @@
                     <div class="grid gap-1 py-3 sm:grid-cols-[140px_1fr] sm:gap-4">
                         <dt class="font-semibold text-slate-500">収容台数</dt>
                         <dd class="text-slate-900">{{ $capacity[$validatedData['capacity']] ?? '' }}</dd>
+                    </div>
+                    <div class="grid gap-1 py-3 sm:grid-cols-[140px_1fr] sm:gap-4">
+                        <dt class="font-semibold text-slate-500">画像</dt>
+                        <dd class="text-slate-900">{{ filled($validatedData['image_path'] ?? null) ? '設定あり' : '未設定' }}</dd>
                     </div>
                     <div class="grid gap-1 py-3 sm:grid-cols-[140px_1fr] sm:gap-4">
                         <dt class="font-semibold text-slate-500">営業時間</dt>

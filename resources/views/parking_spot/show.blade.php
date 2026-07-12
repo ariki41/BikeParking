@@ -40,7 +40,7 @@
         <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
             <div class="space-y-6">
                 <div class="bp-panel">
-                    <img class="h-72 w-full object-cover" src="/images/noimage.jpg" alt="駐車場の写真">
+                    <img class="h-72 w-full object-cover" src="{{ $parkingSpot->image_url }}" alt="駐車場の写真">
                 </div>
 
                 <div class="bp-panel">
