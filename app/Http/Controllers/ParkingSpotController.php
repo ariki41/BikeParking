@@ -20,10 +20,8 @@ class ParkingSpotController extends Controller
         $parkingSpot = ParkingSpot::with('rates')->findOrFail($id);
 
         $postalcode = Postalcode::getPostalcode($parkingSpot->postalcode)->postalcode;
-        $capacity = config('categories.parking_spot_capacity');
 
         $parkingSpot['postalcode'] = $postalcode;
-        $parkingSpot['capacity'] = $capacity[$parkingSpot['capacity']];
         $parkingSpot['opening_time'] = date('H:i', strtotime($parkingSpot['opening_time']));
         $parkingSpot['closing_time'] = $parkingSpot['closing_time'] === '00:00:00' ? '24:00' : date('H:i', strtotime($parkingSpot['closing_time']));
 
