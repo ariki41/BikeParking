@@ -92,7 +92,7 @@
                     <dl class="divide-y divide-slate-100 p-5 text-sm">
                         <div class="grid grid-cols-[96px_1fr] gap-3 py-3 first:pt-0">
                             <dt class="font-semibold text-slate-500">収容台数</dt>
-                            <dd class="text-slate-900">{{ $parkingSpot->capacity }}</dd>
+                            <dd class="text-slate-900">{{ $parkingSpot->capacity_label }}</dd>
                         </div>
                         <div class="grid grid-cols-[96px_1fr] gap-3 pb-2 pt-3">
                             <dt class="font-semibold text-slate-500">営業時間</dt>

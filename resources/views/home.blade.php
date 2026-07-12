@@ -36,7 +36,7 @@
                             </div>
                             <div class="flex items-center justify-between border-t border-slate-100 pt-3">
                                 <span class="text-sm font-semibold text-emerald-700">詳細を見る</span>
-                                <span class="text-xs text-slate-500">{{ $parkingSpot->capacity }}台</span>
+                                <span class="text-xs text-slate-500">{{ $parkingSpot->capacity_label }}</span>
                             </div>
                         </div>
                     </a>
