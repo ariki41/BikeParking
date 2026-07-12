@@ -5,7 +5,11 @@ namespace App\Services;
 use App\Models\ParkingSpot;
 use App\Models\ParkingSpotRates;
 use App\Models\Postalcode;
+use Carbon\CarbonImmutable;
+use Illuminate\Http\Request;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class ParkingSpotService
 {
@@ -29,6 +33,9 @@ class ParkingSpotService
 
         $parkingSpot->save();
 
+        $parkingSpot->image_path = $this->persistConfirmedImage($parkingSpot, $input['image_path'] ?? null);
+        $parkingSpot->save();
+
         $this->saveParkingSpotRates($parkingSpot, $input['rates']);
     }
 
@@ -36,6 +43,7 @@ class ParkingSpotService
     {
         $id = $input['id'];
         $parkingSpot = ParkingSpot::findOrFail($id);
+        $originalImagePath = $parkingSpot->image_path;
 
         $postalcode = Postalcode::getPostalcodeId($input['postalcode'])->first()->id ?? null;
         if (! $postalcode) {
@@ -50,8 +58,13 @@ class ParkingSpotService
         $parkingSpot->opening_time = $input['opening_time'];
         $parkingSpot->closing_time = $input['closing_time'];
         $parkingSpot->capacity = $input['capacity'];
+        $parkingSpot->image_path = $this->persistConfirmedImage($parkingSpot, $input['image_path'] ?? null);
 
         $parkingSpot->save();
+
+        if ($originalImagePath && $originalImagePath !== $parkingSpot->image_path) {
+            Storage::disk('public')->delete($originalImagePath);
+        }
 
         $parkingSpot->rates()->delete();
         $this->saveParkingSpotRates($parkingSpot, $input['rates']);
@@ -100,5 +113,46 @@ class ParkingSpotService
 
             return $yolpLocation;
         }
+    }
+
+    public function prepareImagePathForConfirm(Request $request, ?string $currentPath): ?string
+    {
+        if (! $request->hasFile('image')) {
+            return $currentPath;
+        }
+
+        if ($this->isTemporaryImagePath($currentPath)) {
+            Storage::disk('public')->delete($currentPath);
+        }
+
+        return $request->file('image')->store('temp/parking-spots', 'public');
+    }
+
+    private function persistConfirmedImage(ParkingSpot $parkingSpot, ?string $imagePath): ?string
+    {
+        if (blank($imagePath) || ! $this->isTemporaryImagePath($imagePath)) {
+            return $imagePath;
+        }
+
+        $disk = Storage::disk('public');
+
+        if (! $disk->exists($imagePath)) {
+            return null;
+        }
+
+        $extension = pathinfo($imagePath, PATHINFO_EXTENSION);
+        $timestamp = CarbonImmutable::now()->format('YmdHisv');
+        $filename = $parkingSpot->id.'_'.$timestamp.($extension ? '.'.$extension : '');
+        $permanentPath = 'parking-spots/'.$filename;
+
+        $disk->copy($imagePath, $permanentPath);
+        $disk->delete($imagePath);
+
+        return $permanentPath;
+    }
+
+    private function isTemporaryImagePath(?string $path): bool
+    {
+        return filled($path) && str_starts_with($path, 'temp/parking-spots/');
     }
 }

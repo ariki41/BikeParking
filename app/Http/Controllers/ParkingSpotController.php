@@ -44,7 +44,9 @@ class ParkingSpotController extends Controller
     public function confirm(ParkingSpotRequest $request)
     {
         $validatedData = $request->validated();
+        unset($validatedData['image']);
         $validatedData['id'] = $request->input('id');
+        $validatedData['image_path'] = $this->service->prepareImagePathForConfirm($request, $validatedData['image_path'] ?? null);
         $validatedData['address'] = mb_convert_kana($validatedData['address1'].$validatedData['address2'], 'rn');
         $validatedData['postalcode'] = mb_convert_kana(str_replace('-', '', $validatedData['postalcode']), 'rn');
 
@@ -112,8 +114,9 @@ class ParkingSpotController extends Controller
             'max_rate' => $rate->max_rate,
             'no_max_rate' => $rate->max_rate === null ? '1' : '0',
         ])->values()->all() ?: [$this->defaultRateInput()]);
+        $imagePath = old('image_path', $parkingSpot->image_path);
 
-        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'rateDayTypes', 'rateUnitMinutes', 'postalcode', 'address1', 'address2', 'session', 'ratesInput'));
+        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'rateDayTypes', 'rateUnitMinutes', 'postalcode', 'address1', 'address2', 'session', 'ratesInput', 'imagePath'));
     }
 
     public function update(Request $request)

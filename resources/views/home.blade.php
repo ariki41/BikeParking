@@ -28,7 +28,7 @@
             <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 @foreach ($parkingSpots as $parkingSpot)
                     <a class="bp-card-link" href="{{ route('parking_spot.show', ['id' => $parkingSpot->id]) }}">
-                        <img class="h-40 w-full rounded-t-lg object-cover" src="/images/noimage.jpg" alt="駐車場画像">
+                        <img class="h-40 w-full rounded-t-lg object-cover" src="{{ $parkingSpot->image_url }}" alt="駐車場画像">
                         <div class="space-y-3 p-4">
                             <div>
                                 <h3 class="text-lg font-semibold text-slate-900">{{ $parkingSpot->name }}</h3>
