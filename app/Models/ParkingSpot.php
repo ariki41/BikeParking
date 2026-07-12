@@ -11,6 +11,13 @@ class ParkingSpot extends Model
 {
     use HasFactory;
 
+    public function getCapacityLabelAttribute(): string
+    {
+        $labels = config('categories.parking_spot_capacity');
+
+        return $labels[$this->capacity] ?? (string) $this->capacity;
+    }
+
     public function getImageUrlAttribute(): string
     {
         return self::imageUrlForPath($this->image_path);
