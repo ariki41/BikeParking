@@ -10,8 +10,11 @@ use App\Models\Prefecture;
 use App\Models\User;
 use App\Services\ParkingSpotService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class ParkingSpotRateDisplayTest extends TestCase
@@ -105,6 +108,64 @@ class ParkingSpotRateDisplayTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('料金未登録');
+        $response->assertSee('/images/noimage.jpg');
+    }
+
+    public function test_parking_spot_confirm_stores_uploaded_image_path_in_session(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+        Storage::fake('public');
+        Http::fake([
+            '*' => Http::response([
+                'Feature' => [
+                    [
+                        'Geometry' => ['Coordinates' => '139.753000,35.685000'],
+                        'Property' => ['Address' => '東京都千代田区千代田1-2'],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'image' => UploadedFile::fake()->image('parking-spot.jpg'),
+            ]));
+
+        $response->assertOk();
+        $imagePath = session('create_parking_spot_form.image_path');
+        $this->assertNotNull($imagePath);
+        $this->assertStringStartsWith('temp/parking-spots/', $imagePath);
+        Storage::disk('public')->assertExists($imagePath);
+        $response->assertSee('/storage/'.$imagePath);
+    }
+
+    public function test_parking_spot_confirm_rejects_unsupported_image_extension(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'image' => UploadedFile::fake()->create('parking-spot.gif', 100, 'image/gif'),
+            ]));
+
+        $response->assertRedirect(route('parking_spot.create'));
+        $response->assertSessionHasErrors(['image']);
+    }
+
+    public function test_parking_spot_confirm_rejects_oversized_image(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'image' => UploadedFile::fake()->image('parking-spot.jpg')->size(21000),
+            ]));
+
+        $response->assertRedirect(route('parking_spot.create'));
+        $response->assertSessionHasErrors(['image']);
     }
 
     public function test_parking_spot_can_save_multiple_rates(): void
@@ -161,6 +222,8 @@ class ParkingSpotRateDisplayTest extends TestCase
     public function test_parking_spot_store_creates_rates_from_confirmed_form(): void
     {
         [, $user, $postalcode] = $this->createParkingSpot();
+        Storage::fake('public');
+        $tempImagePath = UploadedFile::fake()->image('confirmed.jpg')->store('temp/parking-spots', 'public');
 
         $input = [
             'name' => '登録Featureテスト駐車場',
@@ -169,6 +232,7 @@ class ParkingSpotRateDisplayTest extends TestCase
             'longitude' => 139.753000,
             'latitude' => 35.685000,
             'capacity' => 1,
+            'image_path' => $tempImagePath,
             'opening_time' => '00:00',
             'closing_time' => '00:00',
             'rates' => [
@@ -193,6 +257,14 @@ class ParkingSpotRateDisplayTest extends TestCase
             'name' => '登録Featureテスト駐車場',
             'user_id' => $user->id,
         ]);
+        $parkingSpot = ParkingSpot::where('name', '登録Featureテスト駐車場')->firstOrFail();
+        $this->assertNotNull($parkingSpot->image_path);
+        $this->assertMatchesRegularExpression(
+            '/^parking-spots\/'.$parkingSpot->id.'_\d{17}\.webp$/',
+            $parkingSpot->image_path
+        );
+        Storage::disk('public')->assertExists($parkingSpot->image_path);
+        Storage::disk('public')->assertMissing($tempImagePath);
         $this->assertDatabaseHas('parking_spot_rates', [
             'day_type' => '平日',
             'start_time' => '08:00',
@@ -459,6 +531,10 @@ class ParkingSpotRateDisplayTest extends TestCase
     public function test_parking_spot_update_replaces_rates_from_confirmed_form(): void
     {
         [$parkingSpot, $user, $postalcode] = $this->createParkingSpot();
+        Storage::fake('public');
+        Storage::disk('public')->put('parking-spots/original.jpg', 'original');
+        $parkingSpot->forceFill(['image_path' => 'parking-spots/original.jpg'])->save();
+        $tempImagePath = UploadedFile::fake()->image('updated.jpg')->store('temp/parking-spots', 'public');
 
         ParkingSpotRates::create([
             'parking_spot_id' => $parkingSpot->id,
@@ -479,6 +555,7 @@ class ParkingSpotRateDisplayTest extends TestCase
             'longitude' => 139.754000,
             'latitude' => 35.686000,
             'capacity' => 1,
+            'image_path' => $tempImagePath,
             'opening_time' => '00:00',
             'closing_time' => '00:00',
             'rates' => [
@@ -499,6 +576,15 @@ class ParkingSpotRateDisplayTest extends TestCase
             ->post(route('parking_spot.update'));
 
         $response->assertRedirect(route('home'));
+        $parkingSpot->refresh();
+        $this->assertNotSame('parking-spots/original.jpg', $parkingSpot->image_path);
+        $this->assertMatchesRegularExpression(
+            '/^parking-spots\/'.$parkingSpot->id.'_\d{17}\.webp$/',
+            $parkingSpot->image_path
+        );
+        Storage::disk('public')->assertMissing('parking-spots/original.jpg');
+        Storage::disk('public')->assertMissing($tempImagePath);
+        Storage::disk('public')->assertExists($parkingSpot->image_path);
         $this->assertDatabaseMissing('parking_spot_rates', [
             'parking_spot_id' => $parkingSpot->id,
             'day_type' => '平日',
@@ -929,6 +1015,40 @@ class ParkingSpotRateDisplayTest extends TestCase
 
         $response->assertRedirect(route('parking_spot.create'));
         $response->assertSessionHasErrors(['rates.0.unit_minutes']);
+    }
+
+    public function test_home_displays_uploaded_image_and_fallback_image(): void
+    {
+        [$parkingSpot, $user] = $this->createParkingSpot();
+        $parkingSpot->forceFill(['image_path' => 'parking-spots/home.jpg'])->save();
+
+        ParkingSpot::forceCreate([
+            'user_id' => $user->id,
+            'name' => '画像なし駐車場',
+            'postalcode' => $parkingSpot->postalcode,
+            'address' => '東京都千代田区千代田1-9',
+            'longitude' => 139.759000,
+            'latitude' => 35.689000,
+            'capacity' => 2,
+            'opening_time' => '00:00:00',
+            'closing_time' => '00:00:00',
+        ]);
+
+        $response = $this->get(route('home'));
+
+        $response->assertOk();
+        $response->assertSee('/storage/parking-spots/home.jpg');
+        $response->assertSee('/images/noimage.jpg');
+    }
+
+    public function test_livewire_parking_spots_list_uses_image_url_accessor(): void
+    {
+        [$parkingSpot] = $this->createParkingSpot();
+        $parkingSpot->forceFill(['image_path' => 'parking-spots/list.jpg'])->save();
+
+        Livewire::test(\App\Livewire\ParkingSpots::class)
+            ->set('spots', collect([$parkingSpot->fresh()->load('rates')]))
+            ->assertSee('/storage/parking-spots/list.jpg');
     }
 
     private function createParkingSpot(): array

@@ -62,6 +62,8 @@ class ParkingSpotRequest extends FormRequest
             ],
             'address2' => 'required|string|max:255',
             'capacity' => 'required|integer|min:1',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:20480',
+            'image_path' => 'nullable|string|max:255',
             'opening_time' => 'required|date_format:H:i',
             'closing_time' => 'required|date_format:H:i',
             'rates' => 'required|array|min:1|max:4',
@@ -103,6 +105,12 @@ class ParkingSpotRequest extends FormRequest
             'capacity.required' => '駐車場台数は必須です。',
             'capacity.integer' => '駐車場台数は整数で入力してください。',
             'capacity.min' => '駐車場台数を設定してください。',
+
+            'image.image' => '画像ファイルを選択してください。',
+            'image.mimes' => '画像は jpg / jpeg / png / webp 形式でアップロードしてください。',
+            'image.max' => '画像は20MB以下でアップロードしてください。',
+            'image_path.string' => '画像の保持情報が正しくありません。',
+            'image_path.max' => '画像の保持情報が長すぎます。',
 
             'opening_time.required' => '開場時間は必須です。',
             'opening_time.date_format' => '開場時間の形式が正しくありません。例: 10:00',
