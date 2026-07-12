@@ -6,6 +6,11 @@ use App\Models\ParkingSpot;
 use App\Models\ParkingSpotRates;
 use App\Models\Postalcode;
 use Carbon\CarbonImmutable;
+use Illuminate\Validation\ValidationException;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\Drivers\Imagick\Driver as ImagickDriver;
+use Intervention\Image\Encoders\WebpEncoder;
+use Intervention\Image\ImageManager;
 use Illuminate\Http\Request;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
@@ -13,6 +18,8 @@ use Illuminate\Support\Facades\Storage;
 
 class ParkingSpotService
 {
+    private const MAX_FINAL_IMAGE_BYTES = 5 * 1024 * 1024;
+
     public function saveParkingSpot($input)
     {
         $postalcodeId = Postalcode::getPostalcodeId($input['postalcode'])->first()->id ?? null;
@@ -125,7 +132,20 @@ class ParkingSpotService
             Storage::disk('public')->delete($currentPath);
         }
 
-        return $request->file('image')->store('temp/parking-spots', 'public');
+        $timestamp = CarbonImmutable::now()->format('YmdHisv');
+        $tempPath = 'temp/parking-spots/'.$timestamp.'.webp';
+
+        try {
+            $webpBinary = $this->convertImageToWebpWithinLimit($request->file('image')->getRealPath());
+        } catch (\Throwable) {
+            throw ValidationException::withMessages([
+                'image' => '画像をWebP形式へ変換できませんでした。別の画像をお試しください。',
+            ]);
+        }
+
+        Storage::disk('public')->put($tempPath, $webpBinary);
+
+        return $tempPath;
     }
 
     private function persistConfirmedImage(ParkingSpot $parkingSpot, ?string $imagePath): ?string
@@ -140,9 +160,8 @@ class ParkingSpotService
             return null;
         }
 
-        $extension = pathinfo($imagePath, PATHINFO_EXTENSION);
         $timestamp = CarbonImmutable::now()->format('YmdHisv');
-        $filename = $parkingSpot->id.'_'.$timestamp.($extension ? '.'.$extension : '');
+        $filename = $parkingSpot->id.'_'.$timestamp.'.webp';
         $permanentPath = 'parking-spots/'.$filename;
 
         $disk->copy($imagePath, $permanentPath);
@@ -154,5 +173,53 @@ class ParkingSpotService
     private function isTemporaryImagePath(?string $path): bool
     {
         return filled($path) && str_starts_with($path, 'temp/parking-spots/');
+    }
+
+    private function convertImageToWebpWithinLimit(string $sourcePath): string
+    {
+        $manager = $this->imageManager();
+        $quality = 85;
+        $maxWidth = null;
+
+        while (true) {
+            $image = $manager->decodePath($sourcePath);
+
+            if ($maxWidth !== null && $image->width() > $maxWidth) {
+                $image = $image->scaleDown(width: $maxWidth);
+            }
+
+            $encoded = $image->encode(new WebpEncoder(quality: $quality));
+            $binary = (string) $encoded;
+
+            if (strlen($binary) <= self::MAX_FINAL_IMAGE_BYTES) {
+                return $binary;
+            }
+
+            if ($quality > 55) {
+                $quality -= 10;
+                continue;
+            }
+
+            $nextWidth = $maxWidth
+                ? (int) floor($maxWidth * 0.85)
+                : (int) floor($image->width() * 0.85);
+
+            if ($nextWidth < 600 || $nextWidth >= $image->width()) {
+                break;
+            }
+
+            $maxWidth = $nextWidth;
+        }
+
+        throw new \RuntimeException('Unable to convert image within size limit.');
+    }
+
+    private function imageManager(): ImageManager
+    {
+        if (extension_loaded('imagick')) {
+            return new ImageManager(new ImagickDriver);
+        }
+
+        return new ImageManager(new GdDriver);
     }
 }

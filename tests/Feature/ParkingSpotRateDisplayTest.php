@@ -139,6 +139,34 @@ class ParkingSpotRateDisplayTest extends TestCase
         $response->assertSee('/storage/'.$imagePath);
     }
 
+    public function test_parking_spot_confirm_rejects_unsupported_image_extension(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'image' => UploadedFile::fake()->create('parking-spot.gif', 100, 'image/gif'),
+            ]));
+
+        $response->assertRedirect(route('parking_spot.create'));
+        $response->assertSessionHasErrors(['image']);
+    }
+
+    public function test_parking_spot_confirm_rejects_oversized_image(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'image' => UploadedFile::fake()->image('parking-spot.jpg')->size(21000),
+            ]));
+
+        $response->assertRedirect(route('parking_spot.create'));
+        $response->assertSessionHasErrors(['image']);
+    }
+
     public function test_parking_spot_can_save_multiple_rates(): void
     {
         [$parkingSpot, $user, $postalcode] = $this->createParkingSpot();
@@ -231,7 +259,7 @@ class ParkingSpotRateDisplayTest extends TestCase
         $parkingSpot = ParkingSpot::where('name', '登録Featureテスト駐車場')->firstOrFail();
         $this->assertNotNull($parkingSpot->image_path);
         $this->assertMatchesRegularExpression(
-            '/^parking-spots\/'.$parkingSpot->id.'_\d{17}\.jpg$/',
+            '/^parking-spots\/'.$parkingSpot->id.'_\d{17}\.webp$/',
             $parkingSpot->image_path
         );
         Storage::disk('public')->assertExists($parkingSpot->image_path);
@@ -520,7 +548,7 @@ class ParkingSpotRateDisplayTest extends TestCase
         $parkingSpot->refresh();
         $this->assertNotSame('parking-spots/original.jpg', $parkingSpot->image_path);
         $this->assertMatchesRegularExpression(
-            '/^parking-spots\/'.$parkingSpot->id.'_\d{17}\.jpg$/',
+            '/^parking-spots\/'.$parkingSpot->id.'_\d{17}\.webp$/',
             $parkingSpot->image_path
         );
         Storage::disk('public')->assertMissing('parking-spots/original.jpg');
