@@ -1,66 +1,144 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Bike Parking
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+駐輪場の情報を登録・検索・参照するためのLaravel製Webアプリケーションです。
+利用者は会員登録・ログイン後、駐輪場の基本情報、営業時間、料金帯、画像を登録・編集できます。
 
-## About Laravel
+## 主な機能
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- 駐輪場の一覧表示・検索
+- 駐輪場情報の登録・編集・詳細表示
+- 郵便番号による住所補完
+- 住所からの緯度・経度取得と地図表示
+- 曜日・時間帯ごとの料金設定
+- 料金帯の重複チェック
+- 駐輪場画像のアップロード（WebP変換）
+- 会員登録、ログイン、メール確認、プロフィール管理
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 技術構成
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| 項目 | 採用技術 |
+| --- | --- |
+| Backend | PHP 8.3 / Laravel 13 |
+| Frontend | Blade / Livewire 3 / Tailwind CSS / Alpine.js |
+| Database | MySQL 8.0（SQLiteも利用可能） |
+| Development environment | Laravel Sail / Docker Compose |
+| Asset build | Vite |
 
-## Learning Laravel
+## 必要な環境
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- Docker Desktop または Docker Engine
+- Docker Compose
+- PHP 8.3 / Composer
+- Node.js / npm（ローカルでViteを実行する場合）
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## セットアップ
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 1. リポジトリの取得
 
-## Laravel Sponsors
+```bash
+git clone <repository-url>
+cd bike-parking
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 2. Laravel Sailの起動
 
-### Premium Partners
+```bash
+cp .env.example .env
+composer install
+docker compose up -d
+docker compose exec laravel.test php artisan key:generate
+docker compose exec laravel.test php artisan migrate --seed
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+画像や静的ファイルを利用する場合は、必要に応じてストレージリンクも作成します。
 
-## Contributing
+```bash
+docker compose exec laravel.test php artisan storage:link
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 3. フロントエンドの準備
 
-## Code of Conduct
+```bash
+npm install
+npm run dev
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+本番用アセットを生成する場合は `npm run build` を実行してください。
 
-## Security Vulnerabilities
+### 4. アプリケーションへのアクセス
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+ブラウザで [http://localhost](http://localhost) を開きます。
+メール確認などのメール内容は、開発環境ではMailpit（[http://localhost:8025](http://localhost:8025)）で確認できます。
 
-## License
+## 環境変数
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+基本設定は `.env.example` を使用します。住所検索・ジオコード機能を利用する場合は、利用するYOLP APIの情報を追加してください。
+
+```dotenv
+YOLP_URL=https://map.yahooapis.jp/search/local/V1/localSearch
+YOLP_GEOCODE_URL=https://map.yahooapis.jp/geocode/V1/geoCoder
+YOLP_CLIENT_ID=<your-client-id>
+```
+
+データベース接続をMySQLにする場合は、`.env` の `DB_*` をDocker Composeの設定に合わせます。
+
+```dotenv
+DB_CONNECTION=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=bike_parking
+DB_USERNAME=sail
+DB_PASSWORD=password
+```
+
+## 開発コマンド
+
+```bash
+# Laravelコンテナの起動・停止
+docker compose up -d
+docker compose down
+
+# マイグレーション
+docker compose exec laravel.test php artisan migrate
+
+# コード整形
+docker compose exec laravel.test vendor/bin/pint
+
+# テスト全体
+docker compose exec laravel.test php artisan test
+```
+
+Laravel Sailのショートカットを利用できる環境では、上記の `docker compose exec laravel.test` を `./vendor/bin/sail` に置き換えられます。
+
+料金表示・入力・保存に関する変更では、まず次のfocused testを実行してください。
+
+```bash
+./vendor/bin/sail test tests/Feature/ParkingSpotRateDisplayTest.php
+```
+
+## ドキュメント
+
+- [簡易設計書](doc/design.md)
+- [状態遷移図](doc/state-transition.md)
+
+設計書と状態遷移図はMarkdownとMermaidで管理しているため、GitHub上またはMermaid対応エディタで確認できます。
+
+## ディレクトリ構成
+
+```text
+app/
+├── Http/Controllers/     HTTPリクエストと画面遷移
+├── Http/Requests/        入力値検証
+├── Livewire/             住所補完などのリアクティブ処理
+├── Models/               Eloquentモデル
+└── Services/              駐輪場の保存・更新などの業務処理
+database/                 マイグレーション、ファクトリ、シーダー
+resources/views/          Bladeテンプレート
+routes/                   Web・認証ルート
+tests/                    Feature / Unitテスト
+doc/                      設計書・状態遷移図
+```
+
+## ライセンス
+
+このプロジェクトはMITライセンスで公開されています。
