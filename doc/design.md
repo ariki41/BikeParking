@@ -58,7 +58,7 @@ flowchart LR
 | --- | --- | --- | --- |
 | トップ | GET | `/` | 不要 |
 | 検索 | GET | `/search` | 不要 |
-| ダッシュボード | GET | `/dashboard` | 必須・メール確認済み |
+| ダッシュボード | GET | `/dashboard` | 必須 |
 | 駐輪場詳細 | GET | `/parking-spot/detail/{id}` | 必須 |
 | 駐輪場登録画面 | GET | `/parking-spot/create` | 必須 |
 | 駐輪場確認 | POST | `/parking-spot/confirm` | 必須 |
@@ -66,7 +66,7 @@ flowchart LR
 | 駐輪場編集画面 | GET | `/parking-spot/edit/{id}` | 必須 |
 | 駐輪場更新確定 | POST | `/parking-spot/update` | 必須 |
 | プロフィール | GET/PATCH/DELETE | `/profile` | 必須 |
-| 認証 | GET/POST | `/login`, `/register` ほか | 機能ごとに異なる |
+| 認証 | GET/POST | `/login`, `/register`, `/logout` | 機能ごとに異なる |
 
 ## 5. 駐輪場登録・更新処理
 
@@ -123,6 +123,8 @@ erDiagram
 
 ## 7. 入力・整合性ルール
 
+- 認証識別子には一意なユーザーIDを使用し、メールアドレスは保持しない。
+- パスワードはログイン後のプロフィール画面から変更できる。メール確認とメール経由のパスワード再設定は提供しない。
 - 駐輪場名、住所、営業時間、料金は必須。
 - 収容台数は 1 以上。
 - 料金帯は 1〜4 件。

@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
@@ -28,14 +29,14 @@ class RegisteredUserController extends Controller
     /**
      * Handle an incoming registration request.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'name' => ['required', 'string', 'max:16'],
             'user_id' => ['required', 'string', 'lowercase', 'max:16', 'unique:'.User::class],
-            'prefecture' => ['required', 'string', 'exists:'.Prefecture::class.',id'],
+            'prefecture' => ['required', 'integer', 'exists:'.Prefecture::class.',id'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
