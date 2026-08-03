@@ -36,4 +36,9 @@ class ParkingSpot extends Model
     {
         return $this->hasMany(ParkingSpotRates::class);
     }
+
+    public function updateHistories(): HasMany
+    {
+        return $this->hasMany(ParkingSpotUpdateHistory::class)->latest();
+    }
 }

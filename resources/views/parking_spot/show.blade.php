@@ -78,6 +78,29 @@
                         @endif
                     </div>
                 </div>
+
+                <div class="bp-panel">
+                    <div class="bp-panel-header">
+                        <h2 class="bp-section-title">更新履歴</h2>
+                    </div>
+                    <div class="divide-y divide-slate-100 px-5">
+                        @forelse ($parkingSpot->updateHistories->take(10) as $history)
+                            <div class="py-4 text-sm">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <span class="font-semibold text-slate-800">
+                                        {{ $history->user?->name ?? '退会済みユーザー' }}
+                                    </span>
+                                    <time class="text-xs text-slate-500" datetime="{{ $history->created_at?->toIso8601String() }}">
+                                        {{ $history->created_at?->format('Y-m-d H:i') }}
+                                    </time>
+                                </div>
+                                <p class="mt-1 text-slate-600">変更項目: {{ $history->change_summary }}</p>
+                            </div>
+                        @empty
+                            <p class="py-5 text-sm text-slate-500">更新履歴はありません。</p>
+                        @endforelse
+                    </div>
+                </div>
             </div>
 
             <aside class="space-y-6">

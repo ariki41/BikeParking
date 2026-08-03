@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\ParkingSpots;
 use App\Models\City;
 use App\Models\ParkingSpot;
 use App\Models\ParkingSpotRates;
@@ -466,7 +467,7 @@ class ParkingSpotRateDisplayTest extends TestCase
 
     public function test_parking_spot_can_replace_rates_on_update(): void
     {
-        [$parkingSpot] = $this->createParkingSpot();
+        [$parkingSpot, $user] = $this->createParkingSpot();
 
         ParkingSpotRates::create([
             'parking_spot_id' => $parkingSpot->id,
@@ -509,7 +510,7 @@ class ParkingSpotRateDisplayTest extends TestCase
                     'max_rate' => 500,
                 ],
             ],
-        ]);
+        ], $user);
 
         $this->assertDatabaseMissing('parking_spot_rates', [
             'parking_spot_id' => $parkingSpot->id,
@@ -1046,7 +1047,7 @@ class ParkingSpotRateDisplayTest extends TestCase
         [$parkingSpot] = $this->createParkingSpot();
         $parkingSpot->forceFill(['image_path' => 'parking-spots/list.jpg'])->save();
 
-        Livewire::test(\App\Livewire\ParkingSpots::class)
+        Livewire::test(ParkingSpots::class)
             ->set('spots', collect([$parkingSpot->fresh()->load('rates')]))
             ->assertSee('/storage/parking-spots/list.jpg');
     }

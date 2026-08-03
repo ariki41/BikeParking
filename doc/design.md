@@ -32,6 +32,7 @@ flowchart LR
     V --> R[HTTP Routes]
     R --> C[Controller]
     C --> F[Form Request]
+    C --> P[Policy]
     C --> S[Service]
     S --> M[Eloquent Model]
     M --> D[(Database)]
@@ -44,7 +45,8 @@ flowchart LR
 | 層 | 主な責務 | 主なファイル |
 | --- | --- | --- |
 | Route | URL と処理の対応付け、認証 middleware | `routes/web.php`, `routes/auth.php` |
-| Controller | 入力受付、画面遷移、セッション上の確認データ管理 | `app/Http/Controllers/` |
+| Controller | 入力受付、Policy による認可、画面遷移、セッション上の確認データ管理 | `app/Http/Controllers/` |
+| Policy | 駐輪場の共同編集に関する認可 | `app/Policies/ParkingSpotPolicy.php` |
 | Form Request | 駐輪場・料金帯の入力検証、料金帯重複検証 | `app/Http/Requests/ParkingSpotRequest.php` |
 | Service | 駐輪場・料金の保存更新、住所のジオコード、画像変換 | `app/Services/ParkingSpotService.php` |
 | Model | DB とリレーション、表示用アクセサ | `app/Models/` |
@@ -78,7 +80,9 @@ flowchart LR
 
 ### 更新
 
-登録と同じ確認フローを通り、確定時に `updateParkingSpot()` が本体を更新する。料金帯は既存行を削除して入力内容を再作成し、画像が差し替わった場合は旧画像を削除する。
+登録と同じ確認フローを通り、確定時に `updateParkingSpot()` が本体を更新する。料金帯は既存行を削除して入力内容を再作成し、画像が差し替わった場合は旧画像を削除する。更新時は変更された本体項目と料金帯の before / after、更新ユーザー、更新日時を `parking_spot_update_histories` に記録する。
+
+編集画面の表示、編集内容の確認、更新確定では、いずれも `ParkingSpotPolicy::update()` を通して認可する。共同編集を前提とするため、駐輪場の登録者かどうかにかかわらずログイン済みユーザーは更新でき、未ログインユーザーは認証 middleware によりログイン画面へ遷移する。
 
 ### 画像
 
@@ -89,6 +93,8 @@ flowchart LR
 ```mermaid
 erDiagram
     users ||--o{ parking_spots : owns
+    users ||--o{ parking_spot_update_histories : updates
+    parking_spots ||--o{ parking_spot_update_histories : records
     parking_spots ||--o{ parking_spot_rates : has
     users ||--o{ favorites : creates
     parking_spots ||--o{ favorites : receives
@@ -103,6 +109,7 @@ erDiagram
 | `users` | 利用者 | 認証情報、氏名、都道府県 |
 | `parking_spots` | 駐輪場本体 | 所有者、名称、住所、緯度経度、営業時間、収容台数、画像 |
 | `parking_spot_rates` | 料金帯 | 曜日区分、時間帯、単位、料金、無料時間、最大料金 |
+| `parking_spot_update_histories` | 更新履歴 | 対象駐輪場、更新ユーザー、変更内容（JSON）、更新日時 |
 | `favorites` | お気に入り関連 | 利用者、駐輪場 |
 | `reviews` | レビュー関連 | 利用者、駐輪場、評価、コメント |
 | `prefectures` / `cities` / `postalcodes` | 住所マスタ | 郵便番号と住所の対応 |
@@ -127,7 +134,7 @@ erDiagram
 ## 8. 現状の制約・未実装領域
 
 - `favorites` と `reviews` のテーブル・モデルは存在するが、現行の Web ルート、Controller、画面処理は確認できない。
-- 駐輪場の詳細・編集ルートは認証必須だが、所有者本人かどうかを確認する認可処理は現行コード上確認できない。
+- 駐輪場は共同編集方式であり、`ParkingSpotPolicy` がログイン済みユーザー全員の編集を許可する。履歴は駐輪場詳細画面に新しい順で最大10件表示し、全件は `ParkingSpot::updateHistories()` から参照できる。
 - トップ画面は新着 3 件、地図表示の範囲検索は最大 50 件に制限される。
 - 外部ジオコード API の設定（`YOLP_GEOCODE_URL` / `YOLP_CLIENT_ID`）が必要である。
 
@@ -137,6 +144,6 @@ erDiagram
 
 ```bash
 vendor/bin/sail test tests/Feature/ParkingSpotRateDisplayTest.php
+vendor/bin/sail test tests/Feature/ParkingSpotAuthorizationHistoryTest.php
 vendor/bin/sail test
 ```
-
