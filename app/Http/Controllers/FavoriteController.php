@@ -13,7 +13,7 @@ class FavoriteController extends Controller
     {
         $parkingSpots = $request->user()
             ->favoriteParkingSpots()
-            ->with('rates')
+            ->withRateSummary()
             ->withCount(['favorites', 'reviews'])
             ->withAvg('reviews', 'rating')
             ->orderByPivot('created_at', 'desc')
