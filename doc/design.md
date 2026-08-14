@@ -46,8 +46,8 @@ flowchart LR
 | --- | --- | --- |
 | Route | URL と処理の対応付け、認証 middleware | `routes/web.php`, `routes/auth.php` |
 | Controller | 入力受付、Policy による認可、画面遷移、セッション上の確認データ管理 | `app/Http/Controllers/` |
-| Policy | 駐輪場の共同編集に関する認可 | `app/Policies/ParkingSpotPolicy.php` |
-| Form Request | 駐輪場・料金帯の入力検証、料金帯重複検証 | `app/Http/Requests/ParkingSpotRequest.php` |
+| Policy | 駐輪場の共同編集とレビューの本人更新に関する認可 | `app/Policies/` |
+| Form Request | 駐輪場・料金帯・レビューの入力検証、料金帯重複検証 | `app/Http/Requests/` |
 | Service | 駐輪場・料金の保存更新、住所のジオコード、画像変換 | `app/Services/ParkingSpotService.php` |
 | Model | DB とリレーション、表示用アクセサ | `app/Models/` |
 | View / Livewire | 入力フォーム、確認・詳細・一覧、地図連携 | `resources/views/`, `app/Livewire/` |
@@ -60,6 +60,7 @@ flowchart LR
 | 検索 | GET | `/search` | 不要 |
 | ダッシュボード | GET | `/dashboard` | 必須 |
 | 駐輪場詳細 | GET | `/parking-spot/detail/{id}` | 必須 |
+| レビュー投稿・更新 | POST | `/parking-spot/{parkingSpot}/reviews` | 必須 |
 | 駐輪場登録画面 | GET | `/parking-spot/create` | 必須 |
 | 駐輪場確認 | POST | `/parking-spot/confirm` | 必須 |
 | 駐輪場登録確定 | POST | `/parking-spot/store` | 必須 |
@@ -111,7 +112,7 @@ erDiagram
 | `parking_spot_rates` | 料金帯 | 曜日区分、時間帯、単位、料金、無料時間、最大料金 |
 | `parking_spot_update_histories` | 更新履歴 | 対象駐輪場、更新ユーザー、変更内容（JSON）、更新日時 |
 | `favorites` | お気に入り関連 | 利用者、駐輪場 |
-| `reviews` | レビュー関連 | 利用者、駐輪場、評価、コメント |
+| `reviews` | レビュー関連 | 利用者、駐輪場、1〜5の評価、コメント（利用者と駐輪場の組み合わせは一意） |
 | `prefectures` / `cities` / `postalcodes` | 住所マスタ | 郵便番号と住所の対応 |
 
 ### 料金の表示ルール
@@ -132,10 +133,13 @@ erDiagram
 - 最大料金なしを選択した場合、最大料金は `NULL` として保存する。
 - 無料時間なしの場合、無料時間は 0 分として保存する。
 - 同じ曜日区分の重複する時間帯は登録不可。日付またぎの時間帯も分割して重複判定する。
+- レビューの評価は 1〜5、コメントは必須かつ1,000文字以内とする。
+- レビューは1ユーザーにつき1駐輪場1件とし、再投稿時は本人の既存レビューを更新する。
 
 ## 8. 現状の制約・未実装領域
 
-- `favorites` と `reviews` のテーブル・モデルは存在するが、現行の Web ルート、Controller、画面処理は確認できない。
+- `favorites` のテーブル・モデルは存在するが、現行の Web ルート、Controller、画面処理は確認できない。
+- レビューは駐輪場詳細から投稿・更新でき、平均評価と件数をトップ・検索一覧・詳細に表示する。投稿にはログインが必要で、既存レビューを更新できるのは投稿者本人のみとする。
 - 駐輪場は共同編集方式であり、`ParkingSpotPolicy` がログイン済みユーザー全員の編集を許可する。履歴は駐輪場詳細画面に新しい順で最大10件表示し、全件は `ParkingSpot::updateHistories()` から参照できる。
 - トップ画面は新着 3 件、地図表示の範囲検索は最大 50 件に制限される。
 - 外部ジオコード API の設定（`YOLP_GEOCODE_URL` / `YOLP_CLIENT_ID`）が必要である。
@@ -147,5 +151,6 @@ erDiagram
 ```bash
 vendor/bin/sail test tests/Feature/ParkingSpotRateDisplayTest.php
 vendor/bin/sail test tests/Feature/ParkingSpotAuthorizationHistoryTest.php
+vendor/bin/sail test tests/Feature/ParkingSpotReviewTest.php
 vendor/bin/sail test
 ```

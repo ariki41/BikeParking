@@ -31,6 +31,7 @@
             <div>
                 <h1 class="text-3xl font-bold text-slate-900">{{ $parkingSpot->name }}</h1>
                 <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{{ $parkingSpot->address }}</p>
+                <x-rating-summary class="mt-2" :parking-spot="$parkingSpot" />
             </div>
             <a href="{{ route('parking_spot.edit', ['id' => $parkingSpot->id]) }}">
                 <x-primary-button tag="a">編集</x-primary-button>
@@ -76,6 +77,70 @@
                                 </table>
                             </div>
                         @endif
+                    </div>
+                </div>
+
+                <div class="bp-panel" id="reviews">
+                    <div class="bp-panel-header flex flex-wrap items-center justify-between gap-3">
+                        <h2 class="bp-section-title">評価・レビュー</h2>
+                        <x-rating-summary :parking-spot="$parkingSpot" />
+                    </div>
+
+                    <div class="border-b border-slate-100 p-5">
+                        @if (session('review_success'))
+                            <p class="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+                                {{ session('review_success') }}
+                            </p>
+                        @endif
+
+                        <h3 class="text-base font-semibold text-slate-900">
+                            {{ $userReview ? 'あなたの評価を更新' : 'この駐輪場を評価' }}
+                        </h3>
+                        <form class="mt-4 space-y-4" method="POST" action="{{ route('reviews.store', $parkingSpot) }}">
+                            @csrf
+
+                            <div>
+                                <x-input-label for="rating" value="評価" />
+                                <select class="bp-select" id="rating" name="rating" required>
+                                    <option value="">選択してください</option>
+                                    @for ($rating = 5; $rating >= 1; $rating--)
+                                        <option value="{{ $rating }}" @selected((int) old('rating', $userReview?->rating) === $rating)>
+                                            {{ $rating }} - {{ str_repeat('★', $rating) }}
+                                        </option>
+                                    @endfor
+                                </select>
+                                <x-input-error class="mt-2" :messages="$errors->get('rating')" />
+                            </div>
+
+                            <div>
+                                <x-input-label for="comment" value="コメント" />
+                                <textarea class="bp-input min-h-32" id="comment" name="comment" maxlength="1000" required>{{ old('comment', $userReview?->comment) }}</textarea>
+                                <x-input-error class="mt-2" :messages="$errors->get('comment')" />
+                            </div>
+
+                            <x-primary-button>{{ $userReview ? '評価を更新' : '評価を投稿' }}</x-primary-button>
+                        </form>
+                    </div>
+
+                    <div class="divide-y divide-slate-100 px-5">
+                        @forelse ($parkingSpot->reviews as $review)
+                            <article class="py-5">
+                                <div class="flex flex-wrap items-start justify-between gap-2">
+                                    <div>
+                                        <p class="font-semibold text-slate-800">{{ $review->user?->name ?? '退会済みユーザー' }}</p>
+                                        <p class="mt-1 text-amber-500" aria-label="5段階中{{ $review->rating }}の評価">
+                                            <span aria-hidden="true">{{ str_repeat('★', $review->rating) }}{{ str_repeat('☆', 5 - $review->rating) }}</span>
+                                        </p>
+                                    </div>
+                                    <time class="text-xs text-slate-500" datetime="{{ $review->updated_at?->toIso8601String() }}">
+                                        {{ $review->updated_at?->format('Y-m-d H:i') }}
+                                    </time>
+                                </div>
+                                <p class="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $review->comment }}</p>
+                            </article>
+                        @empty
+                            <p class="py-5 text-sm text-slate-500">まだ評価はありません。</p>
+                        @endforelse
                     </div>
                 </div>
 

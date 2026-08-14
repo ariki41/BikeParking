@@ -38,6 +38,7 @@
                             data-latitude="{{ $spot->latitude }}">
                             {{ $spot->name }}</h2>
                         <p class="mt-1 text-sm leading-5 text-slate-600">{{ $spot->address }}</p>
+                        <x-rating-summary class="mt-2" :parking-spot="$spot" />
 
                         <div class="mt-3 flex flex-wrap items-center gap-2">
                             @if ($rate)

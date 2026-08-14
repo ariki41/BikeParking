@@ -18,15 +18,19 @@ class ParkingSpotController extends Controller
 
     public function show($id)
     {
-        $parkingSpot = ParkingSpot::with(['rates', 'updateHistories.user'])->findOrFail($id);
+        $parkingSpot = ParkingSpot::with(['rates', 'reviews.user', 'updateHistories.user'])
+            ->withCount('reviews')
+            ->withAvg('reviews', 'rating')
+            ->findOrFail($id);
 
         $postalcode = Postalcode::getPostalcode($parkingSpot->postalcode)->postalcode;
+        $userReview = $parkingSpot->reviews->firstWhere('user_id', auth()->id());
 
         $parkingSpot['postalcode'] = $postalcode;
         $parkingSpot['opening_time'] = date('H:i', strtotime($parkingSpot['opening_time']));
         $parkingSpot['closing_time'] = $parkingSpot['closing_time'] === '00:00:00' ? '24:00' : date('H:i', strtotime($parkingSpot['closing_time']));
 
-        return view('parking_spot.show', compact('parkingSpot'));
+        return view('parking_spot.show', compact('parkingSpot', 'userReview'));
 
     }
 

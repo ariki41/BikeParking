@@ -51,4 +51,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(ParkingSpotUpdateHistory::class);
     }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
 }
