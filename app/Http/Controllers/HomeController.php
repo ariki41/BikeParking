@@ -9,7 +9,9 @@ class HomeController extends Controller
 {
     public function index(Request $request)
     {
-        $query = ParkingSpot::withCount(['favorites', 'reviews'])
+        $query = ParkingSpot::query()
+            ->withRateSummary()
+            ->withCount(['favorites', 'reviews'])
             ->withAvg('reviews', 'rating')
             ->latest()
             ->take(3);

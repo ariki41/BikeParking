@@ -21,7 +21,7 @@
 
             <article class="bp-card-link overflow-hidden">
                 <a href="{{ route('parking_spot.show', $parkingSpot) }}">
-                    <img class="h-40 w-full object-cover" src="{{ $parkingSpot->image_url }}" alt="駐車場画像">
+                    <img class="h-40 w-full object-cover" src="{{ $parkingSpot->image_url }}" alt="駐輪場画像">
                 </a>
                 <div class="space-y-3 p-4">
                     <div>
@@ -31,6 +31,7 @@
                         <p class="mt-1 text-sm leading-6 text-slate-600">{{ $parkingSpot->address }}</p>
                         <x-rating-summary class="mt-2" :parking-spot="$parkingSpot" />
                     </div>
+                    <x-rate-summary :parking-spot="$parkingSpot" />
                     <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
                         <span class="text-xs text-slate-500">{{ $parkingSpot->capacity_label }}</span>
                         <x-favorite-button :parking-spot="$parkingSpot" :favorited="true" compact />

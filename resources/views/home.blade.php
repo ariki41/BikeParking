@@ -27,7 +27,7 @@
         <section>
             <div class="mb-5 flex items-end justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-900">新着の駐車場</h2>
+                    <h2 class="text-2xl font-bold text-slate-900">新着の駐輪場</h2>
                     <p class="bp-muted mt-1">最近登録された駐輪場を確認できます。</p>
                 </div>
             </div>
@@ -35,7 +35,7 @@
                 @foreach ($parkingSpots as $parkingSpot)
                     <article class="bp-card-link overflow-hidden">
                         <a href="{{ route('parking_spot.show', ['id' => $parkingSpot->id]) }}">
-                            <img class="h-40 w-full object-cover" src="{{ $parkingSpot->image_url }}" alt="駐車場画像">
+                            <img class="h-40 w-full object-cover" src="{{ $parkingSpot->image_url }}" alt="駐輪場画像">
                         </a>
                         <div class="space-y-3 p-4">
                             <div>
@@ -46,6 +46,7 @@
                                 <p class="mt-1 text-sm leading-6 text-slate-600">{{ $parkingSpot->address }}</p>
                                 <x-rating-summary class="mt-2" :parking-spot="$parkingSpot" />
                             </div>
+                            <x-rate-summary :parking-spot="$parkingSpot" />
                             <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
                                 <div>
                                     <a class="text-sm font-semibold text-emerald-700 hover:text-emerald-800"

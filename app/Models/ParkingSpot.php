@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 
 class ParkingSpot extends Model
@@ -35,6 +37,18 @@ class ParkingSpot extends Model
     public function rates(): HasMany
     {
         return $this->hasMany(ParkingSpotRates::class);
+    }
+
+    public function representativeRate(): HasOne
+    {
+        return $this->hasOne(ParkingSpotRates::class)->oldestOfMany();
+    }
+
+    public function scopeWithRateSummary(Builder $query): Builder
+    {
+        return $query
+            ->with('representativeRate')
+            ->withCount('rates');
     }
 
     public function updateHistories(): HasMany
