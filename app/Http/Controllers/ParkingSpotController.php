@@ -7,6 +7,7 @@ use App\Models\ParkingSpot;
 use App\Models\Postalcode;
 use App\Services\ParkingSpotService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class ParkingSpotController extends Controller
 {
@@ -17,15 +18,19 @@ class ParkingSpotController extends Controller
 
     public function show($id)
     {
-        $parkingSpot = ParkingSpot::with('rates')->findOrFail($id);
+        $parkingSpot = ParkingSpot::with(['rates', 'reviews.user', 'updateHistories.user'])
+            ->withCount('reviews')
+            ->withAvg('reviews', 'rating')
+            ->findOrFail($id);
 
         $postalcode = Postalcode::getPostalcode($parkingSpot->postalcode)->postalcode;
+        $userReview = $parkingSpot->reviews->firstWhere('user_id', auth()->id());
 
         $parkingSpot['postalcode'] = $postalcode;
         $parkingSpot['opening_time'] = date('H:i', strtotime($parkingSpot['opening_time']));
         $parkingSpot['closing_time'] = $parkingSpot['closing_time'] === '00:00:00' ? '24:00' : date('H:i', strtotime($parkingSpot['closing_time']));
 
-        return view('parking_spot.show', compact('parkingSpot'));
+        return view('parking_spot.show', compact('parkingSpot', 'userReview'));
 
     }
 
@@ -44,6 +49,11 @@ class ParkingSpotController extends Controller
         $validatedData = $request->validated();
         unset($validatedData['image']);
         $validatedData['id'] = $request->input('id');
+
+        if ($validatedData['id']) {
+            Gate::authorize('update', ParkingSpot::findOrFail($validatedData['id']));
+        }
+
         $validatedData['image_path'] = $this->service->prepareImagePathForConfirm($request, $validatedData['image_path'] ?? null);
         $validatedData['address'] = mb_convert_kana($validatedData['address1'].$validatedData['address2'], 'rn');
         $validatedData['postalcode'] = mb_convert_kana(str_replace('-', '', $validatedData['postalcode']), 'rn');
@@ -87,6 +97,8 @@ class ParkingSpotController extends Controller
     public function edit($id)
     {
         $parkingSpot = ParkingSpot::with('rates')->findOrFail($id);
+        Gate::authorize('update', $parkingSpot);
+
         $capacity = config('categories.parking_spot_capacity');
         $rateDayTypes = config('categories.parking_spot_rate_day_types');
         $rateUnitMinutes = config('categories.parking_spot_rate_unit_minutes');
@@ -120,13 +132,19 @@ class ParkingSpotController extends Controller
     public function update(Request $request)
     {
         $input = $request->session()->get('edit_parking_spot_form');
+
+        abort_unless(is_array($input) && isset($input['id']), 419);
+
+        $parkingSpot = ParkingSpot::findOrFail($input['id']);
+        Gate::authorize('update', $parkingSpot);
+
         $request->session()->forget('edit_parking_spot_form');
 
         if ($request->input('back') === 'back') {
             return redirect()->route('parking_spot.edit', ['id' => $input['id']])->withInput($input);
         }
 
-        $this->service->updateParkingSpot($input);
+        $this->service->updateParkingSpot($input, $request->user());
 
         $request->session()->regenerateToken();
 

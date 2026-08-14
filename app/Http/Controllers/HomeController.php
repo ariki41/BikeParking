@@ -8,7 +8,11 @@ class HomeController extends Controller
 {
     public function index()
     {
-        $parkingSpots = ParkingSpot::latest()->take(3)->get();
+        $parkingSpots = ParkingSpot::withCount('reviews')
+            ->withAvg('reviews', 'rating')
+            ->latest()
+            ->take(3)
+            ->get();
 
         return view('home', compact('parkingSpots'));
     }

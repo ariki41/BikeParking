@@ -33,6 +33,7 @@
                             <div>
                                 <h3 class="text-lg font-semibold text-slate-900">{{ $parkingSpot->name }}</h3>
                                 <p class="mt-1 text-sm leading-6 text-slate-600">{{ $parkingSpot->address }}</p>
+                                <x-rating-summary class="mt-2" :parking-spot="$parkingSpot" />
                             </div>
                             <div class="flex items-center justify-between border-t border-slate-100 pt-3">
                                 <span class="text-sm font-semibold text-emerald-700">詳細を見る</span>

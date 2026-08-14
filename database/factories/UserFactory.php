@@ -2,12 +2,14 @@
 
 namespace Database\Factories;
 
+use App\Models\Prefecture;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends Factory<User>
  */
 class UserFactory extends Factory
 {
@@ -27,7 +29,7 @@ class UserFactory extends Factory
             'user_id' => fake()->unique()->userName(5),
             'name' => fake()->name(),
             'password' => static::$password ??= Hash::make('password'),
-            'prefecture_id' => fake()->numberBetween(1, 48),
+            'prefecture_id' => Prefecture::factory(),
             'remember_token' => Str::random(10),
         ];
     }

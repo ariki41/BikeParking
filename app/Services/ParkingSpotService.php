@@ -4,17 +4,19 @@ namespace App\Services;
 
 use App\Models\ParkingSpot;
 use App\Models\ParkingSpotRates;
+use App\Models\ParkingSpotUpdateHistory;
 use App\Models\Postalcode;
+use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Intervention\Image\Drivers\Imagick\Driver as ImagickDriver;
 use Intervention\Image\Encoders\WebpEncoder;
 use Intervention\Image\ImageManager;
-use Illuminate\Http\Request;
-use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 
 class ParkingSpotService
 {
@@ -34,8 +36,8 @@ class ParkingSpotService
         $parkingSpot->address = $input['address'];
         $parkingSpot->longitude = $input['longitude'];
         $parkingSpot->latitude = $input['latitude'];
-        $parkingSpot->opening_time = $input['opening_time'];
-        $parkingSpot->closing_time = $input['closing_time'];
+        $parkingSpot->opening_time = $this->normalizeDatabaseTime($input['opening_time']);
+        $parkingSpot->closing_time = $this->normalizeDatabaseTime($input['closing_time']);
         $parkingSpot->capacity = $input['capacity'];
 
         $parkingSpot->save();
@@ -46,11 +48,18 @@ class ParkingSpotService
         $this->saveParkingSpotRates($parkingSpot, $input['rates']);
     }
 
-    public function updateParkingSpot($input)
+    public function updateParkingSpot($input, ?User $updatedBy = null)
     {
+        $updatedBy ??= auth()->user();
+
+        if (! $updatedBy instanceof User) {
+            throw new \LogicException('駐輪場の更新履歴には更新ユーザーが必要です。');
+        }
+
         $id = $input['id'];
-        $parkingSpot = ParkingSpot::findOrFail($id);
+        $parkingSpot = ParkingSpot::with('rates')->findOrFail($id);
         $originalImagePath = $parkingSpot->image_path;
+        $originalRates = $this->normalizeStoredRates($parkingSpot);
 
         $postalcode = Postalcode::getPostalcodeId($input['postalcode'])->first()->id ?? null;
         if (! $postalcode) {
@@ -62,10 +71,20 @@ class ParkingSpotService
         $parkingSpot->address = $input['address'];
         $parkingSpot->longitude = $input['longitude'];
         $parkingSpot->latitude = $input['latitude'];
-        $parkingSpot->opening_time = $input['opening_time'];
-        $parkingSpot->closing_time = $input['closing_time'];
+        $parkingSpot->opening_time = $this->normalizeDatabaseTime($input['opening_time']);
+        $parkingSpot->closing_time = $this->normalizeDatabaseTime($input['closing_time']);
         $parkingSpot->capacity = $input['capacity'];
         $parkingSpot->image_path = $this->persistConfirmedImage($parkingSpot, $input['image_path'] ?? null);
+
+        $changes = collect($parkingSpot->getDirty())
+            ->except('updated_at')
+            ->mapWithKeys(fn ($after, string $field) => [
+                $field => [
+                    'before' => $parkingSpot->getOriginal($field),
+                    'after' => $after,
+                ],
+            ])
+            ->all();
 
         $parkingSpot->save();
 
@@ -76,7 +95,62 @@ class ParkingSpotService
         $parkingSpot->rates()->delete();
         $this->saveParkingSpotRates($parkingSpot, $input['rates']);
 
+        $updatedRates = $this->normalizeInputRates($input['rates']);
+        if ($originalRates !== $updatedRates) {
+            $changes['rates'] = [
+                'before' => $originalRates,
+                'after' => $updatedRates,
+            ];
+        }
+
+        ParkingSpotUpdateHistory::create([
+            'parking_spot_id' => $parkingSpot->id,
+            'user_id' => $updatedBy->id,
+            'changes' => $changes,
+        ]);
+
         session()->forget('parking_spot_form');
+
+        return $parkingSpot;
+    }
+
+    private function normalizeStoredRates(ParkingSpot $parkingSpot): array
+    {
+        return $parkingSpot->rates
+            ->map(fn (ParkingSpotRates $rate) => [
+                'day_type' => $rate->day_type,
+                'start_time' => substr((string) $rate->start_time, 0, 5),
+                'end_time' => substr((string) $rate->end_time, 0, 5),
+                'unit_minutes' => (int) $rate->unit_minutes,
+                'rate' => (int) $rate->rate,
+                'free_minutes' => (int) $rate->free_minutes,
+                'max_rate' => $rate->max_rate === null ? null : (int) $rate->max_rate,
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function normalizeInputRates(array $rates): array
+    {
+        return collect($rates)
+            ->map(fn (array $rate) => [
+                'day_type' => $rate['day_type'],
+                'start_time' => substr($rate['start_time'], 0, 5),
+                'end_time' => substr($rate['end_time'], 0, 5),
+                'unit_minutes' => (int) $rate['unit_minutes'],
+                'rate' => (int) $rate['rate'],
+                'free_minutes' => (int) ($rate['free_minutes'] ?? 0),
+                'max_rate' => ($rate['no_max_rate'] ?? false)
+                    ? null
+                    : (isset($rate['max_rate']) ? (int) $rate['max_rate'] : null),
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function normalizeDatabaseTime(string $time): string
+    {
+        return strlen($time) === 5 ? $time.':00' : $time;
     }
 
     private function saveParkingSpotRates(ParkingSpot $parkingSpot, array $rates): void
@@ -197,6 +271,7 @@ class ParkingSpotService
 
             if ($quality > 55) {
                 $quality -= 10;
+
                 continue;
             }
 
