@@ -16,11 +16,14 @@ class ParkingSpotController extends Controller
         $this->service = new ParkingSpotService;
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $parkingSpot = ParkingSpot::with(['rates', 'reviews.user', 'updateHistories.user'])
-            ->withCount('reviews')
+            ->withCount(['favorites', 'reviews'])
             ->withAvg('reviews', 'rating')
+            ->withExists([
+                'favorites as is_favorited' => fn ($favoriteQuery) => $favoriteQuery->where('user_id', $request->user()->id),
+            ])
             ->findOrFail($id);
 
         $postalcode = Postalcode::getPostalcode($parkingSpot->postalcode)->postalcode;

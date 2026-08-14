@@ -29,14 +29,18 @@
             @php
                 $rate = $spot->rates->first();
             @endphp
-            <a class="bp-card-link" href="{{ route('parking_spot.show', $spot->id) }}">
+            <article class="bp-card-link overflow-hidden">
                 <div class="flex gap-3 p-3">
-                    <img class="h-24 w-28 shrink-0 rounded-md object-cover" src="{{ $spot->image_url }}" alt="駐車場画像">
+                    <a class="shrink-0" href="{{ route('parking_spot.show', $spot->id) }}">
+                        <img class="h-24 w-28 rounded-md object-cover" src="{{ $spot->image_url }}" alt="駐車場画像">
+                    </a>
 
                     <div class="min-w-0 flex-1">
-                        <h2 class="truncate text-base font-bold text-slate-900" data-longitude="{{ $spot->longitude }}"
+                        <a class="block truncate text-base font-bold text-slate-900 hover:text-emerald-700"
+                            href="{{ route('parking_spot.show', $spot->id) }}" data-longitude="{{ $spot->longitude }}"
                             data-latitude="{{ $spot->latitude }}">
-                            {{ $spot->name }}</h2>
+                            {{ $spot->name }}
+                        </a>
                         <p class="mt-1 text-sm leading-5 text-slate-600">{{ $spot->address }}</p>
                         <x-rating-summary class="mt-2" :parking-spot="$spot" />
 
@@ -49,9 +53,15 @@
                                 <span class="text-sm font-semibold text-slate-500">料金未登録</span>
                             @endif
                         </div>
+
+                        @auth
+                            <div class="mt-3">
+                                <x-favorite-button :parking-spot="$spot" :favorited="$spot->is_favorited" compact />
+                            </div>
+                        @endauth
                     </div>
                 </div>
-            </a>
+            </article>
         @endforeach
     </div>
 </div>

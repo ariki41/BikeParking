@@ -46,4 +46,9 @@ class ParkingSpot extends Model
     {
         return $this->hasMany(Review::class)->latest();
     }
+
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(Favorite::class);
+    }
 }

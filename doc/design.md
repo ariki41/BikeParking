@@ -61,6 +61,9 @@ flowchart LR
 | ダッシュボード | GET | `/dashboard` | 必須 |
 | 駐輪場詳細 | GET | `/parking-spot/detail/{id}` | 必須 |
 | レビュー投稿・更新 | POST | `/parking-spot/{parkingSpot}/reviews` | 必須 |
+| お気に入り一覧 | GET | `/favorites` | 必須 |
+| お気に入り追加 | POST | `/parking-spot/{parkingSpot}/favorite` | 必須 |
+| お気に入り解除 | DELETE | `/parking-spot/{parkingSpot}/favorite` | 必須 |
 | 駐輪場登録画面 | GET | `/parking-spot/create` | 必須 |
 | 駐輪場確認 | POST | `/parking-spot/confirm` | 必須 |
 | 駐輪場登録確定 | POST | `/parking-spot/store` | 必須 |
@@ -111,7 +114,7 @@ erDiagram
 | `parking_spots` | 駐輪場本体 | 所有者、名称、住所、緯度経度、営業時間、収容台数、画像 |
 | `parking_spot_rates` | 料金帯 | 曜日区分、時間帯、単位、料金、無料時間、最大料金 |
 | `parking_spot_update_histories` | 更新履歴 | 対象駐輪場、更新ユーザー、変更内容（JSON）、更新日時 |
-| `favorites` | お気に入り関連 | 利用者、駐輪場 |
+| `favorites` | お気に入り関連 | 利用者、駐輪場（利用者と駐輪場の組み合わせは一意） |
 | `reviews` | レビュー関連 | 利用者、駐輪場、1〜5の評価、コメント（利用者と駐輪場の組み合わせは一意） |
 | `prefectures` / `cities` / `postalcodes` | 住所マスタ | 郵便番号と住所の対応 |
 
@@ -135,10 +138,11 @@ erDiagram
 - 同じ曜日区分の重複する時間帯は登録不可。日付またぎの時間帯も分割して重複判定する。
 - レビューの評価は 1〜5、コメントは必須かつ1,000文字以内とする。
 - レビューは1ユーザーにつき1駐輪場1件とし、再投稿時は本人の既存レビューを更新する。
+- お気に入りは1ユーザーにつき1駐輪場1件とし、追加・解除はログインユーザー自身の関連だけを操作する。
 
-## 8. 現状の制約・未実装領域
+## 8. 現状の制約
 
-- `favorites` のテーブル・モデルは存在するが、現行の Web ルート、Controller、画面処理は確認できない。
+- お気に入りは駐輪場詳細・トップ・地図検索一覧から追加・解除できる。登録件数は各駐輪場とナビゲーションに表示し、利用者ごとの一覧画面を提供する。
 - レビューは駐輪場詳細から投稿・更新でき、平均評価と件数をトップ・検索一覧・詳細に表示する。投稿にはログインが必要で、既存レビューを更新できるのは投稿者本人のみとする。
 - 駐輪場は共同編集方式であり、`ParkingSpotPolicy` がログイン済みユーザー全員の編集を許可する。履歴は駐輪場詳細画面に新しい順で最大10件表示し、全件は `ParkingSpot::updateHistories()` から参照できる。
 - トップ画面は新着 3 件、地図表示の範囲検索は最大 50 件に制限される。
@@ -152,5 +156,6 @@ erDiagram
 vendor/bin/sail test tests/Feature/ParkingSpotRateDisplayTest.php
 vendor/bin/sail test tests/Feature/ParkingSpotAuthorizationHistoryTest.php
 vendor/bin/sail test tests/Feature/ParkingSpotReviewTest.php
+vendor/bin/sail test tests/Feature/ParkingSpotFavoriteTest.php
 vendor/bin/sail test
 ```

@@ -1,3 +1,7 @@
+@auth
+    @php($favoriteCount = Auth::user()->favorites()->count())
+@endauth
+
 <nav class="sticky top-0 z-40 border-b border-slate-200 bg-white/95 shadow-sm shadow-slate-200/60 backdrop-blur" x-data="{ open: false }">
     <!-- Primary Navigation Menu -->
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -14,6 +18,11 @@
                     <x-nav-link :href="route('parking_spot.create')" :active="request()->routeIs('parking_spot.create')">
                         駐車場追加
                     </x-nav-link>
+                    @auth
+                        <x-nav-link :href="route('favorites.index')" :active="request()->routeIs('favorites.*')">
+                            お気に入り ({{ $favoriteCount }})
+                        </x-nav-link>
+                    @endauth
                 </div>
             </div>
 
@@ -91,6 +100,11 @@
             <x-responsive-nav-link :href="route('parking_spot.create')" :active="request()->routeIs('parking_spot.create')">
                 駐車場追加
             </x-responsive-nav-link>
+            @auth
+                <x-responsive-nav-link :href="route('favorites.index')" :active="request()->routeIs('favorites.*')">
+                    お気に入り ({{ $favoriteCount }})
+                </x-responsive-nav-link>
+            @endauth
         </div>
 
         <!-- Responsive Settings Options -->
