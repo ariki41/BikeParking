@@ -69,6 +69,11 @@
                 <input name="lat" type="hidden" value="{{ $yolpLocation['lat'] }}">
                 <input name="lon" type="hidden" value="{{ $yolpLocation['lon'] }}">
             </form>
+            @if (session('favorite_success'))
+                <p class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
+                    {{ session('favorite_success') }}
+                </p>
+            @endif
             <div class="mt-5 h-[calc(100vh-17rem)] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50" id="parking-spots">
                 @livewire('parking-spots')
             </div>

@@ -20,12 +20,19 @@ class ParkingSpots extends Component
 
     public function updateBounds($bounds)
     {
-        $this->spots = ParkingSpot::with('rates')
-            ->withCount('reviews')
+        $query = ParkingSpot::with('rates')
+            ->withCount(['favorites', 'reviews'])
             ->withAvg('reviews', 'rating')
             ->whereBetween('latitude', [$bounds['south'], $bounds['north']])
             ->whereBetween('longitude', [$bounds['west'], $bounds['east']])
-            ->limit(50)
-            ->get();
+            ->limit(50);
+
+        if ($user = auth()->user()) {
+            $query->withExists([
+                'favorites as is_favorited' => fn ($favoriteQuery) => $favoriteQuery->where('user_id', $user->id),
+            ]);
+        }
+
+        $this->spots = $query->get();
     }
 }

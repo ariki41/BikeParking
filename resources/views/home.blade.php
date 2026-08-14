@@ -1,5 +1,11 @@
 <x-app-layout>
     <div class="bp-shell">
+        @if (session('favorite_success'))
+            <p class="mb-5 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+                {{ session('favorite_success') }}
+            </p>
+        @endif
+
         <section class="mb-8 rounded-lg border border-emerald-100 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-8">
             <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center">
                 <div>
@@ -27,20 +33,33 @@
             </div>
             <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 @foreach ($parkingSpots as $parkingSpot)
-                    <a class="bp-card-link" href="{{ route('parking_spot.show', ['id' => $parkingSpot->id]) }}">
-                        <img class="h-40 w-full rounded-t-lg object-cover" src="{{ $parkingSpot->image_url }}" alt="駐車場画像">
+                    <article class="bp-card-link overflow-hidden">
+                        <a href="{{ route('parking_spot.show', ['id' => $parkingSpot->id]) }}">
+                            <img class="h-40 w-full object-cover" src="{{ $parkingSpot->image_url }}" alt="駐車場画像">
+                        </a>
                         <div class="space-y-3 p-4">
                             <div>
-                                <h3 class="text-lg font-semibold text-slate-900">{{ $parkingSpot->name }}</h3>
+                                <a class="text-lg font-semibold text-slate-900 hover:text-emerald-700"
+                                    href="{{ route('parking_spot.show', ['id' => $parkingSpot->id]) }}">
+                                    {{ $parkingSpot->name }}
+                                </a>
                                 <p class="mt-1 text-sm leading-6 text-slate-600">{{ $parkingSpot->address }}</p>
                                 <x-rating-summary class="mt-2" :parking-spot="$parkingSpot" />
                             </div>
-                            <div class="flex items-center justify-between border-t border-slate-100 pt-3">
-                                <span class="text-sm font-semibold text-emerald-700">詳細を見る</span>
-                                <span class="text-xs text-slate-500">{{ $parkingSpot->capacity_label }}</span>
+                            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                                <div>
+                                    <a class="text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+                                        href="{{ route('parking_spot.show', ['id' => $parkingSpot->id]) }}">
+                                        詳細を見る
+                                    </a>
+                                    <span class="ml-2 text-xs text-slate-500">{{ $parkingSpot->capacity_label }}</span>
+                                </div>
+                                @auth
+                                    <x-favorite-button :parking-spot="$parkingSpot" :favorited="$parkingSpot->is_favorited" compact />
+                                @endauth
                             </div>
                         </div>
-                    </a>
+                    </article>
                 @endforeach
             </div>
         </section>

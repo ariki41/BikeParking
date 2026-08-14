@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ParkingSpotController;
 use App\Http\Controllers\ProfileController;
@@ -19,6 +20,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::get('/favorites', [FavoriteController::class, 'index'])->name('favorites.index');
+    Route::post('/parking-spot/{parkingSpot}/favorite', [FavoriteController::class, 'store'])->name('favorites.store');
+    Route::delete('/parking-spot/{parkingSpot}/favorite', [FavoriteController::class, 'destroy'])->name('favorites.destroy');
 
     Route::get('parking-spot/detail/{id}', [ParkingSpotController::class, 'show'])->name('parking_spot.show');
     Route::post('/parking-spot/{parkingSpot}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
