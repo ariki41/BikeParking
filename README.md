@@ -122,6 +122,7 @@ Laravel Sailのショートカットを利用できる環境では、上記の `
 
 - [簡易設計書](doc/design.md)
 - [状態遷移図](doc/state-transition.md)
+- [開発サーバーへのデプロイ](doc/deployment.md)
 
 設計書と状態遷移図はMarkdownとMermaidで管理しているため、GitHub上またはMermaid対応エディタで確認できます。
 
