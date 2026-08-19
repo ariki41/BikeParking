@@ -22,7 +22,29 @@ class ParkingSpot extends Model
 
     public function getImageUrlAttribute(): string
     {
-        return self::imageUrlForPath($this->image_path);
+        return self::imageUrlForPath($this->image_path ?: ($this->image_paths[0] ?? null));
+    }
+
+    public function getImagePathsAttribute(): array
+    {
+        $paths = $this->relationLoaded('images')
+            ? $this->images->pluck('path')->filter()->values()->all()
+            : [];
+
+        if ($paths === [] && filled($this->image_path)) {
+            return [$this->image_path];
+        }
+
+        return $paths;
+    }
+
+    public function getImageUrlsAttribute(): array
+    {
+        $urls = collect($this->image_paths)
+            ->map(fn (string $path) => self::imageUrlForPath($path))
+            ->all();
+
+        return $urls ?: [self::imageUrlForPath(null)];
     }
 
     public static function imageUrlForPath(?string $path): string
@@ -37,6 +59,11 @@ class ParkingSpot extends Model
     public function rates(): HasMany
     {
         return $this->hasMany(ParkingSpotRates::class);
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(ParkingSpotImage::class)->orderBy('position');
     }
 
     public function representativeRate(): HasOne

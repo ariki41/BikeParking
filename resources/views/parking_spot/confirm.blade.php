@@ -41,10 +41,16 @@
 
         <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
             <div class="bp-panel">
-                <div class="overflow-hidden border-b border-slate-100">
-                    <img class="h-72 w-full object-cover"
-                        src="{{ \App\Models\ParkingSpot::imageUrlForPath($validatedData['image_path'] ?? null) }}"
-                        alt="駐輪場画像">
+                <div class="grid gap-1 overflow-hidden border-b border-slate-100 sm:grid-cols-2">
+                    @forelse ($validatedData['image_paths'] ?? [] as $position => $imagePath)
+                        <img class="h-56 w-full object-cover"
+                            src="{{ \App\Models\ParkingSpot::imageUrlForPath($imagePath) }}"
+                            alt="駐輪場画像 {{ $position + 1 }}">
+                    @empty
+                        <img class="h-72 w-full object-cover sm:col-span-2"
+                            src="{{ \App\Models\ParkingSpot::imageUrlForPath(null) }}"
+                            alt="駐輪場画像未設定">
+                    @endforelse
                 </div>
                 <div class="bp-panel-header">
                     <h2 class="bp-section-title">{{ $validatedData['name'] ?? '' }}</h2>
@@ -64,7 +70,9 @@
                     </div>
                     <div class="grid gap-1 py-3 sm:grid-cols-[140px_1fr] sm:gap-4">
                         <dt class="font-semibold text-slate-500">画像</dt>
-                        <dd class="text-slate-900">{{ filled($validatedData['image_path'] ?? null) ? '設定あり' : '未設定' }}</dd>
+                        <dd class="text-slate-900">
+                            {{ count($validatedData['image_paths'] ?? []) > 0 ? count($validatedData['image_paths']) . '枚' : '未設定' }}
+                        </dd>
                     </div>
                     <div class="grid gap-1 py-3 sm:grid-cols-[140px_1fr] sm:gap-4">
                         <dt class="font-semibold text-slate-500">営業時間</dt>

@@ -76,7 +76,7 @@ flowchart LR
 
 ### 登録
 
-1. 登録画面で基本情報、営業時間、料金帯、任意画像を入力する。
+1. 登録画面で基本情報、営業時間、料金帯、任意画像（最大4枚）を入力する。
 2. 郵便番号から住所を補完し、`ParkingSpotRequest` で入力を検証する。
 3. 住所を外部 API でジオコードし、緯度・経度と正規化済み住所を確定する。
 4. 確認用データをセッションへ保存し、確認画面を表示する。
@@ -84,13 +84,13 @@ flowchart LR
 
 ### 更新
 
-登録と同じ確認フローを通り、確定時に `updateParkingSpot()` が本体を更新する。料金帯は既存行を削除して入力内容を再作成し、画像が差し替わった場合は旧画像を削除する。更新時は変更された本体項目と料金帯の before / after、更新ユーザー、更新日時を `parking_spot_update_histories` に記録する。
+登録と同じ確認フローを通り、確定時に `updateParkingSpot()` が本体を更新する。料金帯は既存行を削除して入力内容を再作成し、新しい画像が選択された場合は既存画像を選択された画像一式へ置き換える。更新時は変更された本体項目、画像、料金帯の before / after、更新ユーザー、更新日時を `parking_spot_update_histories` に記録する。
 
 編集画面の表示、編集内容の確認、更新確定では、いずれも `ParkingSpotPolicy::update()` を通して認可する。共同編集を前提とするため、駐輪場の登録者かどうかにかかわらずログイン済みユーザーは更新でき、未ログインユーザーは認証 middleware によりログイン画面へ遷移する。
 
 ### 画像
 
-アップロード画像は確認時に WebP 化して `temp/parking-spots/` に仮保存する。登録・更新確定時に `parking-spots/` へ移動し、画像がない場合は `public/images/noimage.jpg` を表示する。変換後サイズの上限は 5MB。
+1件の駐輪場へ最大4枚を登録できる。アップロード画像は確認時に WebP 化して `temp/parking-spots/` に仮保存し、登録・更新確定時に `parking-spots/` へ移動する。画像の順序は `parking_spot_images.position` で保持し、先頭画像を一覧・ホームの代表画像として従来の `parking_spots.image_path` にも保持する。既存の単一画像データはマイグレーション時に画像テーブルへ移行し、画像未設定の場合は `public/images/noimage.jpg` を表示する。変換後サイズの上限は1枚あたり5MB。
 
 ## 6. データ設計
 
@@ -99,6 +99,7 @@ erDiagram
     users ||--o{ parking_spots : owns
     users ||--o{ parking_spot_update_histories : updates
     parking_spots ||--o{ parking_spot_update_histories : records
+    parking_spots ||--o{ parking_spot_images : has
     parking_spots ||--o{ parking_spot_rates : has
     users ||--o{ favorites : creates
     parking_spots ||--o{ favorites : receives
@@ -111,7 +112,8 @@ erDiagram
 | テーブル | 役割 | 主な項目 |
 | --- | --- | --- |
 | `users` | 利用者 | 認証情報、氏名、都道府県 |
-| `parking_spots` | 駐輪場本体 | 所有者、名称、住所、緯度経度、営業時間、収容台数、画像 |
+| `parking_spots` | 駐輪場本体 | 所有者、名称、住所、緯度経度、営業時間、収容台数、代表画像 |
+| `parking_spot_images` | 駐輪場画像 | 対象駐輪場、保存パス、表示順 |
 | `parking_spot_rates` | 料金帯 | 曜日区分、時間帯、単位、料金、無料時間、最大料金 |
 | `parking_spot_update_histories` | 更新履歴 | 対象駐輪場、更新ユーザー、変更内容（JSON）、更新日時 |
 | `favorites` | お気に入り関連 | 利用者、駐輪場（利用者と駐輪場の組み合わせは一意） |
@@ -134,6 +136,7 @@ erDiagram
 - パスワードはログイン後のプロフィール画面から変更できる。メール確認とメール経由のパスワード再設定は提供しない。
 - 駐輪場名、住所、営業時間、料金は必須。
 - 収容台数は 1 以上。
+- 駐輪場画像は0〜4枚、jpg / jpeg / png / webp、1枚あたりアップロード時20MB以下とする。
 - 料金帯は 1〜4 件。
 - 料金は 0 円以上、最大料金は設定する場合 1 円以上。
 - 最大料金なしを選択した場合、最大料金は `NULL` として保存する。
@@ -153,10 +156,11 @@ erDiagram
 
 ## 9. テスト方針
 
-料金表示・入力・保存・日付またぎ・最大料金なしの主要ケースは `tests/Feature/ParkingSpotRateDisplayTest.php` に集約されている。変更時はまず次の focused test を実行し、必要に応じて全体テストを実行する。
+料金表示・入力・保存・日付またぎ・最大料金なしの主要ケースは `tests/Feature/ParkingSpotRateDisplayTest.php`、複数画像の主要フローは `tests/Feature/ParkingSpotImageTest.php` に集約されている。変更時はまず次の focused test を実行し、必要に応じて全体テストを実行する。
 
 ```bash
 vendor/bin/sail test tests/Feature/ParkingSpotRateDisplayTest.php
+vendor/bin/sail test tests/Feature/ParkingSpotImageTest.php
 vendor/bin/sail test tests/Feature/ParkingSpotAuthorizationHistoryTest.php
 vendor/bin/sail test tests/Feature/ParkingSpotReviewTest.php
 vendor/bin/sail test tests/Feature/ParkingSpotFavoriteTest.php

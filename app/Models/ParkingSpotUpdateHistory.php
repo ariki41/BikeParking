@@ -42,6 +42,7 @@ class ParkingSpotUpdateHistory extends Model
             'closing_time' => '閉場時間',
             'capacity' => '収容台数',
             'image_path' => '画像',
+            'images' => '画像',
             'rates' => '料金',
         ];
 

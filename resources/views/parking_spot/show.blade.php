@@ -52,7 +52,25 @@
         <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
             <div class="space-y-6">
                 <div class="bp-panel">
-                    <img class="h-72 w-full object-cover" src="{{ $parkingSpot->image_url }}" alt="駐車場の写真">
+                    @php($imageUrls = $parkingSpot->image_urls)
+                    <div x-data="{ activeImage: @js($imageUrls[0]) }">
+                        <img class="h-72 w-full object-cover" x-bind:src="activeImage" src="{{ $imageUrls[0] }}"
+                            alt="駐輪場の写真">
+
+                        @if (count($imageUrls) > 1)
+                            <div class="grid grid-cols-2 gap-2 border-t border-slate-100 p-3 sm:grid-cols-4">
+                                @foreach ($imageUrls as $position => $imageUrl)
+                                    <button class="overflow-hidden rounded-md border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                        type="button" x-on:click="activeImage = @js($imageUrl)"
+                                        x-bind:class="activeImage === @js($imageUrl) ? 'border-emerald-500' : 'border-transparent'"
+                                        aria-label="画像{{ $position + 1 }}を表示">
+                                        <img class="h-20 w-full object-cover" src="{{ $imageUrl }}"
+                                            alt="駐輪場の写真 {{ $position + 1 }}">
+                                    </button>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
                 </div>
 
                 <div class="bp-panel">
