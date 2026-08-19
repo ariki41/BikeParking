@@ -87,6 +87,9 @@ jobs:
           DB_DATABASE: testing
           DB_USERNAME: sail
           DB_PASSWORD: password
+          YOLP_URL: https://example.test/local-search
+          YOLP_GEOCODE_URL: https://example.test/geocode
+          YOLP_CLIENT_ID: test-client-id
         run: php artisan test
 
   image:
