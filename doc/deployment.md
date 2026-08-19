@@ -12,6 +12,19 @@
 
 デプロイジョブの最初にSSH、`x86_64`、Docker、Docker Compose、デプロイ先ディレクトリ、および5 GiB以上の空き容量を確認します。サーバーが停止中などで接続できない場合は、その時点で失敗して終了し、サーバー上のファイル・コンテナは変更しません。
 
+## 通常のデプロイ・停止・復旧
+
+サーバーの起動は別途行い、起動後にTailscaleへ参加していることを確認します。`main` へのpushで自動デプロイされます。任意のタイミングで実行する場合は、GitHubの **Actions** から **CI/CD** を選び、`main` を指定して **Run workflow** を実行します。
+
+サーバーが停止中または接続不能な場合、デプロイはSSH接続から10秒以内に中止します。この確認より後のイメージ取得・マイグレーション・コンテナ更新は行いません。停止する場合は、必要に応じてサーバー上でアプリケーションを先に停止します。
+
+```bash
+cd /opt/bike-parking
+docker compose -f compose.deploy.yml stop app
+```
+
+アプリケーション更新後にヘルスチェックが失敗すると、デプロイスクリプトは直前のdigestのアプリケーションコンテナへ自動で戻します。初回デプロイで戻すイメージがない場合は、異常なアプリケーションコンテナを停止して終了します。データベースマイグレーションは前方互換で作成することを前提とします。
+
 ## 開発サーバーの初期設定
 
 対象は `kaede.tail06f222.ts.net` 上のUbuntu x86_64サーバーです。Tailscale、OpenSSH Server、Docker EngineとDocker Compose v2をあらかじめ導入し、`ariki` ユーザーでSSH接続できるようにします。
@@ -73,7 +86,7 @@ TailscaleのTrust credentialはGitHub ActionsをIssuerとし、Subjectを `repo:
 
 デプロイスクリプトは新しいdigestのイメージを取得してからMySQLの起動を待ち、`php artisan migrate --force` を実行して、最後にアプリケーションの更新とヘルスチェックを行います。
 
-以前のdigestへ戻す必要がある場合は、サーバーで次のように実行できます。
+自動復旧後も手動で以前のdigestへ戻す必要がある場合は、サーバーで次のように実行できます。
 
 ```bash
 cd /opt/bike-parking

@@ -244,3 +244,12 @@ jobs:
             -o StrictHostKeyChecking=yes \
             "$DEPLOY_USER@$DEPLOY_HOST" \
             "env IMAGE_NAME='$IMAGE_NAME' IMAGE_DIGEST='$IMAGE_DIGEST' bash '$DEPLOY_PATH/deploy.sh' '$DEPLOY_PATH'"
+
+      - name: Publish deployment details
+        run: |
+          {
+            echo '## Development deployment'
+            echo
+            echo "Commit: \`${GITHUB_SHA}\`"
+            echo "Image: \`${IMAGE_NAME}@${IMAGE_DIGEST}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
