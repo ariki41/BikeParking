@@ -36,6 +36,12 @@ class ParkingSpotRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            $imageCount = count((array) $this->file('images', [])) + ($this->hasFile('image') ? 1 : 0);
+
+            if ($imageCount > 4) {
+                $validator->errors()->add('images', '画像は4枚までアップロードできます。');
+            }
+
             $this->validateRateTimeConflicts($validator);
         });
     }
@@ -62,7 +68,11 @@ class ParkingSpotRequest extends FormRequest
             ],
             'address2' => 'required|string|max:255',
             'capacity' => 'required|integer|min:1',
+            'images' => 'nullable|array|max:4',
+            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:20480',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:20480',
+            'image_paths' => 'nullable|array|max:4',
+            'image_paths.*' => 'string|max:255',
             'image_path' => 'nullable|string|max:255',
             'opening_time' => 'required|date_format:H:i',
             'closing_time' => 'required|date_format:H:i',
@@ -106,9 +116,18 @@ class ParkingSpotRequest extends FormRequest
             'capacity.integer' => '駐車場台数は整数で入力してください。',
             'capacity.min' => '駐車場台数を設定してください。',
 
+            'images.array' => '画像の選択内容が正しくありません。',
+            'images.max' => '画像は4枚までアップロードできます。',
+            'images.*.image' => '画像ファイルを選択してください。',
+            'images.*.mimes' => '画像は jpg / jpeg / png / webp 形式でアップロードしてください。',
+            'images.*.max' => '画像は1枚あたり20MB以下でアップロードしてください。',
             'image.image' => '画像ファイルを選択してください。',
             'image.mimes' => '画像は jpg / jpeg / png / webp 形式でアップロードしてください。',
             'image.max' => '画像は20MB以下でアップロードしてください。',
+            'image_paths.array' => '画像の保持情報が正しくありません。',
+            'image_paths.max' => '画像は4枚まで保持できます。',
+            'image_paths.*.string' => '画像の保持情報が正しくありません。',
+            'image_paths.*.max' => '画像の保持情報が長すぎます。',
             'image_path.string' => '画像の保持情報が正しくありません。',
             'image_path.max' => '画像の保持情報が長すぎます。',
 

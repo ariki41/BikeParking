@@ -19,7 +19,7 @@ class ParkingSpotController extends Controller
     public function show(Request $request, $id)
     {
         $user = $request->user();
-        $query = ParkingSpot::with(['rates', 'reviews.user', 'updateHistories.user'])
+        $query = ParkingSpot::with(['images', 'rates', 'reviews.user', 'updateHistories.user'])
             ->withCount(['favorites', 'reviews'])
             ->withAvg('reviews', 'rating');
 
@@ -50,21 +50,31 @@ class ParkingSpotController extends Controller
         $rateDayTypes = config('categories.parking_spot_rate_day_types');
         $rateUnitMinutes = config('categories.parking_spot_rate_unit_minutes');
         $ratesInput = old('rates', [$this->defaultRateInput()]);
+        $imagePaths = old('image_paths', array_values(array_filter([old('image_path')])));
 
-        return view('parking_spot.create', compact('capacity', 'rateDayTypes', 'rateUnitMinutes', 'ratesInput'));
+        return view('parking_spot.create', compact('capacity', 'rateDayTypes', 'rateUnitMinutes', 'ratesInput', 'imagePaths'));
     }
 
     public function confirm(ParkingSpotRequest $request)
     {
         $validatedData = $request->validated();
-        unset($validatedData['image']);
+        unset($validatedData['image'], $validatedData['images']);
         $validatedData['id'] = $request->input('id');
+        $parkingSpot = null;
 
         if ($validatedData['id']) {
-            Gate::authorize('update', ParkingSpot::findOrFail($validatedData['id']));
+            $parkingSpot = ParkingSpot::with('images')->findOrFail($validatedData['id']);
+            Gate::authorize('update', $parkingSpot);
         }
 
-        $validatedData['image_path'] = $this->service->prepareImagePathForConfirm($request, $validatedData['image_path'] ?? null);
+        $currentImagePaths = $validatedData['image_paths']
+            ?? array_values(array_filter([$validatedData['image_path'] ?? null]));
+        $validatedData['image_paths'] = $this->service->prepareImagePathsForConfirm(
+            $request,
+            $currentImagePaths,
+            $parkingSpot?->image_paths ?? [],
+        );
+        $validatedData['image_path'] = $validatedData['image_paths'][0] ?? null;
         $validatedData['address'] = mb_convert_kana($validatedData['address1'].$validatedData['address2'], 'rn');
         $validatedData['postalcode'] = mb_convert_kana(str_replace('-', '', $validatedData['postalcode']), 'rn');
 
@@ -106,7 +116,7 @@ class ParkingSpotController extends Controller
 
     public function edit($id)
     {
-        $parkingSpot = ParkingSpot::with('rates')->findOrFail($id);
+        $parkingSpot = ParkingSpot::with(['images', 'rates'])->findOrFail($id);
         Gate::authorize('update', $parkingSpot);
 
         $capacity = config('categories.parking_spot_capacity');
@@ -134,9 +144,12 @@ class ParkingSpotController extends Controller
             'max_rate' => $rate->max_rate,
             'no_max_rate' => $rate->max_rate === null ? '1' : '0',
         ])->values()->all() ?: [$this->defaultRateInput()]);
-        $imagePath = old('image_path', $parkingSpot->image_path);
+        $imagePaths = old('image_paths');
+        if (! is_array($imagePaths)) {
+            $imagePaths = filled(old('image_path')) ? [old('image_path')] : $parkingSpot->image_paths;
+        }
 
-        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'rateDayTypes', 'rateUnitMinutes', 'postalcode', 'address1', 'address2', 'session', 'ratesInput', 'imagePath'));
+        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'rateDayTypes', 'rateUnitMinutes', 'postalcode', 'address1', 'address2', 'session', 'ratesInput', 'imagePaths'));
     }
 
     public function update(Request $request)
