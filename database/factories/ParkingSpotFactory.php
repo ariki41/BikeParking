@@ -2,12 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Models\ParkingSpot;
 use App\Models\PostalcodeLatLon;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ParkingSpot>
+ * @extends Factory<ParkingSpot>
  */
 class ParkingSpotFactory extends Factory
 {

@@ -953,6 +953,16 @@ class ParkingSpotRateDisplayTest extends TestCase
     public function test_parking_spot_rate_validation_allows_empty_max_rate_when_no_max_rate_is_on(): void
     {
         [, $user, $postalcode] = $this->createParkingSpot();
+        Http::fake([
+            '*' => Http::response([
+                'Feature' => [
+                    [
+                        'Geometry' => ['Coordinates' => '139.753000,35.685000'],
+                        'Property' => ['Address' => '東京都千代田区千代田1-2'],
+                    ],
+                ],
+            ]),
+        ]);
 
         $response = $this->actingAs($user)
             ->from(route('parking_spot.create'))
