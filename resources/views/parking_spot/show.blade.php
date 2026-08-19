@@ -39,12 +39,14 @@
                 <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{{ $parkingSpot->address }}</p>
                 <x-rating-summary class="mt-2" :parking-spot="$parkingSpot" />
             </div>
-            <div class="flex flex-wrap items-center gap-3">
-                <x-favorite-button :parking-spot="$parkingSpot" :favorited="$parkingSpot->is_favorited" />
-                <a href="{{ route('parking_spot.edit', ['id' => $parkingSpot->id]) }}">
-                    <x-primary-button tag="a">編集</x-primary-button>
-                </a>
-            </div>
+            @auth
+                <div class="flex flex-wrap items-center gap-3">
+                    <x-favorite-button :parking-spot="$parkingSpot" :favorited="$parkingSpot->is_favorited" />
+                    <a href="{{ route('parking_spot.edit', ['id' => $parkingSpot->id]) }}">
+                        <x-primary-button tag="a">編集</x-primary-button>
+                    </a>
+                </div>
+            @endauth
         </div>
 
         <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
@@ -102,33 +104,41 @@
                             </p>
                         @endif
 
-                        <h3 class="text-base font-semibold text-slate-900">
-                            {{ $userReview ? 'あなたの評価を更新' : 'この駐輪場を評価' }}
-                        </h3>
-                        <form class="mt-4 space-y-4" method="POST" action="{{ route('reviews.store', $parkingSpot) }}">
-                            @csrf
+                        @auth
+                            <h3 class="text-base font-semibold text-slate-900">
+                                {{ $userReview ? 'あなたの評価を更新' : 'この駐輪場を評価' }}
+                            </h3>
+                            <form class="mt-4 space-y-4" method="POST" action="{{ route('reviews.store', $parkingSpot) }}">
+                                @csrf
 
-                            <div>
-                                <x-input-label for="rating" value="評価" />
-                                <select class="bp-select" id="rating" name="rating" required>
-                                    <option value="">選択してください</option>
-                                    @for ($rating = 5; $rating >= 1; $rating--)
-                                        <option value="{{ $rating }}" @selected((int) old('rating', $userReview?->rating) === $rating)>
-                                            {{ $rating }} - {{ str_repeat('★', $rating) }}
-                                        </option>
-                                    @endfor
-                                </select>
-                                <x-input-error class="mt-2" :messages="$errors->get('rating')" />
-                            </div>
+                                <div>
+                                    <x-input-label for="rating" value="評価" />
+                                    <select class="bp-select" id="rating" name="rating" required>
+                                        <option value="">選択してください</option>
+                                        @for ($rating = 5; $rating >= 1; $rating--)
+                                            <option value="{{ $rating }}" @selected((int) old('rating', $userReview?->rating) === $rating)>
+                                                {{ $rating }} - {{ str_repeat('★', $rating) }}
+                                            </option>
+                                        @endfor
+                                    </select>
+                                    <x-input-error class="mt-2" :messages="$errors->get('rating')" />
+                                </div>
 
-                            <div>
-                                <x-input-label for="comment" value="コメント" />
-                                <textarea class="bp-input min-h-32" id="comment" name="comment" maxlength="1000" required>{{ old('comment', $userReview?->comment) }}</textarea>
-                                <x-input-error class="mt-2" :messages="$errors->get('comment')" />
-                            </div>
+                                <div>
+                                    <x-input-label for="comment" value="コメント" />
+                                    <textarea class="bp-input min-h-32" id="comment" name="comment" maxlength="1000" required>{{ old('comment', $userReview?->comment) }}</textarea>
+                                    <x-input-error class="mt-2" :messages="$errors->get('comment')" />
+                                </div>
 
-                            <x-primary-button>{{ $userReview ? '評価を更新' : '評価を投稿' }}</x-primary-button>
-                        </form>
+                                <x-primary-button>{{ $userReview ? '評価を更新' : '評価を投稿' }}</x-primary-button>
+                            </form>
+                        @else
+                            <p class="text-sm text-slate-600">
+                                評価を投稿するには
+                                <a class="font-semibold text-emerald-700 hover:text-emerald-800" href="{{ route('login') }}">ログイン</a>
+                                してください。
+                            </p>
+                        @endauth
                     </div>
 
                     <div class="divide-y divide-slate-100 px-5">
