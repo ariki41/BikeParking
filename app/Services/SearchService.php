@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 class SearchService
@@ -10,7 +11,7 @@ class SearchService
     /**
      * Yahoo!ローカルサーチAPIを利用してキーワードから緯度経度を取得
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  Request  $request
      * @return array
      */
     public function getYolpLocation($request)
