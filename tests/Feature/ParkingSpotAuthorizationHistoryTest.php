@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\ParkingSpots;
 use App\Models\City;
 use App\Models\ParkingSpot;
 use App\Models\ParkingSpotRates;
@@ -11,11 +12,45 @@ use App\Models\Prefecture;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class ParkingSpotAuthorizationHistoryTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_guest_can_view_parking_spot_detail_without_authenticated_actions(): void
+    {
+        [$parkingSpot] = $this->createParkingSpot();
+
+        $this->get(route('parking_spot.show', $parkingSpot->id))
+            ->assertOk()
+            ->assertSee($parkingSpot->name)
+            ->assertSee('評価・レビュー')
+            ->assertSee('評価を投稿するには')
+            ->assertDontSee(route('parking_spot.edit', $parkingSpot->id), false)
+            ->assertDontSee(route('favorites.store', $parkingSpot), false)
+            ->assertDontSee(route('reviews.store', $parkingSpot), false);
+    }
+
+    public function test_public_lists_link_to_parking_spot_detail(): void
+    {
+        [$parkingSpot] = $this->createParkingSpot();
+        $detailUrl = route('parking_spot.show', $parkingSpot->id);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee($detailUrl, false);
+
+        Livewire::test(ParkingSpots::class)
+            ->call('updateBounds', [
+                'south' => 35.0,
+                'north' => 36.0,
+                'west' => 139.0,
+                'east' => 140.0,
+            ])
+            ->assertSee($detailUrl, false);
+    }
 
     public function test_owner_can_edit_parking_spot(): void
     {
