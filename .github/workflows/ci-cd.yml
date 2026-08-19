@@ -50,6 +50,17 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build frontend assets
+        run: |
+          npm ci
+          npm run build
+
       - name: Prepare Laravel test environment
         env:
           APP_ENV: testing
@@ -77,17 +88,6 @@ jobs:
           DB_USERNAME: sail
           DB_PASSWORD: password
         run: php artisan test
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Build frontend assets
-        run: |
-          npm ci
-          npm run build
 
   image:
     name: Build production image
