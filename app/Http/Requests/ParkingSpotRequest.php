@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Domain\ParkingSpotRates\RateConflictDetector;
+use App\Domain\ParkingSpotRates\RateDayType;
+use App\Domain\ParkingSpotRates\RatePeriod;
 use App\Models\Postalcode;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -78,7 +81,7 @@ class ParkingSpotRequest extends FormRequest
             'opening_time' => 'required|date_format:H:i',
             'closing_time' => 'required|date_format:H:i',
             'rates' => 'required|array|min:1|max:4',
-            'rates.*.day_type' => ['required', 'string', Rule::in(array_keys(config('categories.parking_spot_rate_day_types')))],
+            'rates.*.day_type' => ['required', 'string', Rule::in(RateDayType::values())],
             'rates.*.start_time' => 'required|date_format:H:i',
             'rates.*.end_time' => 'required|date_format:H:i',
             'rates.*.unit_minutes' => ['required', 'integer', Rule::in(array_keys(config('categories.parking_spot_rate_unit_minutes')))],
@@ -180,34 +183,30 @@ class ParkingSpotRequest extends FormRequest
             return;
         }
 
-        $validatedRates = collect($rates)
+        $periods = collect($rates)
             ->map(fn ($rate, $index) => ['index' => $index, 'rate' => $rate])
             ->filter(fn (array $item) => $this->isReadyForTimeConflictCheck($item['rate'], $item['index'], $validator))
-            ->values();
+            ->mapWithKeys(fn (array $item) => [
+                $item['index'] => RatePeriod::fromValues(
+                    $item['rate']['day_type'],
+                    $item['rate']['start_time'],
+                    $item['rate']['end_time'],
+                ),
+            ])
+            ->all();
 
-        for ($left = 0; $left < $validatedRates->count(); $left++) {
-            for ($right = $left + 1; $right < $validatedRates->count(); $right++) {
-                $leftRate = $validatedRates[$left];
-                $rightRate = $validatedRates[$right];
+        foreach ((new RateConflictDetector)->detect($periods) as $conflict) {
+            $leftIndex = $conflict['left'];
+            $rightIndex = $conflict['right'];
+            $message = $this->buildTimeConflictMessage(
+                $leftIndex,
+                $rates[$leftIndex]['day_type'],
+                $rightIndex,
+                $rates[$rightIndex]['day_type'],
+            );
 
-                if (! $this->hasDayTypeOverlap($leftRate['rate']['day_type'], $rightRate['rate']['day_type'])) {
-                    continue;
-                }
-
-                if (! $this->hasTimeOverlap($leftRate['rate'], $rightRate['rate'])) {
-                    continue;
-                }
-
-                $message = $this->buildTimeConflictMessage(
-                    $leftRate['index'],
-                    $leftRate['rate']['day_type'],
-                    $rightRate['index'],
-                    $rightRate['rate']['day_type'],
-                );
-
-                $validator->errors()->add("rates.{$leftRate['index']}.time_conflict", $message);
-                $validator->errors()->add("rates.{$rightRate['index']}.time_conflict", $message);
-            }
+            $validator->errors()->add("rates.{$leftIndex}.time_conflict", $message);
+            $validator->errors()->add("rates.{$rightIndex}.time_conflict", $message);
         }
     }
 
@@ -225,65 +224,7 @@ class ParkingSpotRequest extends FormRequest
             return false;
         }
 
-        return in_array($rate['day_type'], array_keys(config('categories.parking_spot_rate_day_types')), true)
-            && preg_match('/^\d{2}:\d{2}$/', $rate['start_time']) === 1
-            && preg_match('/^\d{2}:\d{2}$/', $rate['end_time']) === 1;
-    }
-
-    private function hasTimeOverlap(array $leftRate, array $rightRate): bool
-    {
-        foreach ($this->expandTimeRanges($leftRate['start_time'], $leftRate['end_time']) as [$leftStart, $leftEnd]) {
-            foreach ($this->expandTimeRanges($rightRate['start_time'], $rightRate['end_time']) as [$rightStart, $rightEnd]) {
-                if (max($leftStart, $rightStart) < min($leftEnd, $rightEnd)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    private function hasDayTypeOverlap(string $leftDayType, string $rightDayType): bool
-    {
-        return count(array_intersect(
-            $this->dayTypeScopes($leftDayType),
-            $this->dayTypeScopes($rightDayType),
-        )) > 0;
-    }
-
-    private function dayTypeScopes(string $dayType): array
-    {
-        return match ($dayType) {
-            '平日' => ['weekday'],
-            '土日祝' => ['holiday'],
-            default => ['weekday', 'holiday'],
-        };
-    }
-
-    private function expandTimeRanges(string $startTime, string $endTime): array
-    {
-        $start = $this->timeToMinutes($startTime);
-        $end = $this->timeToMinutes($endTime);
-
-        if ($start === $end) {
-            return [[0, 1440]];
-        }
-
-        if ($start < $end) {
-            return [[$start, $end]];
-        }
-
-        return [
-            [$start, 1440],
-            [0, $end],
-        ];
-    }
-
-    private function timeToMinutes(string $time): int
-    {
-        [$hours, $minutes] = array_map('intval', explode(':', $time));
-
-        return ($hours * 60) + $minutes;
+        return RateDayType::tryFrom($rate['day_type']) !== null;
     }
 
     private function buildTimeConflictMessage(int $leftIndex, string $leftDayType, int $rightIndex, string $rightDayType): string
