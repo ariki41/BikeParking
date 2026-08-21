@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'yolp' => [
+        'search_url' => env('YOLP_URL', 'https://map.yahooapis.jp/search/local/V1/localSearch'),
+        'geocode_url' => env('YOLP_GEOCODE_URL', 'https://map.yahooapis.jp/geocode/V1/geoCoder'),
+        'client_id' => env('YOLP_CLIENT_ID'),
+        'timeout_seconds' => 5,
+        'retry' => [
+            'times' => 3,
+            'sleep_milliseconds' => 100,
+        ],
+    ],
+
 ];

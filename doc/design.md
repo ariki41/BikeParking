@@ -35,11 +35,14 @@ flowchart LR
     C --> P[Policy]
     C --> PS[Persistence Service]
     C --> GS[Geocoding Service]
+    C --> SS[Search Service]
     C --> IS[Image Service]
     PS --> IS
     PS --> M[Eloquent Model]
     M --> D[(Database)]
-    GS --> G[ジオコード API]
+    GS --> YC[YOLP API Client]
+    SS --> YC
+    YC --> G[検索 / ジオコード API]
     IS --> FS[Storage public ディスク]
 ```
 
@@ -52,7 +55,9 @@ flowchart LR
 | Policy | 駐輪場の共同編集とレビューの本人更新に関する認可 | `app/Policies/` |
 | Form Request | 駐輪場・料金帯・レビューの入力検証、料金帯重複検証 | `app/Http/Requests/` |
 | Persistence Service | 駐輪場・料金・更新履歴のトランザクション制御 | `app/Services/ParkingSpotPersistenceService.php` |
-| Geocoding Service | 住所のジオコードとAPIレスポンスの正規化 | `app/Services/ParkingSpotGeocodingService.php` |
+| Geocoding Service | 駐輪場登録用の住所ジオコード | `app/Services/ParkingSpotGeocodingService.php` |
+| Search Service | 検索位置と検索結果なしの場合の表示位置を決定 | `app/Services/SearchService.php` |
+| YOLP API Client | 検索・ジオコードAPIの設定、通信、リトライ、レスポンス正規化 | `app/Services/YolpApiClient.php` |
 | Image Service | 確認用画像変換、確定保存、画像レコード同期、補償削除 | `app/Services/ParkingSpotImageService.php` |
 | Model | DB とリレーション、表示用アクセサ | `app/Models/` |
 | View / Livewire | 入力フォーム、確認・詳細・一覧、地図連携 | `resources/views/`, `app/Livewire/` |
@@ -161,11 +166,11 @@ erDiagram
 - レビューは駐輪場詳細から投稿・更新でき、平均評価と件数をトップ・検索一覧・詳細に表示する。投稿にはログインが必要で、既存レビューを更新できるのは投稿者本人のみとする。
 - 駐輪場は共同編集方式であり、`ParkingSpotPolicy` がログイン済みユーザー全員の編集を許可する。履歴は駐輪場詳細画面に新しい順で最大10件表示し、全件は `ParkingSpot::updateHistories()` から参照できる。
 - トップ画面は新着 3 件、地図表示の範囲検索は最大 50 件に制限される。
-- 外部ジオコード API の設定（`YOLP_GEOCODE_URL` / `YOLP_CLIENT_ID`）が必要である。
+- 外部YOLP APIの設定（`YOLP_URL` / `YOLP_GEOCODE_URL` / `YOLP_CLIENT_ID`）は `config/services.php` を経由し、検索と登録で共通クライアントを利用する。
 
 ## 9. テスト方針
 
-料金表示・入力・保存・日付またぎ・最大料金なしの主要ケースは `tests/Feature/ParkingSpotRateDisplayTest.php`、複数画像の主要フローは `tests/Feature/ParkingSpotImageTest.php`、確認セッションと一時画像清掃は `tests/Feature/ParkingSpotConfirmationSessionTest.php` に集約されている。保存更新・ジオコード・画像サービスの境界は `tests/Feature/ParkingSpotPersistenceServiceTest.php` と `tests/Unit/Services/` で確認する。変更時はまず次の focused test を実行し、必要に応じて全体テストを実行する。
+料金表示・入力・保存・日付またぎ・最大料金なしの主要ケースは `tests/Feature/ParkingSpotRateDisplayTest.php`、複数画像の主要フローは `tests/Feature/ParkingSpotImageTest.php`、確認セッションと一時画像清掃は `tests/Feature/ParkingSpotConfirmationSessionTest.php` に集約されている。保存更新・YOLP API・ジオコード・画像サービスの境界は `tests/Feature/ParkingSpotPersistenceServiceTest.php` と `tests/Unit/Services/` で確認する。変更時はまず次の focused test を実行し、必要に応じて全体テストを実行する。
 
 ```bash
 vendor/bin/sail test tests/Feature/ParkingSpotRateDisplayTest.php

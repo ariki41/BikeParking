@@ -9,6 +9,18 @@ use Tests\TestCase;
 
 class ParkingSpotGeocodingServiceTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config()->set([
+            'services.yolp.geocode_url' => 'https://yolp.test/geocode',
+            'services.yolp.client_id' => 'test-client-id',
+            'services.yolp.retry.sleep_milliseconds' => 0,
+        ]);
+        Http::preventStrayRequests();
+    }
+
     public function test_geocode_returns_normalized_location_from_yolp_response(): void
     {
         Http::fake([
@@ -27,7 +39,9 @@ class ParkingSpotGeocodingServiceTest extends TestCase
             'lat' => '35.685000',
             'address' => '東京都千代田区千代田1-1',
         ], $location);
-        Http::assertSent(fn (Request $request) => $request['query'] === '東京都千代田区千代田1-1'
+        Http::assertSent(fn (Request $request) => str_starts_with($request->url(), 'https://yolp.test/geocode?')
+            && $request['appid'] === 'test-client-id'
+            && $request['query'] === '東京都千代田区千代田1-1'
             && $request['results'] === 1
             && $request['output'] === 'json');
     }
