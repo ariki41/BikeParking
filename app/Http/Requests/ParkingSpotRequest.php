@@ -54,6 +54,7 @@ class ParkingSpotRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'id' => 'nullable|integer|exists:parking_spots,id',
             'name' => 'required|string|max:255',
             'postalcode' => 'required|regex:/^\d{3}-?\d{4}$/',
             'address1' => ['required', 'string', 'max:255',
@@ -97,6 +98,8 @@ class ParkingSpotRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'id.integer' => '編集対象の情報が正しくありません。',
+            'id.exists' => '編集対象の駐輪場が見つかりません。',
             'name.required' => '駐車場名は必須です。',
             'name.string' => '駐車場名は文字列で入力してください。',
             'name.max' => '駐車場名は255文字以内で入力してください。',

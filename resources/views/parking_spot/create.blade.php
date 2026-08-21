@@ -1,5 +1,7 @@
 <x-app-layout>
     <div class="bp-shell">
+        <x-input-error class="mb-5 rounded-md border border-red-200 bg-red-50 px-4 py-3" :messages="$errors->get('confirmation')" />
+
         <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
                 <h1 class="text-3xl font-bold text-slate-900">駐車場の新規登録</h1>

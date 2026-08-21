@@ -1,5 +1,7 @@
 <x-app-layout>
     <div class="bp-shell">
+        <x-input-error class="mb-5 rounded-md border border-red-200 bg-red-50 px-4 py-3" :messages="$errors->get('confirmation')" />
+
         <div class="mb-6">
             <h1 class="text-3xl font-bold text-slate-900">駐車場の編集</h1>
             <p class="bp-muted mt-2">登録済みの内容を更新して、確認画面で差分を確認します。</p>

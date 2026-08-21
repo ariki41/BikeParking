@@ -8,6 +8,7 @@ use App\Models\ParkingSpotRates;
 use App\Models\Postalcode;
 use App\Models\Prefecture;
 use App\Models\User;
+use App\Services\ParkingSpotConfirmationService;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -32,10 +33,10 @@ class ParkingSpotTransactionTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->withSession(['create_parking_spot_form' => $input])
+            ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_CREATE, $input))
             ->post(route('parking_spot.store'))
             ->assertRedirect(route('home'))
-            ->assertSessionMissing('create_parking_spot_form');
+            ->assertSessionMissing(ParkingSpotConfirmationService::SESSION_KEY);
 
         $parkingSpot = ParkingSpot::with(['images', 'rates'])
             ->where('name', 'トランザクション登録成功駐輪場')
@@ -64,7 +65,7 @@ class ParkingSpotTransactionTest extends TestCase
         $exception = $this->captureException(function () use ($user, $input): void {
             $this->withoutExceptionHandling()
                 ->actingAs($user)
-                ->withSession(['create_parking_spot_form' => $input])
+                ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_CREATE, $input))
                 ->post(route('parking_spot.store'));
         });
 
@@ -95,10 +96,10 @@ class ParkingSpotTransactionTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->withSession(['edit_parking_spot_form' => $input])
+            ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_EDIT, $input))
             ->post(route('parking_spot.update'))
             ->assertRedirect(route('home'))
-            ->assertSessionMissing('edit_parking_spot_form');
+            ->assertSessionMissing(ParkingSpotConfirmationService::SESSION_KEY);
 
         $parkingSpot->refresh()->load(['images', 'rates', 'updateHistories']);
         $this->assertSame('トランザクション更新成功駐輪場', $parkingSpot->name);
@@ -130,7 +131,7 @@ class ParkingSpotTransactionTest extends TestCase
         $exception = $this->captureException(function () use ($user, $input): void {
             $this->withoutExceptionHandling()
                 ->actingAs($user)
-                ->withSession(['edit_parking_spot_form' => $input])
+                ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_EDIT, $input))
                 ->post(route('parking_spot.update'));
         });
 
@@ -165,7 +166,7 @@ class ParkingSpotTransactionTest extends TestCase
         $exception = $this->captureException(function () use ($user, $input): void {
             $this->withoutExceptionHandling()
                 ->actingAs($user)
-                ->withSession(['edit_parking_spot_form' => $input])
+                ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_EDIT, $input))
                 ->post(route('parking_spot.update'));
         });
 
@@ -204,7 +205,7 @@ class ParkingSpotTransactionTest extends TestCase
         $exception = $this->captureException(function () use ($user, $input): void {
             $this->withoutExceptionHandling()
                 ->actingAs($user)
-                ->withSession(['edit_parking_spot_form' => $input])
+                ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_EDIT, $input))
                 ->post(route('parking_spot.update'));
         });
 
@@ -240,7 +241,7 @@ class ParkingSpotTransactionTest extends TestCase
         Storage::set('public', $failingDisk);
 
         $this->actingAs($user)
-            ->withSession(['edit_parking_spot_form' => $input])
+            ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_EDIT, $input))
             ->post(route('parking_spot.update'))
             ->assertRedirect(route('home'));
 
@@ -350,5 +351,21 @@ class ParkingSpotTransactionTest extends TestCase
         }
 
         return null;
+    }
+
+    private function confirmationState(string $mode, array $input): array
+    {
+        return [
+            ParkingSpotConfirmationService::SESSION_KEY => [
+                'mode' => $mode,
+                'parking_spot_id' => $input['id'] ?? null,
+                'input' => $input,
+                'temporary_image_paths' => array_values(array_filter(
+                    $input['image_paths'] ?? array_values(array_filter([$input['image_path'] ?? null])),
+                    fn ($path) => is_string($path) && str_starts_with($path, 'temp/parking-spots/'),
+                )),
+                'expires_at' => now()->addDay()->getTimestamp(),
+            ],
+        ];
     }
 }

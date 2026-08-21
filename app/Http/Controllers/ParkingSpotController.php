@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ParkingSpotRequest;
 use App\Models\ParkingSpot;
 use App\Models\Postalcode;
+use App\Services\ParkingSpotConfirmationService;
 use App\Services\ParkingSpotService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -12,7 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 class ParkingSpotController extends Controller
 {
-    public function __construct(private readonly ParkingSpotService $service) {}
+    public function __construct(
+        private readonly ParkingSpotService $service,
+        private readonly ParkingSpotConfirmationService $confirmation,
+    ) {}
 
     public function show(Request $request, $id)
     {
@@ -42,8 +46,10 @@ class ParkingSpotController extends Controller
 
     }
 
-    public function create()
+    public function create(Request $request)
     {
+        $this->confirmation->beginCreate($request);
+
         $capacity = config('categories.parking_spot_capacity');
         $rateDayTypes = config('categories.parking_spot_rate_day_types');
         $rateUnitMinutes = config('categories.parking_spot_rate_unit_minutes');
@@ -57,8 +63,20 @@ class ParkingSpotController extends Controller
     {
         $validatedData = $request->validated();
         unset($validatedData['image'], $validatedData['images']);
-        $validatedData['id'] = $request->input('id');
+        $validatedData['id'] = isset($validatedData['id']) ? (int) $validatedData['id'] : null;
+        $mode = $validatedData['id']
+            ? ParkingSpotConfirmationService::MODE_EDIT
+            : ParkingSpotConfirmationService::MODE_CREATE;
         $parkingSpot = null;
+
+        if ($mode === ParkingSpotConfirmationService::MODE_CREATE && ! $this->confirmation->hasState($request)) {
+            $this->confirmation->beginCreate($request);
+        }
+
+        if (! $this->confirmation->matches($request, $mode, $validatedData['id'])) {
+            return $this->redirectToTrustedForm($request)
+                ->withErrors(['confirmation' => '入力内容を確認できませんでした。入力画面からやり直してください。']);
+        }
 
         if ($validatedData['id']) {
             $parkingSpot = ParkingSpot::with('images')->findOrFail($validatedData['id']);
@@ -71,15 +89,24 @@ class ParkingSpotController extends Controller
             $request,
             $currentImagePaths,
             $parkingSpot?->image_paths ?? [],
+            $this->confirmation->allowedTemporaryImagePaths($request, $mode, $validatedData['id']),
         );
         $validatedData['image_path'] = $validatedData['image_paths'][0] ?? null;
+        $this->confirmation->trackTemporaryImagePaths(
+            $request,
+            $mode,
+            $validatedData['id'],
+            $validatedData['image_paths'],
+        );
         $validatedData['address'] = mb_convert_kana($validatedData['address1'].$validatedData['address2'], 'rn');
         $validatedData['postalcode'] = mb_convert_kana(str_replace('-', '', $validatedData['postalcode']), 'rn');
 
         $yolpLocation = $this->service->getYolpLonLat($validatedData['address']);
 
         if (is_null($yolpLocation)) {
-            return redirect()->route('parking_spot.create')->withErrors(['address2' => '住所が見つかりません。'])->withInput();
+            return $this->redirectToTrustedForm($request)
+                ->withErrors(['address2' => '住所が見つかりません。'])
+                ->withInput($validatedData);
         }
 
         $validatedData['longitude'] = $yolpLocation['lon'];
@@ -88,45 +115,43 @@ class ParkingSpotController extends Controller
 
         $capacity = config('categories.parking_spot_capacity');
 
-        if ($validatedData['id']) {
-            $request->session()->put('edit_parking_spot_form', $validatedData);
-        } else {
-            $request->session()->put('create_parking_spot_form', $validatedData);
-        }
+        $this->confirmation->confirm($request, $mode, $validatedData['id'], $validatedData);
 
         return view('parking_spot.confirm', compact('validatedData', 'capacity'));
     }
 
     public function store(Request $request)
     {
-        $input = $request->session()->get('create_parking_spot_form');
+        $input = $this->confirmation->confirmedInput($request, ParkingSpotConfirmationService::MODE_CREATE);
+
+        if ($input === null) {
+            return redirect()->route('parking_spot.create')
+                ->withErrors(['confirmation' => '確認情報の有効期限が切れました。入力内容を確認して、もう一度お試しください。']);
+        }
 
         if ($request->input('back') === 'back') {
-            $request->session()->forget('create_parking_spot_form');
-
             return redirect()->route('parking_spot.create')->withInput($input);
         }
 
         try {
             $this->service->saveParkingSpot($input);
         } catch (ValidationException $exception) {
-            $request->session()->forget('create_parking_spot_form');
-
             return redirect()->route('parking_spot.create')
                 ->withErrors($exception->errors())
                 ->withInput($input);
         }
 
-        $request->session()->forget('create_parking_spot_form');
+        $this->confirmation->forget($request);
         $request->session()->regenerateToken();
 
         return redirect()->route('home')->with('success', '駐車場を登録しました。');
     }
 
-    public function edit($id)
+    public function edit(Request $request, $id)
     {
         $parkingSpot = ParkingSpot::with(['images', 'rates'])->findOrFail($id);
         Gate::authorize('update', $parkingSpot);
+        $this->confirmation->beginEdit($request, $parkingSpot->id);
 
         $capacity = config('categories.parking_spot_capacity');
         $rateDayTypes = config('categories.parking_spot_rate_day_types');
@@ -141,7 +166,6 @@ class ParkingSpotController extends Controller
         $parkingSpot['opening_time'] = date('H:i', strtotime($parkingSpot['opening_time']));
         $parkingSpot['closing_time'] = date('H:i', strtotime($parkingSpot['closing_time']));
 
-        $session = session('edit_parking_spot_form') ?? [];
         $ratesInput = old('rates', $parkingSpot->rates->map(fn ($rate) => [
             'day_type' => $rate->day_type,
             'start_time' => date('H:i', strtotime($rate->start_time)),
@@ -158,38 +182,46 @@ class ParkingSpotController extends Controller
             $imagePaths = filled(old('image_path')) ? [old('image_path')] : $parkingSpot->image_paths;
         }
 
-        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'rateDayTypes', 'rateUnitMinutes', 'postalcode', 'address1', 'address2', 'session', 'ratesInput', 'imagePaths'));
+        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'rateDayTypes', 'rateUnitMinutes', 'postalcode', 'address1', 'address2', 'ratesInput', 'imagePaths'));
     }
 
     public function update(Request $request)
     {
-        $input = $request->session()->get('edit_parking_spot_form');
+        $input = $this->confirmation->confirmedInput($request, ParkingSpotConfirmationService::MODE_EDIT);
 
-        abort_unless(is_array($input) && isset($input['id']), 419);
+        if ($input === null) {
+            return redirect()->route('home')
+                ->with('error', '確認情報の有効期限が切れました。編集画面からやり直してください。');
+        }
 
         $parkingSpot = ParkingSpot::findOrFail($input['id']);
         Gate::authorize('update', $parkingSpot);
 
         if ($request->input('back') === 'back') {
-            $request->session()->forget('edit_parking_spot_form');
-
             return redirect()->route('parking_spot.edit', ['id' => $input['id']])->withInput($input);
         }
 
         try {
             $this->service->updateParkingSpot($input, $request->user());
         } catch (ValidationException $exception) {
-            $request->session()->forget('edit_parking_spot_form');
-
             return redirect()->route('parking_spot.edit', ['id' => $input['id']])
                 ->withErrors($exception->errors())
                 ->withInput($input);
         }
 
-        $request->session()->forget('edit_parking_spot_form');
+        $this->confirmation->forget($request);
         $request->session()->regenerateToken();
 
         return redirect()->route('home')->with('success', '駐車場情報を更新しました。');
+    }
+
+    private function redirectToTrustedForm(Request $request)
+    {
+        $parkingSpotId = $this->confirmation->trustedParkingSpotId($request);
+
+        return $parkingSpotId
+            ? redirect()->route('parking_spot.edit', ['id' => $parkingSpotId])
+            : redirect()->route('parking_spot.create');
     }
 
     private function defaultRateInput(): array
