@@ -8,7 +8,7 @@ use App\Models\Postalcode;
 use App\Models\Prefecture;
 use App\Models\User;
 use App\Services\ParkingSpotConfirmationService;
-use App\Services\ParkingSpotService;
+use App\Services\ParkingSpotPersistenceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -167,11 +167,11 @@ class ParkingSpotConfirmationSessionTest extends TestCase
         $this->actingAs($user)->get(route('parking_spot.create'))->assertOk();
         $this->post(route('parking_spot.confirm'), $input)->assertOk();
 
-        $service = Mockery::mock(ParkingSpotService::class);
-        $service->shouldReceive('saveParkingSpot')
+        $service = Mockery::mock(ParkingSpotPersistenceService::class);
+        $service->shouldReceive('create')
             ->once()
             ->andThrow(ValidationException::withMessages(['postalcode' => '保存できませんでした。']));
-        $this->app->instance(ParkingSpotService::class, $service);
+        $this->app->instance(ParkingSpotPersistenceService::class, $service);
 
         $this->post(route('parking_spot.store'))
             ->assertRedirect(route('parking_spot.create'))

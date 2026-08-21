@@ -10,7 +10,7 @@ use App\Models\Postalcode;
 use App\Models\Prefecture;
 use App\Models\User;
 use App\Services\ParkingSpotConfirmationService;
-use App\Services\ParkingSpotService;
+use App\Services\ParkingSpotPersistenceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
@@ -176,7 +176,7 @@ class ParkingSpotRateDisplayTest extends TestCase
 
         $this->actingAs($user);
 
-        app(ParkingSpotService::class)->saveParkingSpot([
+        app(ParkingSpotPersistenceService::class)->create([
             'name' => '複数料金テスト駐車場',
             'postalcode' => $postalcode->postalcode,
             'address' => '東京都千代田区千代田1-2',
@@ -205,7 +205,7 @@ class ParkingSpotRateDisplayTest extends TestCase
                     'max_rate' => 1800,
                 ],
             ],
-        ]);
+        ], $user);
 
         $this->assertDatabaseHas('parking_spot_rates', [
             'day_type' => '平日',
@@ -418,7 +418,7 @@ class ParkingSpotRateDisplayTest extends TestCase
 
         $this->actingAs($user);
 
-        app(ParkingSpotService::class)->saveParkingSpot([
+        app(ParkingSpotPersistenceService::class)->create([
             'name' => '最大料金なしテスト駐車場',
             'postalcode' => $postalcode->postalcode,
             'address' => '東京都千代田区千代田1-2',
@@ -439,7 +439,7 @@ class ParkingSpotRateDisplayTest extends TestCase
                     'no_max_rate' => '1',
                 ],
             ],
-        ]);
+        ], $user);
 
         $this->assertDatabaseHas('parking_spot_rates', [
             'day_type' => '全日',
@@ -481,7 +481,7 @@ class ParkingSpotRateDisplayTest extends TestCase
             'max_rate' => 1200,
         ]);
 
-        app(ParkingSpotService::class)->updateParkingSpot([
+        app(ParkingSpotPersistenceService::class)->update([
             'id' => $parkingSpot->id,
             'name' => $parkingSpot->name,
             'postalcode' => '1000001',
