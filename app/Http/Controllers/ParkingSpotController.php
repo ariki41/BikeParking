@@ -8,13 +8,11 @@ use App\Models\Postalcode;
 use App\Services\ParkingSpotService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 
 class ParkingSpotController extends Controller
 {
-    public function __construct()
-    {
-        $this->service = new ParkingSpotService;
-    }
+    public function __construct(private readonly ParkingSpotService $service) {}
 
     public function show(Request $request, $id)
     {
@@ -102,13 +100,24 @@ class ParkingSpotController extends Controller
     public function store(Request $request)
     {
         $input = $request->session()->get('create_parking_spot_form');
-        $request->session()->forget('create_parking_spot_form');
 
         if ($request->input('back') === 'back') {
+            $request->session()->forget('create_parking_spot_form');
+
             return redirect()->route('parking_spot.create')->withInput($input);
         }
 
-        $this->service->saveParkingSpot($input);
+        try {
+            $this->service->saveParkingSpot($input);
+        } catch (ValidationException $exception) {
+            $request->session()->forget('create_parking_spot_form');
+
+            return redirect()->route('parking_spot.create')
+                ->withErrors($exception->errors())
+                ->withInput($input);
+        }
+
+        $request->session()->forget('create_parking_spot_form');
         $request->session()->regenerateToken();
 
         return redirect()->route('home')->with('success', '駐車場を登録しました。');
@@ -161,14 +170,23 @@ class ParkingSpotController extends Controller
         $parkingSpot = ParkingSpot::findOrFail($input['id']);
         Gate::authorize('update', $parkingSpot);
 
-        $request->session()->forget('edit_parking_spot_form');
-
         if ($request->input('back') === 'back') {
+            $request->session()->forget('edit_parking_spot_form');
+
             return redirect()->route('parking_spot.edit', ['id' => $input['id']])->withInput($input);
         }
 
-        $this->service->updateParkingSpot($input, $request->user());
+        try {
+            $this->service->updateParkingSpot($input, $request->user());
+        } catch (ValidationException $exception) {
+            $request->session()->forget('edit_parking_spot_form');
 
+            return redirect()->route('parking_spot.edit', ['id' => $input['id']])
+                ->withErrors($exception->errors())
+                ->withInput($input);
+        }
+
+        $request->session()->forget('edit_parking_spot_form');
         $request->session()->regenerateToken();
 
         return redirect()->route('home')->with('success', '駐車場情報を更新しました。');

@@ -10,7 +10,9 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
@@ -22,35 +24,57 @@ class ParkingSpotService
 {
     private const MAX_FINAL_IMAGE_BYTES = 5 * 1024 * 1024;
 
-    public function saveParkingSpot($input)
+    public function saveParkingSpot(array $input): ParkingSpot
     {
         $postalcodeId = Postalcode::getPostalcodeId($input['postalcode'])->first()->id ?? null;
         if (! $postalcodeId) {
-            return redirect()->route('parking_spot.create')->withErrors(['postalcode' => '郵便番号に対応する住所が見つかりません。']);
+            throw ValidationException::withMessages([
+                'postalcode' => '郵便番号に対応する住所が見つかりません。',
+            ]);
         }
 
-        $parkingSpot = new ParkingSpot;
-        $parkingSpot->user_id = auth()->id();
-        $parkingSpot->name = $input['name'];
-        $parkingSpot->postalcode = $postalcodeId;
-        $parkingSpot->address = $input['address'];
-        $parkingSpot->longitude = $input['longitude'];
-        $parkingSpot->latitude = $input['latitude'];
-        $parkingSpot->opening_time = $this->normalizeDatabaseTime($input['opening_time']);
-        $parkingSpot->closing_time = $this->normalizeDatabaseTime($input['closing_time']);
-        $parkingSpot->capacity = $input['capacity'];
+        $createdImagePaths = [];
+        $temporaryImagePaths = [];
 
-        $parkingSpot->save();
+        try {
+            $parkingSpot = DB::transaction(function () use ($input, $postalcodeId, &$createdImagePaths, &$temporaryImagePaths): ParkingSpot {
+                $parkingSpot = new ParkingSpot;
+                $parkingSpot->user_id = auth()->id();
+                $parkingSpot->name = $input['name'];
+                $parkingSpot->postalcode = $postalcodeId;
+                $parkingSpot->address = $input['address'];
+                $parkingSpot->longitude = $input['longitude'];
+                $parkingSpot->latitude = $input['latitude'];
+                $parkingSpot->opening_time = $this->normalizeDatabaseTime($input['opening_time']);
+                $parkingSpot->closing_time = $this->normalizeDatabaseTime($input['closing_time']);
+                $parkingSpot->capacity = $input['capacity'];
+                $parkingSpot->save();
 
-        $imagePaths = $this->persistConfirmedImages($parkingSpot, $this->confirmedImagePaths($input));
-        $parkingSpot->image_path = $imagePaths[0] ?? null;
-        $parkingSpot->save();
-        $this->replaceParkingSpotImages($parkingSpot, $imagePaths);
+                $imagePaths = $this->persistConfirmedImages(
+                    $parkingSpot,
+                    $this->confirmedImagePaths($input),
+                    $createdImagePaths,
+                    $temporaryImagePaths,
+                );
+                $parkingSpot->image_path = $imagePaths[0] ?? null;
+                $parkingSpot->save();
+                $this->replaceParkingSpotImages($parkingSpot, $imagePaths);
+                $this->saveParkingSpotRates($parkingSpot, $input['rates']);
 
-        $this->saveParkingSpotRates($parkingSpot, $input['rates']);
+                return $parkingSpot;
+            });
+        } catch (\Throwable $exception) {
+            $this->deleteImagePaths($createdImagePaths);
+
+            throw $exception;
+        }
+
+        $this->deleteImagePaths($temporaryImagePaths);
+
+        return $parkingSpot;
     }
 
-    public function updateParkingSpot($input, ?User $updatedBy = null)
+    public function updateParkingSpot(array $input, ?User $updatedBy = null): ParkingSpot
     {
         $updatedBy ??= auth()->user();
 
@@ -58,70 +82,90 @@ class ParkingSpotService
             throw new \LogicException('駐輪場の更新履歴には更新ユーザーが必要です。');
         }
 
-        $id = $input['id'];
-        $parkingSpot = ParkingSpot::with(['images', 'rates'])->findOrFail($id);
-        $originalImagePaths = $parkingSpot->image_paths;
-        $originalRates = $this->normalizeStoredRates($parkingSpot);
-
         $postalcode = Postalcode::getPostalcodeId($input['postalcode'])->first()->id ?? null;
         if (! $postalcode) {
-            return redirect()->route('parking_spot.edit', ['id' => $id])->withErrors(['postalcode' => '郵便番号に対応する住所が見つかりません。']);
+            throw ValidationException::withMessages([
+                'postalcode' => '郵便番号に対応する住所が見つかりません。',
+            ]);
         }
 
-        $parkingSpot->name = $input['name'];
-        $parkingSpot->postalcode = $postalcode;
-        $parkingSpot->address = $input['address'];
-        $parkingSpot->longitude = $input['longitude'];
-        $parkingSpot->latitude = $input['latitude'];
-        $parkingSpot->opening_time = $this->normalizeDatabaseTime($input['opening_time']);
-        $parkingSpot->closing_time = $this->normalizeDatabaseTime($input['closing_time']);
-        $parkingSpot->capacity = $input['capacity'];
-        $imagePaths = $this->persistConfirmedImages($parkingSpot, $this->confirmedImagePaths($input));
-        $parkingSpot->image_path = $imagePaths[0] ?? null;
+        $createdImagePaths = [];
+        $temporaryImagePaths = [];
+        $removedImagePaths = [];
 
-        $changes = collect($parkingSpot->getDirty())
-            ->except(['image_path', 'updated_at'])
-            ->mapWithKeys(fn ($after, string $field) => [
-                $field => [
-                    'before' => $parkingSpot->getOriginal($field),
-                    'after' => $after,
-                ],
-            ])
-            ->all();
+        try {
+            $parkingSpot = DB::transaction(function () use ($input, $postalcode, $updatedBy, &$createdImagePaths, &$temporaryImagePaths, &$removedImagePaths): ParkingSpot {
+                $parkingSpot = ParkingSpot::query()
+                    ->lockForUpdate()
+                    ->findOrFail($input['id']);
+                $parkingSpot->load(['images', 'rates']);
+                $originalImagePaths = $parkingSpot->image_paths;
+                $originalRates = $this->normalizeStoredRates($parkingSpot);
 
-        $parkingSpot->save();
-        $this->replaceParkingSpotImages($parkingSpot, $imagePaths);
+                $parkingSpot->name = $input['name'];
+                $parkingSpot->postalcode = $postalcode;
+                $parkingSpot->address = $input['address'];
+                $parkingSpot->longitude = $input['longitude'];
+                $parkingSpot->latitude = $input['latitude'];
+                $parkingSpot->opening_time = $this->normalizeDatabaseTime($input['opening_time']);
+                $parkingSpot->closing_time = $this->normalizeDatabaseTime($input['closing_time']);
+                $parkingSpot->capacity = $input['capacity'];
+                $imagePaths = $this->persistConfirmedImages(
+                    $parkingSpot,
+                    $this->confirmedImagePaths($input),
+                    $createdImagePaths,
+                    $temporaryImagePaths,
+                );
+                $parkingSpot->image_path = $imagePaths[0] ?? null;
 
-        $removedImagePaths = array_diff($originalImagePaths, $imagePaths);
-        if ($removedImagePaths !== []) {
-            Storage::disk('public')->delete($removedImagePaths);
+                $changes = collect($parkingSpot->getDirty())
+                    ->except(['image_path', 'updated_at'])
+                    ->mapWithKeys(fn ($after, string $field) => [
+                        $field => [
+                            'before' => $parkingSpot->getOriginal($field),
+                            'after' => $after,
+                        ],
+                    ])
+                    ->all();
+
+                $parkingSpot->save();
+                $this->replaceParkingSpotImages($parkingSpot, $imagePaths);
+
+                if ($originalImagePaths !== $imagePaths) {
+                    $changes['images'] = [
+                        'before' => $originalImagePaths,
+                        'after' => $imagePaths,
+                    ];
+                }
+
+                $parkingSpot->rates()->delete();
+                $this->saveParkingSpotRates($parkingSpot, $input['rates']);
+
+                $updatedRates = $this->normalizeInputRates($input['rates']);
+                if ($originalRates !== $updatedRates) {
+                    $changes['rates'] = [
+                        'before' => $originalRates,
+                        'after' => $updatedRates,
+                    ];
+                }
+
+                ParkingSpotUpdateHistory::create([
+                    'parking_spot_id' => $parkingSpot->id,
+                    'user_id' => $updatedBy->id,
+                    'changes' => $changes,
+                ]);
+
+                $removedImagePaths = array_values(array_diff($originalImagePaths, $imagePaths));
+
+                return $parkingSpot;
+            });
+        } catch (\Throwable $exception) {
+            $this->deleteImagePaths($createdImagePaths);
+
+            throw $exception;
         }
 
-        if ($originalImagePaths !== $imagePaths) {
-            $changes['images'] = [
-                'before' => $originalImagePaths,
-                'after' => $imagePaths,
-            ];
-        }
-
-        $parkingSpot->rates()->delete();
-        $this->saveParkingSpotRates($parkingSpot, $input['rates']);
-
-        $updatedRates = $this->normalizeInputRates($input['rates']);
-        if ($originalRates !== $updatedRates) {
-            $changes['rates'] = [
-                'before' => $originalRates,
-                'after' => $updatedRates,
-            ];
-        }
-
-        ParkingSpotUpdateHistory::create([
-            'parking_spot_id' => $parkingSpot->id,
-            'user_id' => $updatedBy->id,
-            'changes' => $changes,
-        ]);
-
-        session()->forget('parking_spot_form');
+        $this->deleteImagePaths([...$temporaryImagePaths, ...$removedImagePaths]);
 
         return $parkingSpot;
     }
@@ -238,18 +282,21 @@ class ParkingSpotService
                 $suffix = $position === 0 ? '' : '_'.($position + 1);
                 $tempPath = 'temp/parking-spots/'.$timestamp.$suffix.'.webp';
                 $webpBinary = $this->convertImageToWebpWithinLimit($uploadedImage->getRealPath());
-                Storage::disk('public')->put($tempPath, $webpBinary);
+                if (! Storage::disk('public')->put($tempPath, $webpBinary)) {
+                    throw new \RuntimeException("Unable to store temporary parking spot image [{$tempPath}].");
+                }
+
                 $tempPaths[] = $tempPath;
             }
         } catch (\Throwable) {
-            Storage::disk('public')->delete($tempPaths);
+            $this->deleteImagePaths($tempPaths);
 
             throw ValidationException::withMessages([
                 'images' => '画像をWebP形式へ変換できませんでした。別の画像をお試しください。',
             ]);
         }
 
-        Storage::disk('public')->delete(array_filter(
+        $this->deleteImagePaths(array_filter(
             $currentPaths,
             fn (string $path) => $this->isTemporaryImagePath($path),
         ));
@@ -257,17 +304,34 @@ class ParkingSpotService
         return $tempPaths;
     }
 
-    private function persistConfirmedImages(ParkingSpot $parkingSpot, array $imagePaths): array
-    {
-        return collect($this->normalizeImagePaths($imagePaths))
-            ->map(fn (string $imagePath, int $position) => $this->persistConfirmedImage($parkingSpot, $imagePath, $position))
-            ->filter()
-            ->values()
-            ->all();
+    private function persistConfirmedImages(
+        ParkingSpot $parkingSpot,
+        array $imagePaths,
+        array &$createdImagePaths,
+        array &$temporaryImagePaths,
+    ): array {
+        $persistedImagePaths = [];
+
+        foreach ($this->normalizeImagePaths($imagePaths) as $position => $imagePath) {
+            $persistedImagePaths[] = $this->persistConfirmedImage(
+                $parkingSpot,
+                $imagePath,
+                $position,
+                $createdImagePaths,
+                $temporaryImagePaths,
+            );
+        }
+
+        return $persistedImagePaths;
     }
 
-    private function persistConfirmedImage(ParkingSpot $parkingSpot, string $imagePath, int $position): ?string
-    {
+    private function persistConfirmedImage(
+        ParkingSpot $parkingSpot,
+        string $imagePath,
+        int $position,
+        array &$createdImagePaths,
+        array &$temporaryImagePaths,
+    ): string {
         if (! $this->isTemporaryImagePath($imagePath)) {
             return $imagePath;
         }
@@ -275,7 +339,7 @@ class ParkingSpotService
         $disk = Storage::disk('public');
 
         if (! $disk->exists($imagePath)) {
-            return null;
+            throw new \RuntimeException("Temporary parking spot image [{$imagePath}] does not exist.");
         }
 
         $timestamp = CarbonImmutable::now()->format('YmdHisv');
@@ -283,8 +347,12 @@ class ParkingSpotService
         $filename = $parkingSpot->id.'_'.$timestamp.$suffix.'.webp';
         $permanentPath = 'parking-spots/'.$filename;
 
-        $disk->copy($imagePath, $permanentPath);
-        $disk->delete($imagePath);
+        if (! $disk->copy($imagePath, $permanentPath)) {
+            throw new \RuntimeException("Unable to persist parking spot image [{$imagePath}].");
+        }
+
+        $createdImagePaths[] = $permanentPath;
+        $temporaryImagePaths[] = $imagePath;
 
         return $permanentPath;
     }
@@ -318,6 +386,24 @@ class ParkingSpotService
         );
 
         $parkingSpot->unsetRelation('images');
+    }
+
+    private function deleteImagePaths(array $imagePaths): void
+    {
+        $disk = Storage::disk('public');
+
+        foreach ($this->normalizeImagePaths($imagePaths) as $imagePath) {
+            try {
+                if ($disk->exists($imagePath) && ! $disk->delete($imagePath)) {
+                    Log::warning('駐輪場画像を削除できませんでした。', ['path' => $imagePath]);
+                }
+            } catch (\Throwable $exception) {
+                Log::warning('駐輪場画像の削除中に例外が発生しました。', [
+                    'path' => $imagePath,
+                    'exception' => $exception,
+                ]);
+            }
+        }
     }
 
     private function isTemporaryImagePath(?string $path): bool
