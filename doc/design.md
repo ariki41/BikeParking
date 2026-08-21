@@ -32,6 +32,7 @@ flowchart LR
     V --> R[HTTP Routes]
     R --> C[Controller]
     C --> F[Form Request]
+    F --> DR[Domain Rules]
     C --> P[Policy]
     C --> PS[Persistence Service]
     C --> GS[Geocoding Service]
@@ -53,7 +54,8 @@ flowchart LR
 | Route | URL と処理の対応付け、認証 middleware | `routes/web.php`, `routes/auth.php` |
 | Controller | 入力受付、Policy による認可、画面遷移、セッション上の確認データ管理 | `app/Http/Controllers/` |
 | Policy | 駐輪場の共同編集とレビューの本人更新に関する認可 | `app/Policies/` |
-| Form Request | 駐輪場・料金帯・レビューの入力検証、料金帯重複検証 | `app/Http/Requests/` |
+| Form Request | 駐輪場・料金帯・レビューの入力検証、ドメインエラーの入力項目への変換 | `app/Http/Requests/` |
+| Domain Rules | 料金帯の曜日区分、終日・日付またぎを含む時間範囲、重複判定 | `app/Domain/ParkingSpotRates/` |
 | Persistence Service | 駐輪場・料金・更新履歴のトランザクション制御 | `app/Services/ParkingSpotPersistenceService.php` |
 | Geocoding Service | 駐輪場登録用の住所ジオコード | `app/Services/ParkingSpotGeocodingService.php` |
 | Search Service | 検索位置と検索結果なしの場合の表示位置を決定 | `app/Services/SearchService.php` |
@@ -155,7 +157,7 @@ erDiagram
 - 料金は 0 円以上、最大料金は設定する場合 1 円以上。
 - 最大料金なしを選択した場合、最大料金は `NULL` として保存する。
 - 無料時間なしの場合、無料時間は 0 分として保存する。
-- 同じ曜日区分の重複する時間帯は登録不可。日付またぎの時間帯も分割して重複判定する。
+- 適用曜日が重なる料金帯では、重複する時間帯を登録不可とする。終日は24時間、日付またぎは日末と日始めに分割し、隣接するだけの時間帯は重複としない。この判定は `app/Domain/ParkingSpotRates/` に集約する。
 - レビューの評価は 1〜5、コメントは必須かつ1,000文字以内とする。
 - レビューは1ユーザーにつき1駐輪場1件とし、再投稿時は本人の既存レビューを更新する。
 - お気に入りは1ユーザーにつき1駐輪場1件とし、追加・解除はログインユーザー自身の関連だけを操作する。
@@ -170,9 +172,10 @@ erDiagram
 
 ## 9. テスト方針
 
-料金表示・入力・保存・日付またぎ・最大料金なしの主要ケースは `tests/Feature/ParkingSpotRateDisplayTest.php`、複数画像の主要フローは `tests/Feature/ParkingSpotImageTest.php`、確認セッションと一時画像清掃は `tests/Feature/ParkingSpotConfirmationSessionTest.php` に集約されている。保存更新・YOLP API・ジオコード・画像サービスの境界は `tests/Feature/ParkingSpotPersistenceServiceTest.php` と `tests/Unit/Services/` で確認する。変更時はまず次の focused test を実行し、必要に応じて全体テストを実行する。
+料金表示・入力・保存・日付またぎ・最大料金なしの主要ケースは `tests/Feature/ParkingSpotRateDisplayTest.php`、料金帯の曜日・時間範囲・重複判定の境界値は `tests/Unit/Domain/ParkingSpotRates/`、複数画像の主要フローは `tests/Feature/ParkingSpotImageTest.php`、確認セッションと一時画像清掃は `tests/Feature/ParkingSpotConfirmationSessionTest.php` に集約されている。保存更新・YOLP API・ジオコード・画像サービスの境界は `tests/Feature/ParkingSpotPersistenceServiceTest.php` と `tests/Unit/Services/` で確認する。変更時はまず次の focused test を実行し、必要に応じて全体テストを実行する。
 
 ```bash
+vendor/bin/sail test tests/Unit/Domain/ParkingSpotRates
 vendor/bin/sail test tests/Feature/ParkingSpotRateDisplayTest.php
 vendor/bin/sail test tests/Feature/ParkingSpotImageTest.php
 vendor/bin/sail test tests/Feature/ParkingSpotConfirmationSessionTest.php

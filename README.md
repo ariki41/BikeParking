@@ -138,6 +138,7 @@ Laravel Sailのショートカットを利用できる環境では、上記の `
 
 ```text
 app/
+├── Domain/               料金帯などのドメインルール
 ├── Http/Controllers/     HTTPリクエストと画面遷移
 ├── Http/Requests/        入力値検証
 ├── Livewire/             住所補完などのリアクティブ処理
