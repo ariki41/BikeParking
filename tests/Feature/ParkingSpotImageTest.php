@@ -8,6 +8,7 @@ use App\Models\ParkingSpotUpdateHistory;
 use App\Models\Postalcode;
 use App\Models\Prefecture;
 use App\Models\User;
+use App\Services\ParkingSpotConfirmationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
@@ -56,9 +57,9 @@ class ParkingSpotImageTest extends TestCase
 
         $response->assertOk()->assertSee('4枚');
 
-        $imagePaths = session('create_parking_spot_form.image_paths');
+        $imagePaths = session(ParkingSpotConfirmationService::SESSION_KEY.'.input.image_paths');
         $this->assertCount(4, $imagePaths);
-        $this->assertSame($imagePaths[0], session('create_parking_spot_form.image_path'));
+        $this->assertSame($imagePaths[0], session(ParkingSpotConfirmationService::SESSION_KEY.'.input.image_path'));
 
         foreach ($imagePaths as $position => $imagePath) {
             $this->assertStringStartsWith('temp/parking-spots/', $imagePath);
@@ -102,7 +103,7 @@ class ParkingSpotImageTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->withSession(['create_parking_spot_form' => $input])
+            ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_CREATE, $input))
             ->post(route('parking_spot.store'))
             ->assertRedirect(route('home'));
 
@@ -143,6 +144,8 @@ class ParkingSpotImageTest extends TestCase
         $this->setImages($parkingSpot, $originalPaths);
         $this->fakeGeocode();
 
+        $this->actingAs($user)->get(route('parking_spot.edit', $parkingSpot->id))->assertOk();
+
         $confirmResponse = $this->actingAs($user)
             ->post(route('parking_spot.confirm'), $this->validFormInput($postalcode, [
                 'id' => $parkingSpot->id,
@@ -151,7 +154,7 @@ class ParkingSpotImageTest extends TestCase
             ]));
 
         $confirmResponse->assertOk()->assertSee('3枚');
-        $tempPaths = session('edit_parking_spot_form.image_paths');
+        $tempPaths = session(ParkingSpotConfirmationService::SESSION_KEY.'.input.image_paths');
         $this->assertCount(3, $tempPaths);
 
         $this->actingAs($user)
@@ -315,6 +318,22 @@ class ParkingSpotImageTest extends TestCase
             'rate' => 100,
             'free_minutes' => 0,
             'max_rate' => 1200,
+        ];
+    }
+
+    private function confirmationState(string $mode, array $input): array
+    {
+        return [
+            ParkingSpotConfirmationService::SESSION_KEY => [
+                'mode' => $mode,
+                'parking_spot_id' => $input['id'] ?? null,
+                'input' => $input,
+                'temporary_image_paths' => array_values(array_filter(
+                    $input['image_paths'] ?? array_values(array_filter([$input['image_path'] ?? null])),
+                    fn ($path) => is_string($path) && str_starts_with($path, 'temp/parking-spots/'),
+                )),
+                'expires_at' => now()->addDay()->getTimestamp(),
+            ],
         ];
     }
 }

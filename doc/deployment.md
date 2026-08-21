@@ -20,7 +20,7 @@
 
 ```bash
 cd /opt/bike-parking
-docker compose -f compose.deploy.yml stop app
+docker compose -f compose.deploy.yml stop app scheduler
 ```
 
 アプリケーション更新後にヘルスチェックが失敗すると、デプロイスクリプトは直前のdigestのアプリケーションコンテナへ自動で戻します。初回デプロイで戻すイメージがない場合は、異常なアプリケーションコンテナを停止して終了します。データベースマイグレーションは前方互換で作成することを前提とします。
@@ -102,10 +102,11 @@ TailscaleのTrust credentialはGitHub ActionsをIssuerとし、Subjectを `repo:
 サーバーでは `compose.deploy.yml` が次を管理します。
 
 - `app`: Apache + PHP 8.3で動くLaravelアプリケーション。`/up` のヘルスチェックを通過するまでデプロイ完了としません。
+- `scheduler`: Laravelスケジューラを常時実行し、24時間経過した駐輪場確認用の一時画像を1時間ごとに削除します。
 - `mysql`: MySQL 8.0。データは名前付きボリューム `mysql-data` に保存されます。
 - `app-storage`: アップロード画像などLaravelの永続ストレージです。
 
-デプロイスクリプトは新しいdigestのイメージを取得してからMySQLの起動を待ち、`php artisan migrate --force` を実行します。`SEED_DEVELOPMENT_DATA=true` の場合は、その後に開発用テストデータを投入して、最後にアプリケーションの更新とヘルスチェックを行います。
+デプロイスクリプトは新しいdigestのイメージを取得してからMySQLの起動を待ち、`php artisan migrate --force` を実行します。`SEED_DEVELOPMENT_DATA=true` の場合は、その後に開発用テストデータを投入して、最後にアプリケーションとスケジューラの更新およびヘルスチェックを行います。
 
 自動復旧後も手動で以前のdigestへ戻す必要がある場合は、サーバーで次のように実行できます。
 

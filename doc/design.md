@@ -79,18 +79,20 @@ flowchart LR
 1. 登録画面で基本情報、営業時間、料金帯、任意画像（最大4枚）を入力する。
 2. 郵便番号から住所を補完し、`ParkingSpotRequest` で入力を検証する。
 3. 住所を外部 API でジオコードし、緯度・経度と正規化済み住所を確定する。
-4. 確認用データをセッションへ保存し、確認画面を表示する。
+4. サーバー側の確認セッションへ登録モード、入力値、所有する一時画像を保存し、確認画面を表示する。
 5. 確定時に `ParkingSpotService::saveParkingSpot()` が駐輪場本体、画像情報、料金帯を1つのDBトランザクションで保存する。
 
 ### 更新
 
-登録と同じ確認フローを通り、確定時に `updateParkingSpot()` が対象行をロックし、本体、画像情報、料金帯、更新履歴を1つのDBトランザクションで更新する。料金帯はトランザクション内で既存行を削除して入力内容を再作成し、新しい画像が選択された場合は既存画像を選択された画像一式へ置き換える。更新時は変更された本体項目、画像、料金帯の before / after、更新ユーザー、更新日時を `parking_spot_update_histories` に記録する。
+登録と同じ確認フローを通り、確定時に `updateParkingSpot()` が対象行をロックし、本体、画像情報、料金帯、更新履歴を1つのDBトランザクションで更新する。編集画面を開いた時点で対象IDをサーバー側の確認セッションへ固定し、確認POSTのIDが一致しない場合は更新へ進めない。料金帯はトランザクション内で既存行を削除して入力内容を再作成し、新しい画像が選択された場合は既存画像を選択された画像一式へ置き換える。更新時は変更された本体項目、画像、料金帯の before / after、更新ユーザー、更新日時を `parking_spot_update_histories` に記録する。
 
 編集画面の表示、編集内容の確認、更新確定では、いずれも `ParkingSpotPolicy::update()` を通して認可する。共同編集を前提とするため、駐輪場の登録者かどうかにかかわらずログイン済みユーザーは更新でき、未ログインユーザーは認証 middleware によりログイン画面へ遷移する。
 
 ### 画像
 
-1件の駐輪場へ最大4枚を登録できる。アップロード画像は確認時に WebP 化して `temp/parking-spots/` に仮保存し、登録・更新確定時に `parking-spots/` へコピーする。DBコミット後に仮画像と置換前の旧画像を削除するため、DB更新や画像コピーに失敗した場合も旧画像と仮画像を保護して再試行できる。途中でコピー済みとなった新画像は補償削除し、削除だけに失敗したファイルはDBから参照されない孤立ファイルとして残すことで表示中データの欠損を防ぐ。画像の順序は `parking_spot_images.position` で保持し、先頭画像を一覧・ホームの代表画像として従来の `parking_spots.image_path` にも保持する。既存の単一画像データはマイグレーション時に画像テーブルへ移行し、画像未設定の場合は `public/images/noimage.jpg` を表示する。変換後サイズの上限は1枚あたり5MB。
+1件の駐輪場へ最大4枚を登録できる。アップロード画像は確認時に WebP 化して推測困難な名前で `temp/parking-spots/` に仮保存し、そのブラウザーセッションが作成したパスだけを再送信時に受け付ける。登録・更新確定時に `parking-spots/` へコピーし、DBコミット後に仮画像と置換前の旧画像を削除するため、DB更新や画像コピーに失敗した場合も旧画像と仮画像を保護して再試行できる。途中でコピー済みとなった新画像は補償削除し、削除だけに失敗したファイルはDBから参照されない孤立ファイルとして残すことで表示中データの欠損を防ぐ。画像の順序は `parking_spot_images.position` で保持し、先頭画像を一覧・ホームの代表画像として従来の `parking_spots.image_path` にも保持する。既存の単一画像データはマイグレーション時に画像テーブルへ移行し、画像未設定の場合は `public/images/noimage.jpg` を表示する。変換後サイズの上限は1枚あたり5MB。
+
+登録・編集は共通の `parking_spot_confirmation` セッションを使用する。戻る操作や保存エラーでは確認状態を保持し、保存成功後だけ破棄する。確定ルートは同一セッションからの同時送信を直列化し、セッション欠落・期限切れ・二重送信時はDB更新を行わず入力画面またはホームへ案内する。離脱やセッション期限切れで残った仮画像は、1時間ごとに実行する `parking-spots:prune-temporary-images` が24時間経過後に削除する。
 
 ## 6. データ設計
 
@@ -156,11 +158,12 @@ erDiagram
 
 ## 9. テスト方針
 
-料金表示・入力・保存・日付またぎ・最大料金なしの主要ケースは `tests/Feature/ParkingSpotRateDisplayTest.php`、複数画像の主要フローは `tests/Feature/ParkingSpotImageTest.php` に集約されている。変更時はまず次の focused test を実行し、必要に応じて全体テストを実行する。
+料金表示・入力・保存・日付またぎ・最大料金なしの主要ケースは `tests/Feature/ParkingSpotRateDisplayTest.php`、複数画像の主要フローは `tests/Feature/ParkingSpotImageTest.php`、確認セッションと一時画像清掃は `tests/Feature/ParkingSpotConfirmationSessionTest.php` に集約されている。変更時はまず次の focused test を実行し、必要に応じて全体テストを実行する。
 
 ```bash
 vendor/bin/sail test tests/Feature/ParkingSpotRateDisplayTest.php
 vendor/bin/sail test tests/Feature/ParkingSpotImageTest.php
+vendor/bin/sail test tests/Feature/ParkingSpotConfirmationSessionTest.php
 vendor/bin/sail test tests/Feature/ParkingSpotAuthorizationHistoryTest.php
 vendor/bin/sail test tests/Feature/ParkingSpotReviewTest.php
 vendor/bin/sail test tests/Feature/ParkingSpotFavoriteTest.php

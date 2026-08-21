@@ -9,6 +9,7 @@ use App\Models\ParkingSpotRates;
 use App\Models\Postalcode;
 use App\Models\Prefecture;
 use App\Models\User;
+use App\Services\ParkingSpotConfirmationService;
 use App\Services\ParkingSpotService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -134,7 +135,7 @@ class ParkingSpotRateDisplayTest extends TestCase
             ]));
 
         $response->assertOk();
-        $imagePath = session('create_parking_spot_form.image_path');
+        $imagePath = session(ParkingSpotConfirmationService::SESSION_KEY.'.input.image_path');
         $this->assertNotNull($imagePath);
         $this->assertStringStartsWith('temp/parking-spots/', $imagePath);
         Storage::disk('public')->assertExists($imagePath);
@@ -250,7 +251,7 @@ class ParkingSpotRateDisplayTest extends TestCase
         ];
 
         $response = $this->actingAs($user)
-            ->withSession(['create_parking_spot_form' => $input])
+            ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_CREATE, $input))
             ->post(route('parking_spot.store'));
 
         $response->assertRedirect(route('home'));
@@ -344,7 +345,7 @@ class ParkingSpotRateDisplayTest extends TestCase
 
         $response->assertOk();
         $response->assertSessionMissing('errors');
-        $response->assertSessionHas('create_parking_spot_form.rates.0.free_minutes', 0);
+        $response->assertSessionHas(ParkingSpotConfirmationService::SESSION_KEY.'.input.rates.0.free_minutes', 0);
         $response->assertDontSee('最初の30分無料');
         $response->assertDontSee('最初の0分無料');
         $response->assertSee('30分 100円');
@@ -573,7 +574,7 @@ class ParkingSpotRateDisplayTest extends TestCase
         ];
 
         $response = $this->actingAs($user)
-            ->withSession(['edit_parking_spot_form' => $input])
+            ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_EDIT, $input))
             ->post(route('parking_spot.update'));
 
         $response->assertRedirect(route('home'));
@@ -1248,5 +1249,21 @@ class ParkingSpotRateDisplayTest extends TestCase
             'free_minutes' => 0,
             'max_rate' => 1200,
         ], $overrides);
+    }
+
+    private function confirmationState(string $mode, array $input): array
+    {
+        return [
+            ParkingSpotConfirmationService::SESSION_KEY => [
+                'mode' => $mode,
+                'parking_spot_id' => $input['id'] ?? null,
+                'input' => $input,
+                'temporary_image_paths' => array_values(array_filter(
+                    $input['image_paths'] ?? array_values(array_filter([$input['image_path'] ?? null])),
+                    fn ($path) => is_string($path) && str_starts_with($path, 'temp/parking-spots/'),
+                )),
+                'expires_at' => now()->addDay()->getTimestamp(),
+            ],
+        ];
     }
 }

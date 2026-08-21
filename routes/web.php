@@ -29,10 +29,10 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/parking-spot/{parkingSpot}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
     Route::get('/parking-spot/create', [ParkingSpotController::class, 'create'])->name('parking_spot.create');
-    Route::post('/parking-spot/store', [ParkingSpotController::class, 'store'])->name('parking_spot.store');
+    Route::post('/parking-spot/store', [ParkingSpotController::class, 'store'])->block()->name('parking_spot.store');
     Route::post('/parking-spot/confirm', [ParkingSpotController::class, 'confirm'])->name('parking_spot.confirm');
     Route::get('/parking-spot/edit/{id}', [ParkingSpotController::class, 'edit'])->name('parking_spot.edit');
-    Route::post('/parking-spot/update', [ParkingSpotController::class, 'update'])->name('parking_spot.update');
+    Route::post('/parking-spot/update', [ParkingSpotController::class, 'update'])->block()->name('parking_spot.update');
 });
 
 require __DIR__.'/auth.php';

@@ -1,5 +1,11 @@
 <x-app-layout>
     <div class="bp-shell">
+        @if (session('error'))
+            <p class="mb-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                {{ session('error') }}
+            </p>
+        @endif
+
         @if (session('favorite_success'))
             <p class="mb-5 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
                 {{ session('favorite_success') }}

@@ -15,6 +15,7 @@
 - 料金帯の重複チェック
 - 駐輪場画像のアップロード（最大4枚・WebP変換）
 - 駐輪場・料金・画像を一体として保存するトランザクションと画像補償処理
+- 確認画面の改ざん・期限切れ対策と放置された一時画像の定期削除
 - ユーザーIDによる会員登録・ログイン、プロフィール管理
 
 ## 技術構成
@@ -109,9 +110,13 @@ docker compose exec laravel.test vendor/bin/pint
 
 # テスト全体
 docker compose exec laravel.test php artisan test
+
+# 24時間以上経過した確認画面用の一時画像を削除
+docker compose exec laravel.test php artisan parking-spots:prune-temporary-images --hours=24
 ```
 
 Laravel Sailのショートカットを利用できる環境では、上記の `docker compose exec laravel.test` を `./vendor/bin/sail` に置き換えられます。
+一時画像の削除コマンドはLaravelのスケジューラにも1時間ごとで登録されています。本番・開発サーバーではスケジューラプロセスを常時実行してください。
 
 料金表示・入力・保存に関する変更では、まず次のfocused testを実行してください。
 

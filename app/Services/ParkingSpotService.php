@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Intervention\Image\Drivers\Imagick\Driver as ImagickDriver;
@@ -252,8 +253,12 @@ class ParkingSpotService
         }
     }
 
-    public function prepareImagePathsForConfirm(Request $request, array $currentPaths, array $allowedPermanentPaths = []): array
-    {
+    public function prepareImagePathsForConfirm(
+        Request $request,
+        array $currentPaths,
+        array $allowedPermanentPaths = [],
+        array $allowedTemporaryPaths = [],
+    ): array {
         $currentPaths = $this->normalizeImagePaths($currentPaths);
         $uploadedImages = $request->file('images', []);
         $uploadedImages = is_array($uploadedImages) ? array_values($uploadedImages) : [];
@@ -264,7 +269,11 @@ class ParkingSpotService
 
         if ($uploadedImages === []) {
             foreach ($currentPaths as $path) {
-                if (! $this->isTemporaryImagePath($path) && ! in_array($path, $allowedPermanentPaths, true)) {
+                $allowed = $this->isTemporaryImagePath($path)
+                    ? in_array($path, $allowedTemporaryPaths, true)
+                    : in_array($path, $allowedPermanentPaths, true);
+
+                if (! $allowed) {
                     throw ValidationException::withMessages([
                         'image_paths' => '保持している画像情報が正しくありません。',
                     ]);
@@ -274,13 +283,13 @@ class ParkingSpotService
             return $currentPaths;
         }
 
-        $timestamp = CarbonImmutable::now()->format('YmdHisv');
+        $batchId = (string) Str::uuid();
         $tempPaths = [];
 
         try {
             foreach ($uploadedImages as $position => $uploadedImage) {
                 $suffix = $position === 0 ? '' : '_'.($position + 1);
-                $tempPath = 'temp/parking-spots/'.$timestamp.$suffix.'.webp';
+                $tempPath = 'temp/parking-spots/'.$batchId.$suffix.'.webp';
                 $webpBinary = $this->convertImageToWebpWithinLimit($uploadedImage->getRealPath());
                 if (! Storage::disk('public')->put($tempPath, $webpBinary)) {
                     throw new \RuntimeException("Unable to store temporary parking spot image [{$tempPath}].");

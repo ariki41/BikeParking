@@ -10,6 +10,7 @@ use App\Models\ParkingSpotUpdateHistory;
 use App\Models\Postalcode;
 use App\Models\Prefecture;
 use App\Models\User;
+use App\Services\ParkingSpotConfirmationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
@@ -79,7 +80,13 @@ class ParkingSpotAuthorizationHistoryTest extends TestCase
             ->assertRedirect(route('login'));
 
         $this->withSession([
-            'edit_parking_spot_form' => $this->updateInput($parkingSpot, $postalcode),
+            ParkingSpotConfirmationService::SESSION_KEY => [
+                'mode' => ParkingSpotConfirmationService::MODE_EDIT,
+                'parking_spot_id' => $parkingSpot->id,
+                'input' => $this->updateInput($parkingSpot, $postalcode),
+                'temporary_image_paths' => [],
+                'expires_at' => now()->addDay()->getTimestamp(),
+            ],
         ])->post(route('parking_spot.update'))
             ->assertRedirect(route('login'));
 
@@ -117,7 +124,15 @@ class ParkingSpotAuthorizationHistoryTest extends TestCase
         ]);
 
         $this->actingAs($collaborator)
-            ->withSession(['edit_parking_spot_form' => $input])
+            ->withSession([
+                ParkingSpotConfirmationService::SESSION_KEY => [
+                    'mode' => ParkingSpotConfirmationService::MODE_EDIT,
+                    'parking_spot_id' => $parkingSpot->id,
+                    'input' => $input,
+                    'temporary_image_paths' => [],
+                    'expires_at' => now()->addDay()->getTimestamp(),
+                ],
+            ])
             ->post(route('parking_spot.update'))
             ->assertRedirect(route('home'));
 
