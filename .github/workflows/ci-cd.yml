@@ -6,6 +6,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      deploy_development:
+        description: '開発環境へデプロイする'
+        required: true
+        default: false
+        type: boolean
 
 jobs:
   test:
@@ -137,7 +143,7 @@ jobs:
   deploy-development:
     name: Deploy development server
     needs: image
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy_development == true && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     environment: development
     concurrency:
