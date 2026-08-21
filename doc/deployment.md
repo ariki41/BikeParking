@@ -1,6 +1,6 @@
 # 開発サーバーへのデプロイ
 
-`main` への push は GitHub Actions でテスト、Viteアセットのビルド、本番用OCIイメージのビルドを実行します。成功したイメージは GitHub Container Registry (GHCR) へ公開され、その**digest**を指定して `development` Environment のサーバーへデプロイします。サーバー上でソースをビルドしないため、CIで検証した成果物とデプロイされる成果物は同一です。
+`main` への push は GitHub Actions でテスト、Viteアセットのビルド、本番用OCIイメージのビルドを実行します。開発環境へのデプロイは通常のpushでは行わず、Actionsの手動実行で明示的に指定した場合だけ実施します。成功したイメージは GitHub Container Registry (GHCR) へ公開され、その**digest**を指定して `development` Environment のサーバーへデプロイします。サーバー上でソースをビルドしないため、CIで検証した成果物とデプロイされる成果物は同一です。
 
 ## ワークフローの構成
 
@@ -8,13 +8,13 @@
 | --- | --- | --- |
 | `test` | Pull Request、`main` へのpush、手動実行 | MySQLを使ったテスト、Pint、Viteアセットビルド |
 | `image` | `test` 成功後 | 本番用Dockerイメージをビルド。`main` ではGHCRへ公開 |
-| `deploy-development` | `main` へのpushまたは手動実行 | Tailscale経由SSHで開発サーバーへデプロイ |
+| `deploy-development` | `main` の手動実行で `開発環境へデプロイする` を有効化した場合だけ | Tailscale経由SSHで開発サーバーへデプロイ |
 
 デプロイジョブの最初にSSH、`x86_64`、Docker、Docker Compose、デプロイ先ディレクトリ、および5 GiB以上の空き容量を確認します。サーバーが停止中などで接続できない場合は、その時点で失敗して終了し、サーバー上のファイル・コンテナは変更しません。
 
 ## 通常のデプロイ・停止・復旧
 
-サーバーの起動は別途行い、起動後にTailscaleへ参加していることを確認します。`main` へのpushで自動デプロイされます。任意のタイミングで実行する場合は、GitHubの **Actions** から **CI/CD** を選び、`main` を指定して **Run workflow** を実行します。
+サーバーの起動は別途行い、起動後にTailscaleへ参加していることを確認します。開発環境へデプロイする場合は、GitHubの **Actions** から **CI/CD** を選び、ブランチに `main` を指定し、`開発環境へデプロイする` を有効にして **Run workflow** を実行します。入力を有効にしない手動実行や `main` への通常pushでは、テストとイメージ作成だけが実行されます。
 
 サーバーが停止中または接続不能な場合、デプロイはSSH接続から10秒以内に中止します。この確認より後のイメージ取得・マイグレーション・コンテナ更新は行いません。停止する場合は、必要に応じてサーバー上でアプリケーションを先に停止します。
 
