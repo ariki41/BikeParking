@@ -52,6 +52,26 @@ php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
 
 `.env` はGitへ追加せず、サーバー上でだけ保管してください。
 
+### 開発用テストデータ
+
+GitHub Actionsによるkaedeへのデプロイでは、開発用テストデータを常に投入します。テストユーザーのパスワードはGitHub Environment `development` の `DEVELOPMENT_SEED_PASSWORD` Secretに設定してください。
+
+サーバー上で手動デプロイする場合だけ、`.env` に以下を設定します。
+
+```dotenv
+SEED_DEVELOPMENT_DATA=true
+DEVELOPMENT_SEED_PASSWORD=<開発用テストユーザーのパスワード>
+```
+
+デプロイ時、マイグレーション後に `DevelopmentSeeder` が実行されます。これは既存データを削除せず、次の固定データを再実行可能な形で投入・更新します。
+
+- `development-owner` と `development-reviewer` のテストユーザー
+- 東京駅前、神田駅東口、霞が関のテスト駐輪場
+- 平日・休日料金、無料時間、最大料金なし、日付またぎ料金
+- 駐輪場レビュー
+
+`SEED_DEVELOPMENT_DATA` の既定値は `false` です。本番環境では設定せず、`DevelopmentSeeder` を実行しないでください。
+
 GHCRパッケージが非公開の場合、サーバーで `read:packages` 権限を持つGitHub Classic Personal Access Tokenを使い、一度ログインします。
 
 ```bash
@@ -73,6 +93,7 @@ echo '<GitHub PAT>' | docker login ghcr.io -u ariki41 --password-stdin
 | Secret | `TS_AUDIENCE` | Tailscaleで発行したAudience |
 | Secret | `DEPLOY_SSH_PRIVATE_KEY` | `ariki` ユーザーに登録したSSH秘密鍵 |
 | Secret | `DEPLOY_KNOWN_HOSTS` | `kaede.tail06f222.ts.net` のED25519 known_hosts行 |
+| Secret | `DEVELOPMENT_SEED_PASSWORD` | 開発用テストユーザーのパスワード |
 
 TailscaleのTrust credentialはGitHub ActionsをIssuerとし、Subjectを `repo:ariki41/BikeParking:environment:development`、タグを `tag:ci` とします。Scopesは **Devices → Core → Write** と **Keys → Auth Keys → Write** が必要です。
 
@@ -84,7 +105,7 @@ TailscaleのTrust credentialはGitHub ActionsをIssuerとし、Subjectを `repo:
 - `mysql`: MySQL 8.0。データは名前付きボリューム `mysql-data` に保存されます。
 - `app-storage`: アップロード画像などLaravelの永続ストレージです。
 
-デプロイスクリプトは新しいdigestのイメージを取得してからMySQLの起動を待ち、`php artisan migrate --force` を実行して、最後にアプリケーションの更新とヘルスチェックを行います。
+デプロイスクリプトは新しいdigestのイメージを取得してからMySQLの起動を待ち、`php artisan migrate --force` を実行します。`SEED_DEVELOPMENT_DATA=true` の場合は、その後に開発用テストデータを投入して、最後にアプリケーションの更新とヘルスチェックを行います。
 
 自動復旧後も手動で以前のdigestへ戻す必要がある場合は、サーバーで次のように実行できます。
 
