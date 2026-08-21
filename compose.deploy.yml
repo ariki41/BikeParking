@@ -6,6 +6,8 @@ services:
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
+      SEED_DEVELOPMENT_DATA: "${SEED_DEVELOPMENT_DATA:-false}"
+      DEVELOPMENT_SEED_PASSWORD: "${DEVELOPMENT_SEED_PASSWORD:-}"
     ports:
       - "${APP_PORT:-8080}:80"
     volumes:

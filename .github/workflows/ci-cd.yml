@@ -154,6 +154,7 @@ jobs:
       DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
       IMAGE_NAME: ${{ vars.IMAGE_NAME }}
       IMAGE_DIGEST: ${{ needs.image.outputs.image_digest }}
+      SEED_DEVELOPMENT_DATA: 'true'
 
     steps:
       - name: Check out deployment files
@@ -240,13 +241,15 @@ jobs:
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
 
       - name: Deploy immutable image
+        env:
+          DEVELOPMENT_SEED_PASSWORD: ${{ secrets.DEVELOPMENT_SEED_PASSWORD }}
         run: |
           ssh \
             -p "$DEPLOY_PORT" \
             -o BatchMode=yes \
             -o StrictHostKeyChecking=yes \
             "$DEPLOY_USER@$DEPLOY_HOST" \
-            "env IMAGE_NAME='$IMAGE_NAME' IMAGE_DIGEST='$IMAGE_DIGEST' bash '$DEPLOY_PATH/deploy.sh' '$DEPLOY_PATH'"
+            "env IMAGE_NAME='$IMAGE_NAME' IMAGE_DIGEST='$IMAGE_DIGEST' SEED_DEVELOPMENT_DATA='$SEED_DEVELOPMENT_DATA' DEVELOPMENT_SEED_PASSWORD='$DEVELOPMENT_SEED_PASSWORD' bash '$DEPLOY_PATH/deploy.sh' '$DEPLOY_PATH'"
 
       - name: Publish deployment details
         run: |

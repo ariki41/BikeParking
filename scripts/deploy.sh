@@ -17,6 +17,13 @@ export IMAGE_NAME IMAGE_DIGEST
 docker compose -f compose.deploy.yml pull app
 docker compose -f compose.deploy.yml up -d --wait mysql
 docker compose -f compose.deploy.yml run --rm --no-deps app php artisan migrate --force
+docker compose -f compose.deploy.yml run --rm --no-deps app sh -ceu '
+    if [ "${SEED_DEVELOPMENT_DATA:-false}" = "true" ]; then
+        php artisan db:seed --force --class=Database\\Seeders\\DevelopmentSeeder
+    else
+        echo "Development seed data is disabled."
+    fi
+'
 
 previous_image=''
 if previous_container_id="$(docker compose -f compose.deploy.yml ps -q app 2>/dev/null)"; then
