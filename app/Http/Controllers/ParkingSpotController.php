@@ -6,7 +6,9 @@ use App\Http\Requests\ParkingSpotRequest;
 use App\Models\ParkingSpot;
 use App\Models\Postalcode;
 use App\Services\ParkingSpotConfirmationService;
-use App\Services\ParkingSpotService;
+use App\Services\ParkingSpotGeocodingService;
+use App\Services\ParkingSpotImageService;
+use App\Services\ParkingSpotPersistenceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -14,7 +16,9 @@ use Illuminate\Validation\ValidationException;
 class ParkingSpotController extends Controller
 {
     public function __construct(
-        private readonly ParkingSpotService $service,
+        private readonly ParkingSpotPersistenceService $persistence,
+        private readonly ParkingSpotGeocodingService $geocoding,
+        private readonly ParkingSpotImageService $images,
         private readonly ParkingSpotConfirmationService $confirmation,
     ) {}
 
@@ -85,7 +89,7 @@ class ParkingSpotController extends Controller
 
         $currentImagePaths = $validatedData['image_paths']
             ?? array_values(array_filter([$validatedData['image_path'] ?? null]));
-        $validatedData['image_paths'] = $this->service->prepareImagePathsForConfirm(
+        $validatedData['image_paths'] = $this->images->prepareForConfirmation(
             $request,
             $currentImagePaths,
             $parkingSpot?->image_paths ?? [],
@@ -101,7 +105,7 @@ class ParkingSpotController extends Controller
         $validatedData['address'] = mb_convert_kana($validatedData['address1'].$validatedData['address2'], 'rn');
         $validatedData['postalcode'] = mb_convert_kana(str_replace('-', '', $validatedData['postalcode']), 'rn');
 
-        $yolpLocation = $this->service->getYolpLonLat($validatedData['address']);
+        $yolpLocation = $this->geocoding->geocode($validatedData['address']);
 
         if (is_null($yolpLocation)) {
             return $this->redirectToTrustedForm($request)
@@ -134,7 +138,7 @@ class ParkingSpotController extends Controller
         }
 
         try {
-            $this->service->saveParkingSpot($input);
+            $this->persistence->create($input, $request->user());
         } catch (ValidationException $exception) {
             return redirect()->route('parking_spot.create')
                 ->withErrors($exception->errors())
@@ -202,7 +206,7 @@ class ParkingSpotController extends Controller
         }
 
         try {
-            $this->service->updateParkingSpot($input, $request->user());
+            $this->persistence->update($input, $request->user());
         } catch (ValidationException $exception) {
             return redirect()->route('parking_spot.edit', ['id' => $input['id']])
                 ->withErrors($exception->errors())

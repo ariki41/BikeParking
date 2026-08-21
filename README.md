@@ -140,7 +140,8 @@ app/
 ├── Http/Requests/        入力値検証
 ├── Livewire/             住所補完などのリアクティブ処理
 ├── Models/               Eloquentモデル
-└── Services/              駐輪場の保存・更新などの業務処理
+├── Services/             保存更新・ジオコード・画像などの業務処理
+└── ValueObjects/         サービス間で受け渡す型付き処理結果
 database/                 マイグレーション、ファクトリ、シーダー
 resources/views/          Bladeテンプレート
 routes/                   Web・認証ルート
