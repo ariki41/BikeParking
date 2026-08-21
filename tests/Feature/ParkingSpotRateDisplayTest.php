@@ -575,7 +575,7 @@ class ParkingSpotRateDisplayTest extends TestCase
 
         $response = $this->actingAs($user)
             ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_EDIT, $input))
-            ->post(route('parking_spot.update'));
+            ->put(route('parking_spot.update', $parkingSpot));
 
         $response->assertRedirect(route('home'));
         $parkingSpot->refresh();

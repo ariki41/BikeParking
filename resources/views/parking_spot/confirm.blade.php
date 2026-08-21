@@ -24,12 +24,6 @@
             }).addTo(map);
         }
     </script>
-    <script>
-        function setFormAction(actionUrl) {
-            const form = document.getElementById('parkingSpotConfirmForm');
-            form.action = actionUrl;
-        }
-    </script>
 @endpush
 
 <x-app-layout>
@@ -115,17 +109,19 @@
                     </div>
                 </dl>
 
-                <form class="border-t border-slate-100 p-5" id="parkingSpotConfirmForm" method="POST" action="">
+                <form class="border-t border-slate-100 p-5" id="parkingSpotConfirmForm" method="POST"
+                    action="{{ $validatedData['id'] ? route('parking_spot.update', ['parkingSpot' => $validatedData['id']]) : route('parking_spot.store') }}">
                     @csrf
+                    @if ($validatedData['id'])
+                        @method('PUT')
+                    @endif
                     <div class="flex flex-wrap gap-3">
                         @if ($validatedData['id'])
-                            <x-primary-button onclick="setFormAction('{{ route('parking_spot.update') }}')">更新</x-primary-button>
-                            <x-secondary-button name="back" type="submit" value="back"
-                                onclick="setFormAction('{{ route('parking_spot.update') }}')">戻る</x-secondary-button>
+                            <x-primary-button>更新</x-primary-button>
+                            <x-secondary-button name="back" type="submit" value="back">戻る</x-secondary-button>
                         @else
-                            <x-primary-button onclick="setFormAction('{{ route('parking_spot.store') }}')">登録</x-primary-button>
-                            <x-secondary-button name="back" type="submit" value="back"
-                                onclick="setFormAction('{{ route('parking_spot.store') }}')">戻る</x-secondary-button>
+                            <x-primary-button>登録</x-primary-button>
+                            <x-secondary-button name="back" type="submit" value="back">戻る</x-secondary-button>
                         @endif
                     </div>
                 </form>

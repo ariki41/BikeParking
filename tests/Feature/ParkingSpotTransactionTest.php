@@ -97,7 +97,7 @@ class ParkingSpotTransactionTest extends TestCase
 
         $this->actingAs($user)
             ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_EDIT, $input))
-            ->post(route('parking_spot.update'))
+            ->put(route('parking_spot.update', $parkingSpot))
             ->assertRedirect(route('home'))
             ->assertSessionMissing(ParkingSpotConfirmationService::SESSION_KEY);
 
@@ -128,11 +128,11 @@ class ParkingSpotTransactionTest extends TestCase
             'rates' => [$this->validRateInput(['rate' => 200]), $this->invalidRateInput()],
         ]);
 
-        $exception = $this->captureException(function () use ($user, $input): void {
+        $exception = $this->captureException(function () use ($parkingSpot, $user, $input): void {
             $this->withoutExceptionHandling()
                 ->actingAs($user)
                 ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_EDIT, $input))
-                ->post(route('parking_spot.update'));
+                ->put(route('parking_spot.update', $parkingSpot));
         });
 
         $this->assertInstanceOf(QueryException::class, $exception);
@@ -163,11 +163,11 @@ class ParkingSpotTransactionTest extends TestCase
             'rates' => [$this->validRateInput(['rate' => 200])],
         ]);
 
-        $exception = $this->captureException(function () use ($user, $input): void {
+        $exception = $this->captureException(function () use ($parkingSpot, $user, $input): void {
             $this->withoutExceptionHandling()
                 ->actingAs($user)
                 ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_EDIT, $input))
-                ->post(route('parking_spot.update'));
+                ->put(route('parking_spot.update', $parkingSpot));
         });
 
         $this->assertInstanceOf(\RuntimeException::class, $exception);
@@ -202,11 +202,11 @@ class ParkingSpotTransactionTest extends TestCase
         $failingDisk->shouldReceive('copy')->once()->andReturnFalse();
         Storage::set('public', $failingDisk);
 
-        $exception = $this->captureException(function () use ($user, $input): void {
+        $exception = $this->captureException(function () use ($parkingSpot, $user, $input): void {
             $this->withoutExceptionHandling()
                 ->actingAs($user)
                 ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_EDIT, $input))
-                ->post(route('parking_spot.update'));
+                ->put(route('parking_spot.update', $parkingSpot));
         });
 
         $this->assertInstanceOf(\RuntimeException::class, $exception);
@@ -242,7 +242,7 @@ class ParkingSpotTransactionTest extends TestCase
 
         $this->actingAs($user)
             ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_EDIT, $input))
-            ->post(route('parking_spot.update'))
+            ->put(route('parking_spot.update', $parkingSpot))
             ->assertRedirect(route('home'));
 
         $parkingSpot->refresh()->load(['images', 'rates', 'updateHistories']);

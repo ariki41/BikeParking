@@ -40,13 +40,13 @@
             <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 @foreach ($parkingSpots as $parkingSpot)
                     <article class="bp-card-link overflow-hidden">
-                        <a href="{{ route('parking_spot.show', ['id' => $parkingSpot->id]) }}">
+                        <a href="{{ route('parking_spot.show', $parkingSpot) }}">
                             <img class="h-40 w-full object-cover" src="{{ $parkingSpot->image_url }}" alt="駐輪場画像">
                         </a>
                         <div class="space-y-3 p-4">
                             <div>
                                 <a class="text-lg font-semibold text-slate-900 hover:text-emerald-700"
-                                    href="{{ route('parking_spot.show', ['id' => $parkingSpot->id]) }}">
+                                    href="{{ route('parking_spot.show', $parkingSpot) }}">
                                     {{ $parkingSpot->name }}
                                 </a>
                                 <p class="mt-1 text-sm leading-6 text-slate-600">{{ $parkingSpot->address }}</p>
@@ -56,7 +56,7 @@
                             <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
                                 <div>
                                     <a class="text-sm font-semibold text-emerald-700 hover:text-emerald-800"
-                                        href="{{ route('parking_spot.show', ['id' => $parkingSpot->id]) }}">
+                                        href="{{ route('parking_spot.show', $parkingSpot) }}">
                                         詳細を見る
                                     </a>
                                     <span class="ml-2 text-xs text-slate-500">{{ $parkingSpot->capacity_label }}</span>

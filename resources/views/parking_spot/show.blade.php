@@ -42,7 +42,7 @@
             @auth
                 <div class="flex flex-wrap items-center gap-3">
                     <x-favorite-button :parking-spot="$parkingSpot" :favorited="$parkingSpot->is_favorited" />
-                    <a href="{{ route('parking_spot.edit', ['id' => $parkingSpot->id]) }}">
+                    <a href="{{ route('parking_spot.edit', $parkingSpot) }}">
                         <x-primary-button tag="a">編集</x-primary-button>
                     </a>
                 </div>
