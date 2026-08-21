@@ -84,6 +84,8 @@ YOLP_GEOCODE_URL=https://map.yahooapis.jp/geocode/V1/geoCoder
 YOLP_CLIENT_ID=<your-client-id>
 ```
 
+YOLP設定は `config/services.php` を通して共通APIクライアントから参照されます。検索と駐輪場登録のAPI通信には、共通のタイムアウト・リトライ・レスポンス変換が適用されます。
+
 データベース接続をMySQLにする場合は、`.env` の `DB_*` をDocker Composeの設定に合わせます。
 
 ```dotenv
