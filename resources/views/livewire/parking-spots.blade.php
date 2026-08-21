@@ -14,7 +14,7 @@
                     spots.forEach(spot => {
                         if (spot.latitude && spot.longitude) {
                             const popupContent =
-                                `<a href="/parking-spot/detail/${spot.id}">${spot.name}</a>`;
+                                `<a href="/parking-spots/${spot.id}">${spot.name}</a>`;
                             marker = L.marker([spot.latitude, spot.longitude]).addTo(map).bindPopup(
                                 popupContent);
                             markers.push(marker);

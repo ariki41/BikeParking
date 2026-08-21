@@ -13,12 +13,45 @@ use App\Models\User;
 use App\Services\ParkingSpotConfirmationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use Tests\TestCase;
 
 class ParkingSpotAuthorizationHistoryTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_parking_spot_routes_use_rest_urls_and_http_methods(): void
+    {
+        $routes = Route::getRoutes();
+
+        $this->assertSame('parking-spots/{parkingSpot}', $routes->getByName('parking_spot.show')->uri());
+        $this->assertSame(['GET', 'HEAD'], $routes->getByName('parking_spot.show')->methods());
+        $this->assertSame('parking-spots/create', $routes->getByName('parking_spot.create')->uri());
+        $this->assertSame(['GET', 'HEAD'], $routes->getByName('parking_spot.create')->methods());
+        $this->assertSame('parking-spots', $routes->getByName('parking_spot.store')->uri());
+        $this->assertSame(['POST'], $routes->getByName('parking_spot.store')->methods());
+        $this->assertSame('parking-spots/{parkingSpot}/edit', $routes->getByName('parking_spot.edit')->uri());
+        $this->assertSame(['GET', 'HEAD'], $routes->getByName('parking_spot.edit')->methods());
+        $this->assertSame('parking-spots/{parkingSpot}', $routes->getByName('parking_spot.update')->uri());
+        $this->assertSame(['PUT', 'PATCH'], $routes->getByName('parking_spot.update')->methods());
+    }
+
+    public function test_route_model_binding_returns_standard_not_found_responses(): void
+    {
+        [, $user] = $this->createParkingSpot();
+        $missingParkingSpotId = ParkingSpot::max('id') + 1;
+
+        $this->get(route('parking_spot.show', ['parkingSpot' => $missingParkingSpotId]))
+            ->assertNotFound();
+
+        $this->actingAs($user)
+            ->get(route('parking_spot.edit', ['parkingSpot' => $missingParkingSpotId]))
+            ->assertNotFound();
+
+        $this->put(route('parking_spot.update', ['parkingSpot' => $missingParkingSpotId]))
+            ->assertNotFound();
+    }
 
     public function test_guest_can_view_parking_spot_detail_without_authenticated_actions(): void
     {
@@ -87,7 +120,7 @@ class ParkingSpotAuthorizationHistoryTest extends TestCase
                 'temporary_image_paths' => [],
                 'expires_at' => now()->addDay()->getTimestamp(),
             ],
-        ])->post(route('parking_spot.update'))
+        ])->put(route('parking_spot.update', $parkingSpot))
             ->assertRedirect(route('login'));
 
         $this->assertDatabaseCount('parking_spot_update_histories', 0);
@@ -133,7 +166,7 @@ class ParkingSpotAuthorizationHistoryTest extends TestCase
                     'expires_at' => now()->addDay()->getTimestamp(),
                 ],
             ])
-            ->post(route('parking_spot.update'))
+            ->put(route('parking_spot.update', $parkingSpot))
             ->assertRedirect(route('home'));
 
         $history = ParkingSpotUpdateHistory::sole();

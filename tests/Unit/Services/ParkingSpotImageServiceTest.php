@@ -16,7 +16,7 @@ class ParkingSpotImageServiceTest extends TestCase
     {
         Storage::fake('public');
         $request = Request::create(
-            '/parking-spot/confirm',
+            '/parking-spots/confirm',
             'POST',
             [],
             [],

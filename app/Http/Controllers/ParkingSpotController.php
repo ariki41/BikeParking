@@ -22,20 +22,19 @@ class ParkingSpotController extends Controller
         private readonly ParkingSpotConfirmationService $confirmation,
     ) {}
 
-    public function show(Request $request, $id)
+    public function show(Request $request, ParkingSpot $parkingSpot)
     {
         $user = $request->user();
-        $query = ParkingSpot::with(['images', 'rates', 'reviews.user', 'updateHistories.user'])
-            ->withCount(['favorites', 'reviews'])
-            ->withAvg('reviews', 'rating');
+        $parkingSpot
+            ->load(['images', 'rates', 'reviews.user', 'updateHistories.user'])
+            ->loadCount(['favorites', 'reviews'])
+            ->loadAvg('reviews', 'rating');
 
         if ($user) {
-            $query->withExists([
+            $parkingSpot->loadExists([
                 'favorites as is_favorited' => fn ($favoriteQuery) => $favoriteQuery->where('user_id', $user->id),
             ]);
         }
-
-        $parkingSpot = $query->findOrFail($id);
 
         $postalcode = Postalcode::getPostalcode($parkingSpot->postalcode)->postalcode;
         $userReview = $user
@@ -151,9 +150,9 @@ class ParkingSpotController extends Controller
         return redirect()->route('home')->with('success', '駐車場を登録しました。');
     }
 
-    public function edit(Request $request, $id)
+    public function edit(Request $request, ParkingSpot $parkingSpot)
     {
-        $parkingSpot = ParkingSpot::with(['images', 'rates'])->findOrFail($id);
+        $parkingSpot->load(['images', 'rates']);
         Gate::authorize('update', $parkingSpot);
         $this->confirmation->beginEdit($request, $parkingSpot->id);
 
@@ -189,26 +188,25 @@ class ParkingSpotController extends Controller
         return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'rateDayTypes', 'rateUnitMinutes', 'postalcode', 'address1', 'address2', 'ratesInput', 'imagePaths'));
     }
 
-    public function update(Request $request)
+    public function update(Request $request, ParkingSpot $parkingSpot)
     {
         $input = $this->confirmation->confirmedInput($request, ParkingSpotConfirmationService::MODE_EDIT);
 
-        if ($input === null) {
+        if ($input === null || (int) $input['id'] !== $parkingSpot->id) {
             return redirect()->route('home')
                 ->with('error', '確認情報の有効期限が切れました。編集画面からやり直してください。');
         }
 
-        $parkingSpot = ParkingSpot::findOrFail($input['id']);
         Gate::authorize('update', $parkingSpot);
 
         if ($request->input('back') === 'back') {
-            return redirect()->route('parking_spot.edit', ['id' => $input['id']])->withInput($input);
+            return redirect()->route('parking_spot.edit', $parkingSpot)->withInput($input);
         }
 
         try {
             $this->persistence->update($input, $request->user());
         } catch (ValidationException $exception) {
-            return redirect()->route('parking_spot.edit', ['id' => $input['id']])
+            return redirect()->route('parking_spot.edit', $parkingSpot)
                 ->withErrors($exception->errors())
                 ->withInput($input);
         }
@@ -224,7 +222,7 @@ class ParkingSpotController extends Controller
         $parkingSpotId = $this->confirmation->trustedParkingSpotId($request);
 
         return $parkingSpotId
-            ? redirect()->route('parking_spot.edit', ['id' => $parkingSpotId])
+            ? redirect()->route('parking_spot.edit', ['parkingSpot' => $parkingSpotId])
             : redirect()->route('parking_spot.create');
     }
 

@@ -158,7 +158,7 @@ class ParkingSpotImageTest extends TestCase
         $this->assertCount(3, $tempPaths);
 
         $this->actingAs($user)
-            ->post(route('parking_spot.update'))
+            ->put(route('parking_spot.update', $parkingSpot))
             ->assertRedirect(route('home'));
 
         $parkingSpot->refresh()->load('images');

@@ -31,7 +31,7 @@ class ParkingSpotConfirmationSessionTest extends TestCase
             ->assertRedirect(route('parking_spot.create'))
             ->assertSessionHasErrors(['confirmation']);
 
-        $this->post(route('parking_spot.update'))
+        $this->put(route('parking_spot.update', $parkingSpot))
             ->assertRedirect(route('home'))
             ->assertSessionHas('error');
 
@@ -67,7 +67,7 @@ class ParkingSpotConfirmationSessionTest extends TestCase
             ->assertRedirect(route('parking_spot.edit', $parkingSpot->id))
             ->assertSessionHasErrors(['confirmation']);
 
-        $this->post(route('parking_spot.update'))->assertRedirect(route('home'));
+        $this->put(route('parking_spot.update', $parkingSpot))->assertRedirect(route('home'));
 
         $this->assertSame('確認セッションテスト駐輪場', $parkingSpot->fresh()->name);
         $this->assertSame('改ざん先の駐輪場', $otherParkingSpot->fresh()->name);
@@ -114,7 +114,10 @@ class ParkingSpotConfirmationSessionTest extends TestCase
 
         $this->actingAs($user)->get(route('parking_spot.create'))->assertOk();
 
-        $this->post(route('parking_spot.confirm'), $input)->assertOk();
+        $this->post(route('parking_spot.confirm'), $input)
+            ->assertOk()
+            ->assertSee(route('parking_spot.store'), false)
+            ->assertDontSee('name="_method"', false);
 
         $this->post(route('parking_spot.store'), ['back' => 'back'])
             ->assertRedirect(route('parking_spot.create'))
@@ -143,15 +146,18 @@ class ParkingSpotConfirmationSessionTest extends TestCase
         $this->fakeGeocode();
 
         $this->actingAs($user)->get(route('parking_spot.edit', $parkingSpot->id))->assertOk();
-        $this->post(route('parking_spot.confirm'), $input)->assertOk();
+        $this->post(route('parking_spot.confirm'), $input)
+            ->assertOk()
+            ->assertSee(route('parking_spot.update', $parkingSpot), false)
+            ->assertSee('name="_method" value="PUT"', false);
 
-        $this->post(route('parking_spot.update'), ['back' => 'back'])
+        $this->put(route('parking_spot.update', $parkingSpot), ['back' => 'back'])
             ->assertRedirect(route('parking_spot.edit', $parkingSpot->id))
             ->assertSessionHas(ParkingSpotConfirmationService::SESSION_KEY.'.parking_spot_id', $parkingSpot->id)
             ->assertSessionHas(ParkingSpotConfirmationService::SESSION_KEY.'.input.name', '戻って再試行した駐輪場');
 
         $this->post(route('parking_spot.confirm'), $input)->assertOk();
-        $this->post(route('parking_spot.update'))
+        $this->put(route('parking_spot.update', $parkingSpot))
             ->assertRedirect(route('home'))
             ->assertSessionMissing(ParkingSpotConfirmationService::SESSION_KEY);
 
