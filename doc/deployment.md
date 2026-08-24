@@ -1,6 +1,6 @@
 # 開発サーバーへのデプロイ
 
-`main` への push は GitHub Actions でテスト、Viteアセットのビルド、本番用OCIイメージのビルドを実行します。開発環境へのデプロイは通常のpushでは行わず、Actionsの手動実行で明示的に指定した場合だけ実施します。成功したイメージは GitHub Container Registry (GHCR) へ公開され、その**digest**を指定して `development` Environment のサーバーへデプロイします。サーバー上でソースをビルドしないため、CIで検証した成果物とデプロイされる成果物は同一です。
+`main` への push は GitHub Actions でテスト、Viteアセットのビルド、本番用OCIイメージのビルドを実行します。開発環境へのデプロイは通常のpushでは行わず、Actionsの手動実行で明示的に指定した場合だけ実施します。成功したイメージは GitHub Container Registry (GHCR) へ公開され、その**digest**を指定して `development` Environment のサーバーへデプロイします。サーバー上でソースをビルドしないため、CIで検証した成果物とデプロイされる成果物は同一です。開発環境はDocker内のTailscale Funnelサイドカーを経由し、`https://bikeparking-dev.tail06f222.ts.net` としてインターネットへ公開します。
 
 ## ワークフローの構成
 
@@ -20,14 +20,14 @@
 
 ```bash
 cd /opt/bike-parking
-docker compose -f compose.deploy.yml stop app scheduler
+docker compose -f compose.deploy.yml stop app scheduler tailscale
 ```
 
 アプリケーション更新後にヘルスチェックが失敗すると、デプロイスクリプトは直前のdigestのアプリケーションコンテナへ自動で戻します。初回デプロイで戻すイメージがない場合は、異常なアプリケーションコンテナを停止して終了します。データベースマイグレーションは前方互換で作成することを前提とします。
 
 ## 開発サーバーの初期設定
 
-対象は `kaede.tail06f222.ts.net` 上のUbuntu x86_64サーバーです。Tailscale、OpenSSH Server、Docker EngineとDocker Compose v2をあらかじめ導入し、`ariki` ユーザーでSSH接続できるようにします。
+対象は `kaede.tail06f222.ts.net` 上のUbuntu x86_64サーバーです。ホストのTailscaleはGitHub ActionsからのSSH接続に利用します。アプリの外部公開は、Docker内のTailscaleサイドカーが担当します。OpenSSH Server、Docker EngineとDocker Compose v2をあらかじめ導入し、`ariki` ユーザーでSSH接続できるようにします。
 
 デプロイ先ディレクトリを作成し、`ariki` が書き込めるようにします。
 
@@ -50,7 +50,35 @@ YOLP_CLIENT_ID=<Yahoo!地図APIのClient ID>
 php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
 ```
 
-`.env` はGitへ追加せず、サーバー上でだけ保管してください。
+`.env` はGitへ追加せず、サーバー上でだけ保管してください。`TS_AUTHKEY` はサーバーへ手入力せず、GitHub Environment `development` のSecretからデプロイ時に同期します。GitHub Actionsを使わずサーバー上で手動デプロイする場合だけ、サーバーの `.env` にも設定してください。
+
+`APP_URL` は `https://bikeparking-dev.tail06f222.ts.net`、`TS_HOSTNAME` は `bikeparking-dev` に設定します。アプリコンテナはホストのポートを公開しません。TailscaleサイドカーがDockerネットワーク内の `app:80` へHTTPSで転送するため、外部公開の経路はFunnelだけです。
+
+### Tailscale Funnelの初期設定
+
+Tailscale管理画面でMagicDNSとHTTPSを有効にし、TailscaleのAuth keyを次のタグで作成します。
+
+```text
+tag:bike-parking-development
+```
+
+Access controlsには、このタグ付きノードだけがFunnelを使えるよう次の設定を追加します。`tagOwners` の所有者は利用しているTailnetの運用方針に合わせて指定してください。
+
+```json
+{
+  "tagOwners": {
+    "tag:bike-parking-development": ["autogroup:admin"]
+  },
+  "nodeAttrs": [
+    {
+      "target": ["tag:bike-parking-development"],
+      "attr": ["funnel"]
+    }
+  ]
+}
+```
+
+初回デプロイ後に、`https://bikeparking-dev.tail06f222.ts.net/up` と `docker compose -f compose.deploy.yml exec tailscale tailscale funnel status --json` を確認してください。Funnelの状態は `tailscale-state` ボリュームに保持され、コンテナの再作成後も同じホスト名で再接続します。
 
 ### 開発用テストデータ
 
@@ -94,6 +122,7 @@ echo '<GitHub PAT>' | docker login ghcr.io -u ariki41 --password-stdin
 | Secret | `DEPLOY_SSH_PRIVATE_KEY` | `ariki` ユーザーに登録したSSH秘密鍵 |
 | Secret | `DEPLOY_KNOWN_HOSTS` | `kaede.tail06f222.ts.net` のED25519 known_hosts行 |
 | Secret | `DEVELOPMENT_SEED_PASSWORD` | 開発用テストユーザーのパスワード |
+| Secret | `TS_AUTHKEY` | `tag:bike-parking-development` を付与した再利用可能なTailscale Auth key |
 
 TailscaleのTrust credentialはGitHub ActionsをIssuerとし、Subjectを `repo:ariki41/BikeParking:environment:development`、タグを `tag:ci` とします。Scopesは **Devices → Core → Write** と **Keys → Auth Keys → Write** が必要です。
 
@@ -103,10 +132,11 @@ TailscaleのTrust credentialはGitHub ActionsをIssuerとし、Subjectを `repo:
 
 - `app`: Apache + PHP 8.3で動くLaravelアプリケーション。`/up` のヘルスチェックを通過するまでデプロイ完了としません。
 - `scheduler`: Laravelスケジューラを常時実行し、24時間経過した駐輪場確認用の一時画像を1時間ごとに削除します。
+- `tailscale`: `bikeparking-dev` としてTailnetへ参加し、Tailscale FunnelからDocker内部の `app:80` へHTTPSで転送します。ホストポートは公開しません。
 - `mysql`: MySQL 8.0。データは名前付きボリューム `mysql-data` に保存されます。
 - `app-storage`: アップロード画像などLaravelの永続ストレージです。
 
-デプロイスクリプトは新しいdigestのイメージを取得してからMySQLの起動を待ち、`php artisan migrate --force` を実行します。`SEED_DEVELOPMENT_DATA=true` の場合は、その後に開発用テストデータを投入して、最後にアプリケーションとスケジューラの更新およびヘルスチェックを行います。
+デプロイスクリプトは新しいdigestのイメージを取得してからMySQLの起動を待ち、`php artisan migrate --force` を実行します。`SEED_DEVELOPMENT_DATA=true` の場合は、その後に開発用テストデータを投入して、最後にアプリケーション、スケジューラ、Tailscale Funnelを更新します。アプリまたはFunnelのヘルスチェックに失敗した場合は、直前のアプリケーションイメージへ戻します。初回のFunnel用DNS・証明書設定には数分かかることがあります。
 
 自動復旧後も手動で以前のdigestへ戻す必要がある場合は、サーバーで次のように実行できます。
 
