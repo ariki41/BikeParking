@@ -14,7 +14,7 @@ fi
 
 export IMAGE_NAME IMAGE_DIGEST
 
-docker compose -f compose.deploy.yml pull app scheduler
+docker compose -f compose.deploy.yml pull app scheduler tailscale
 docker compose -f compose.deploy.yml up -d --wait mysql
 docker compose -f compose.deploy.yml run --rm --no-deps app php artisan migrate --force
 docker compose -f compose.deploy.yml run --rm --no-deps app sh -ceu '
@@ -32,7 +32,7 @@ if previous_container_id="$(docker compose -f compose.deploy.yml ps -q app 2>/de
     fi
 fi
 
-if ! docker compose -f compose.deploy.yml up -d --wait app scheduler; then
+if ! docker compose -f compose.deploy.yml up -d --wait app scheduler tailscale; then
     echo 'The application did not become healthy. Reverting the application container.' >&2
 
     if [[ "$previous_image" == *@* ]]; then
@@ -40,10 +40,10 @@ if ! docker compose -f compose.deploy.yml up -d --wait app scheduler; then
         previous_image_digest="${previous_image#*@}"
 
         IMAGE_NAME="$previous_image_name" IMAGE_DIGEST="$previous_image_digest" \
-            docker compose -f compose.deploy.yml up -d --wait app scheduler
+            docker compose -f compose.deploy.yml up -d --wait app scheduler tailscale
         echo "Rollback completed: $previous_image" >&2
     else
-        docker compose -f compose.deploy.yml stop app scheduler
+        docker compose -f compose.deploy.yml stop app scheduler tailscale
         echo 'No previous application image was found; the unhealthy application container was stopped.' >&2
     fi
 

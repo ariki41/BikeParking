@@ -239,12 +239,24 @@ jobs:
 
       - name: Upload deployment definition
         run: |
+          ssh \
+            -p "$DEPLOY_PORT" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "mkdir -p '$DEPLOY_PATH/docker/tailscale'"
           scp \
             -P "$DEPLOY_PORT" \
             -o BatchMode=yes \
             -o StrictHostKeyChecking=yes \
             compose.deploy.yml deploy.env.example scripts/deploy.sh \
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+          scp \
+            -P "$DEPLOY_PORT" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            docker/tailscale/funnel.json \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/docker/tailscale/"
 
       - name: Deploy immutable image
         env:

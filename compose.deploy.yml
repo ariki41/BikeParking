@@ -8,8 +8,6 @@ services:
       APP_DEBUG: "false"
       SEED_DEVELOPMENT_DATA: "${SEED_DEVELOPMENT_DATA:-false}"
       DEVELOPMENT_SEED_PASSWORD: "${DEVELOPMENT_SEED_PASSWORD:-}"
-    ports:
-      - "${APP_PORT:-8080}:80"
     volumes:
       - app-storage:/var/www/html/storage
     depends_on:
@@ -21,6 +19,29 @@ services:
       timeout: 5s
       retries: 12
       start_period: 20s
+    restart: unless-stopped
+
+  tailscale:
+    image: tailscale/tailscale:stable
+    env_file:
+      - .env
+    hostname: "${TS_HOSTNAME:-bikeparking-dev}"
+    environment:
+      TS_AUTHKEY: "${TS_AUTHKEY:?TS_AUTHKEY is required}"
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_SERVE_CONFIG: /config/funnel.json
+    volumes:
+      - tailscale-state:/var/lib/tailscale
+      - ./docker/tailscale:/config:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "tailscale funnel status --json | grep -q '\"AllowFunnel\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
     restart: unless-stopped
 
   scheduler:
@@ -62,3 +83,4 @@ services:
 volumes:
   app-storage:
   mysql-data:
+  tailscale-state:
