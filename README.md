@@ -86,6 +86,21 @@ YOLP_CLIENT_ID=<your-client-id>
 
 YOLP設定は `config/services.php` を通して共通APIクライアントから参照されます。検索と駐輪場登録のAPI通信には、共通のタイムアウト・リトライ・レスポンス変換が適用されます。
 
+### 広告（Google AdSense）
+
+広告は初期状態で無効です。手動で配置するのは、ホームの新着一覧の後と、駐輪場詳細の補足情報の後だけです。検索画面・フォーム・ログイン画面には表示せず、追従表示・全画面表示・自動挿入も使用しません。
+
+AdSense の審査完了後に、発行されたサイト運営者 ID と各広告ユニットのスロット ID を設定してください。
+
+```dotenv
+ADVERTISING_ENABLED=true
+ADSENSE_CLIENT=ca-pub-1234567890123456
+ADSENSE_SLOT_HOME_FOOTER=1234567890
+ADSENSE_SLOT_PARKING_SPOT_FOOTER=0987654321
+```
+
+設定後は本番サイトの `/ads.txt` で AdSense 用のレコードが返ることも確認してください。広告を有効化する前に、`/privacy` の内容が実際の広告配信事業者と利用者の地域に必要な同意要件に合っていることを確認してください。
+
 データベース接続をMySQLにする場合は、`.env` の `DB_*` をDocker Composeの設定に合わせます。
 
 ```dotenv

@@ -46,4 +46,16 @@
     .bp-danger-link {
         @apply text-sm font-semibold text-rose-600 transition hover:text-rose-700;
     }
+
+    .bp-ad-slot {
+        @apply overflow-hidden rounded-lg border border-slate-200 bg-white px-3 pb-3 pt-2 shadow-sm shadow-slate-200/70;
+    }
+
+    .bp-ad-slot__label {
+        @apply mb-2 text-center text-[11px] font-medium tracking-[0.18em] text-slate-400;
+    }
+
+    .bp-ad-slot__content {
+        @apply min-h-24 overflow-hidden;
+    }
 }
