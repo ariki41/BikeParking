@@ -16,11 +16,20 @@
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @php
+        $adsenseClient = config('advertising.adsense.client');
+        $hasConfiguredAdSlot = (request()->routeIs('home') && filled(config('advertising.adsense.slots.home_footer')))
+            || (request()->routeIs('parking_spot.show') && filled(config('advertising.adsense.slots.parking_spot_footer')));
+    @endphp
+    @if (config('advertising.enabled') && filled($adsenseClient) && $hasConfiguredAdSlot)
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ urlencode($adsenseClient) }}"
+            crossorigin="anonymous"></script>
+    @endif
     @stack('script')
 </head>
 
 <body class="font-sans antialiased">
-    <div class="bp-page">
+    <div class="bp-page flex min-h-screen flex-col">
         @include('layouts.navigation')
 
         <!-- Page Heading -->
@@ -33,9 +42,16 @@
         @endisset
 
         <!-- Page Content -->
-        <main>
+        <main class="flex-1">
             {{ $slot }}
         </main>
+
+        <footer class="border-t border-slate-200 bg-white">
+            <div class="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+                <span>サービス維持のため、ページ内の一部に広告を掲載することがあります。</span>
+                <a class="font-semibold text-slate-600 hover:text-emerald-700" href="{{ route('privacy') }}">広告とプライバシー</a>
+            </div>
+        </footer>
     </div>
 </body>
 

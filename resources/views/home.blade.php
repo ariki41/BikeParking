@@ -69,6 +69,10 @@
                     </article>
                 @endforeach
             </div>
+
+            @if ($parkingSpots->isNotEmpty())
+                <x-ad-slot class="mt-8" placement="home_footer" />
+            @endif
         </section>
     </div>
 </x-app-layout>

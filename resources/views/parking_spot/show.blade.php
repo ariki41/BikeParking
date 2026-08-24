@@ -234,5 +234,7 @@
                 </div>
             </aside>
         </div>
+
+        <x-ad-slot class="mt-10" placement="parking_spot_footer" />
     </div>
 </x-app-layout>
