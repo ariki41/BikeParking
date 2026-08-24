@@ -246,6 +246,7 @@ jobs:
             "$DEPLOY_USER@$DEPLOY_HOST" \
             "mkdir -p '$DEPLOY_PATH/docker/tailscale'"
           scp \
+            -p \
             -P "$DEPLOY_PORT" \
             -o BatchMode=yes \
             -o StrictHostKeyChecking=yes \
@@ -261,7 +262,83 @@ jobs:
       - name: Deploy immutable image
         env:
           DEVELOPMENT_SEED_PASSWORD: ${{ secrets.DEVELOPMENT_SEED_PASSWORD }}
+          TS_AUTHKEY: ${{ secrets.TS_AUTHKEY }}
         run: |
+          if [ -z "$TS_AUTHKEY" ]; then
+            echo 'The development Environment secret TS_AUTHKEY is required.' >&2
+            exit 1
+          fi
+
+          auth_key_file="$(mktemp)"
+          trap 'rm -f "$auth_key_file"' EXIT
+          chmod 600 "$auth_key_file"
+          printf '%s\n' "$TS_AUTHKEY" > "$auth_key_file"
+
+          scp \
+            -P "$DEPLOY_PORT" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "$auth_key_file" \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/.tailscale-authkey-$GITHUB_RUN_ID"
+
+          ssh \
+            -p "$DEPLOY_PORT" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            "sh -s -- '$DEPLOY_PATH' '$GITHUB_RUN_ID'" <<'REMOTE_AUTHKEY'
+          set -eu
+
+          deploy_path="$1"
+          run_id="$2"
+          env_path="$deploy_path/.env"
+          auth_key_path="$deploy_path/.tailscale-authkey-$run_id"
+          temp_env=''
+
+          cleanup() {
+            rm -f "$auth_key_path"
+            if [ -n "$temp_env" ]; then
+              rm -f "$temp_env"
+            fi
+          }
+          trap cleanup EXIT
+
+          if [ ! -f "$env_path" ]; then
+            echo "Missing $env_path." >&2
+            exit 1
+          fi
+
+          chmod 600 "$auth_key_path"
+          auth_key="$(cat "$auth_key_path")"
+          if [ -z "$auth_key" ]; then
+            echo 'The uploaded Tailscale auth key is empty.' >&2
+            exit 1
+          fi
+
+          umask 077
+          temp_env="$(mktemp "$deploy_path/.env.XXXXXX")"
+          found_auth_key=0
+
+          while IFS= read -r line || [ -n "$line" ]; do
+            case "$line" in
+              TS_AUTHKEY=*)
+                printf 'TS_AUTHKEY=%s\n' "$auth_key" >> "$temp_env"
+                found_auth_key=1
+                ;;
+              *)
+                printf '%s\n' "$line" >> "$temp_env"
+                ;;
+            esac
+          done < "$env_path"
+
+          if [ "$found_auth_key" -eq 0 ]; then
+            printf '\nTS_AUTHKEY=%s\n' "$auth_key" >> "$temp_env"
+          fi
+
+          mv "$temp_env" "$env_path"
+          temp_env=''
+          REMOTE_AUTHKEY
+
           ssh \
             -p "$DEPLOY_PORT" \
             -o BatchMode=yes \

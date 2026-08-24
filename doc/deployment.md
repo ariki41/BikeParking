@@ -42,7 +42,6 @@ APP_KEY=base64:<32バイト乱数をBase64エンコードした値>
 DB_PASSWORD=<MySQLアプリケーションユーザーの強いパスワード>
 MYSQL_ROOT_PASSWORD=<MySQL root用の別の強いパスワード>
 YOLP_CLIENT_ID=<Yahoo!地図APIのClient ID>
-TS_AUTHKEY=<Tailscaleで発行したtag:bike-parking-development用の再利用可能なAuth key>
 ```
 
 `APP_KEY` はPHPがあれば次のコマンドで生成できます。
@@ -51,7 +50,7 @@ TS_AUTHKEY=<Tailscaleで発行したtag:bike-parking-development用の再利用�
 php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
 ```
 
-`.env` はGitへ追加せず、サーバー上でだけ保管してください。
+`.env` はGitへ追加せず、サーバー上でだけ保管してください。`TS_AUTHKEY` はサーバーへ手入力せず、GitHub Environment `development` のSecretからデプロイ時に同期します。GitHub Actionsを使わずサーバー上で手動デプロイする場合だけ、サーバーの `.env` にも設定してください。
 
 `APP_URL` は `https://bikeparking-dev.tail06f222.ts.net`、`TS_HOSTNAME` は `bikeparking-dev` に設定します。アプリコンテナはホストのポートを公開しません。TailscaleサイドカーがDockerネットワーク内の `app:80` へHTTPSで転送するため、外部公開の経路はFunnelだけです。
 
@@ -123,6 +122,7 @@ echo '<GitHub PAT>' | docker login ghcr.io -u ariki41 --password-stdin
 | Secret | `DEPLOY_SSH_PRIVATE_KEY` | `ariki` ユーザーに登録したSSH秘密鍵 |
 | Secret | `DEPLOY_KNOWN_HOSTS` | `kaede.tail06f222.ts.net` のED25519 known_hosts行 |
 | Secret | `DEVELOPMENT_SEED_PASSWORD` | 開発用テストユーザーのパスワード |
+| Secret | `TS_AUTHKEY` | `tag:bike-parking-development` を付与した再利用可能なTailscale Auth key |
 
 TailscaleのTrust credentialはGitHub ActionsをIssuerとし、Subjectを `repo:ariki41/BikeParking:environment:development`、タグを `tag:ci` とします。Scopesは **Devices → Core → Write** と **Keys → Auth Keys → Write** が必要です。
 
