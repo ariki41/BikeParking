@@ -99,6 +99,15 @@ ADSENSE_SLOT_HOME_FOOTER=1234567890
 ADSENSE_SLOT_PARKING_SPOT_FOOTER=0987654321
 ```
 
+開発環境で広告枠の余白・レスポンシブ表示だけを確認する場合は、実AdSenseへ通信しないプレースホルダーを使用できます。`ADSENSE_*` の設定は不要です。
+
+```dotenv
+ADVERTISING_ENABLED=true
+ADVERTISING_TEST_MODE=true
+```
+
+この設定では「広告（開発用）」と `AD PREVIEW` を表示し、AdSense スクリプトや広告リクエストは出力しません。本番で実広告を配信する際は `ADVERTISING_TEST_MODE=false` にしてください。
+
 設定後は本番サイトの `/ads.txt` で AdSense 用のレコードが返ることも確認してください。広告を有効化する前に、`/privacy` の内容が実際の広告配信事業者と利用者の地域に必要な同意要件に合っていることを確認してください。
 
 データベース接続をMySQLにする場合は、`.env` の `DB_*` をDocker Composeの設定に合わせます。

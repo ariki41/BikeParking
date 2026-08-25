@@ -14,6 +14,19 @@ return [
 
     'enabled' => env('ADVERTISING_ENABLED', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Development ad placeholder
+    |--------------------------------------------------------------------------
+    |
+    | This renders a local placeholder in the same locations as manual ads,
+    | without loading the AdSense script or making a third-party ad request.
+    | Enable it only in a development environment when checking the layout.
+    |
+    */
+
+    'test_mode' => env('ADVERTISING_TEST_MODE', false),
+
     'adsense' => [
         'client' => env('ADSENSE_CLIENT'),
 

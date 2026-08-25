@@ -58,4 +58,8 @@
     .bp-ad-slot__content {
         @apply min-h-24 overflow-hidden;
     }
+
+    .bp-ad-slot__placeholder {
+        @apply flex min-h-24 items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 text-xs font-semibold tracking-[0.2em] text-slate-400;
+    }
 }
