@@ -13,6 +13,17 @@ class ParkingSpot extends Model
 {
     use HasFactory;
 
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'longitude' => 'float',
+            'latitude' => 'float',
+        ];
+    }
+
     public function getCapacityLabelAttribute(): string
     {
         $labels = config('categories.parking_spot_capacity');
