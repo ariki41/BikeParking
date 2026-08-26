@@ -2,7 +2,8 @@
     @php($favoriteCount = Auth::user()->favorites()->count())
 @endauth
 
-<nav class="sticky top-0 z-40 border-b border-slate-200 bg-white/95 shadow-sm shadow-slate-200/60 backdrop-blur" x-data="{ open: false }">
+<nav class="sticky top-0 z-[1100] shrink-0 border-b border-slate-200 bg-white/95 shadow-sm shadow-slate-200/60 backdrop-blur"
+    x-data="{ open: false }">
     <!-- Primary Navigation Menu -->
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 justify-between">

@@ -49,7 +49,7 @@
 
 <x-app-layout>
     <div
-        class="grid min-h-[calc(100vh-4rem)] grid-cols-1 bg-stone-50 lg:h-[calc(100vh-4rem)] lg:min-h-0 lg:grid-cols-[420px_minmax(0,1fr)]">
+        class="grid min-h-[calc(100vh-4rem)] grid-cols-1 bg-stone-50 lg:h-full lg:min-h-0 lg:grid-cols-[420px_minmax(0,1fr)]">
         <div
             class="border-b border-slate-200 bg-white p-4 lg:flex lg:min-h-0 lg:flex-col lg:border-b-0 lg:border-r">
             <form class="lg:shrink-0" method="GET" action="{{ route('search') }}">

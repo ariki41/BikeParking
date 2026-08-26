@@ -31,7 +31,11 @@
 </head>
 
 <body class="font-sans antialiased">
-    <div class="bp-page flex min-h-screen flex-col">
+    <div
+        @class([
+            'bp-page flex min-h-screen flex-col',
+            'lg:h-dvh lg:min-h-0 lg:overflow-hidden' => request()->routeIs('search'),
+        ])>
         @include('layouts.navigation')
 
         <!-- Page Heading -->
@@ -44,11 +48,11 @@
         @endisset
 
         <!-- Page Content -->
-        <main class="flex-1">
+        <main @class(['flex-1', 'lg:min-h-0' => request()->routeIs('search')])>
             {{ $slot }}
         </main>
 
-        <footer class="border-t border-slate-200 bg-white">
+        <footer class="shrink-0 border-t border-slate-200 bg-white">
             <div class="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
                 <span>サービス維持のため、ページ内の一部に広告を掲載することがあります。</span>
                 <a class="font-semibold text-slate-600 hover:text-emerald-700" href="{{ route('privacy') }}">広告とプライバシー</a>

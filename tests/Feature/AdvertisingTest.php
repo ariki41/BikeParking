@@ -73,14 +73,24 @@ class AdvertisingTest extends TestCase
             ->assertSee('adsbygoogle.js?client=ca-pub-1234567890123456', false);
     }
 
-    public function test_search_results_and_map_share_the_same_desktop_height(): void
+    public function test_search_results_map_and_footer_fit_the_desktop_viewport(): void
     {
         $this->get(route('search'))
             ->assertOk()
-            ->assertSee('lg:h-[calc(100vh-4rem)] lg:min-h-0 lg:grid-cols-[420px_minmax(0,1fr)]', false)
+            ->assertSee('lg:h-dvh lg:min-h-0 lg:overflow-hidden', false)
+            ->assertSee('<main class="flex-1 lg:min-h-0">', false)
+            ->assertSee('lg:h-full lg:min-h-0 lg:grid-cols-[420px_minmax(0,1fr)]', false)
             ->assertSee('lg:flex lg:min-h-0 lg:flex-col', false)
             ->assertSee('lg:h-auto lg:min-h-0 lg:flex-1', false)
-            ->assertSee('lg:h-full lg:min-h-0', false);
+            ->assertSee('lg:h-full lg:min-h-0', false)
+            ->assertSee('shrink-0 border-t border-slate-200 bg-white', false);
+    }
+
+    public function test_navigation_stays_above_leaflet_layers(): void
+    {
+        $this->get(route('search'))
+            ->assertOk()
+            ->assertSee('sticky top-0 z-[1100] shrink-0', false);
     }
 
     public function test_test_mode_renders_a_placeholder_without_loading_adsense(): void
