@@ -20,7 +20,8 @@
         $advertisingTestMode = config('advertising.test_mode');
         $adsenseClient = config('advertising.adsense.client');
         $hasConfiguredAdSlot = (request()->routeIs('home') && filled(config('advertising.adsense.slots.home_footer')))
-            || (request()->routeIs('parking_spot.show') && filled(config('advertising.adsense.slots.parking_spot_footer')));
+            || (request()->routeIs('parking_spot.show') && filled(config('advertising.adsense.slots.parking_spot_footer')))
+            || (request()->routeIs('search') && filled(config('advertising.adsense.slots.search_footer')));
     @endphp
     @if (config('advertising.enabled') && ! $advertisingTestMode && filled($adsenseClient) && $hasConfiguredAdSlot)
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ urlencode($adsenseClient) }}"

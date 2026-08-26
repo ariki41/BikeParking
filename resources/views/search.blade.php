@@ -77,6 +77,7 @@
             <div class="mt-5 h-[calc(100vh-17rem)] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50" id="parking-spots">
                 @livewire('parking-spots')
             </div>
+            <x-ad-slot class="mt-4" placement="search_footer" />
         </div>
 
         <div class="h-[60vh] min-h-96 bg-slate-100 lg:h-[calc(100vh-4rem)]" id="map"></div>
