@@ -15,7 +15,10 @@
                         <span class="sr-only">BikeParking</span>
                     </a>
                 </div>
-                <div class="hidden items-center space-x-4 sm:ms-10 sm:flex">
+                <div class="hidden items-center space-x-4 lg:ms-10 lg:flex">
+                    <x-nav-link :href="route('home')" :active="request()->routeIs('home')">
+                        ホーム
+                    </x-nav-link>
                     <x-nav-link :href="route('parking_spot.create')" :active="request()->routeIs('parking_spot.create')">
                         駐車場追加
                     </x-nav-link>
@@ -23,13 +26,16 @@
                         <x-nav-link :href="route('favorites.index')" :active="request()->routeIs('favorites.*')">
                             お気に入り ({{ $favoriteCount }})
                         </x-nav-link>
+                        <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.*')">
+                            マイページ
+                        </x-nav-link>
                     @endauth
                 </div>
             </div>
 
             <!-- Settings Dropdown -->
             @auth
-                <div class="hidden sm:ms-6 sm:flex sm:items-center">
+                <div class="hidden lg:ms-6 lg:flex lg:items-center">
                     <x-dropdown align="right" width="48">
                         <x-slot name="trigger">
                             <button
@@ -47,10 +53,6 @@
                         </x-slot>
 
                         <x-slot name="content">
-                            <x-dropdown-link :href="route('profile.edit')">
-                                マイページ
-                            </x-dropdown-link>
-
                             <!-- Authentication -->
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
@@ -65,7 +67,7 @@
                     </x-dropdown>
                 </div>
             @else
-                <div class="hidden items-center space-x-4 sm:ms-10 sm:flex">
+                <div class="hidden items-center space-x-4 lg:ms-10 lg:flex">
                     <x-nav-link :href="route('login')" :active="request()->routeIs('login')">
                         ログイン
                     </x-nav-link>
@@ -75,7 +77,7 @@
                 </div>
             @endauth
 
-            <div class="-me-2 flex items-center sm:hidden">
+            <div class="-me-2 flex items-center lg:hidden">
                 <button
                     class="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white p-2 text-slate-500 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     type="button" @click="open = ! open">
@@ -93,7 +95,7 @@
     </div>
 
     <!-- Responsive Navigation Menu -->
-    <div class="hidden border-t border-slate-100 bg-white sm:hidden" :class="{ 'block': open, 'hidden': !open }">
+    <div class="hidden border-t border-slate-100 bg-white lg:hidden" :class="{ 'block': open, 'hidden': !open }">
         <div class="space-y-1 pb-3 pt-2">
             <x-responsive-nav-link :href="route('home')" :active="request()->routeIs('home')">
                 ホーム
@@ -105,6 +107,9 @@
                 <x-responsive-nav-link :href="route('favorites.index')" :active="request()->routeIs('favorites.*')">
                     お気に入り ({{ $favoriteCount }})
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.*')">
+                    マイページ
+                </x-responsive-nav-link>
             @endauth
         </div>
 
@@ -115,10 +120,6 @@
                     <div class="text-base font-semibold text-slate-800">{{ Auth::user()->name }}</div>
                 </div>
                 <div class="mt-3 space-y-1">
-                    <x-responsive-nav-link :href="route('profile.edit')">
-                        マイページ
-                    </x-responsive-nav-link>
-
                     <!-- Authentication -->
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
