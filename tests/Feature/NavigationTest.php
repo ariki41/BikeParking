@@ -27,15 +27,23 @@ class NavigationTest extends TestCase
 
     public function test_authenticated_navigation_shows_primary_links_on_desktop_and_mobile(): void
     {
-        $response = $this->actingAs(User::factory()->create())
+        $user = User::factory()->create([
+            'name' => 'ナビゲーションユーザー',
+        ]);
+
+        $response = $this->actingAs($user)
             ->get(route('home'))
             ->assertOk();
 
-        $this->assertNavigationLinkCount($response->getContent(), route('home'), 'ホーム', 2);
-        $this->assertNavigationLinkCount($response->getContent(), route('favorites.index'), 'お気に入り (0)', 2);
-        $this->assertNavigationLinkCount($response->getContent(), route('profile.edit'), 'マイページ', 2);
-        $this->assertNavigationLinkCount($response->getContent(), route('login'), 'ログイン', 0);
-        $this->assertNavigationLinkCount($response->getContent(), route('register'), '新規登録', 0);
+        $html = $response->getContent();
+
+        $this->assertNavigationLinkCount($html, route('home'), 'ホーム', 2);
+        $this->assertNavigationLinkCount($html, route('favorites.index'), 'お気に入り (0)', 2);
+        $this->assertNavigationLinkCount($html, route('profile.edit'), 'マイページ', 2);
+        $this->assertNavigationLinkCount($html, route('login'), 'ログイン', 0);
+        $this->assertNavigationLinkCount($html, route('register'), '新規登録', 0);
+        $this->assertCount(2, $this->navigationElements($html, '//*[@aria-label="ログイン中のユーザー"]'));
+        $this->assertCount(2, $this->navigationElements($html, '//form[@action="'.route('logout').'"]/button[@type="submit"]'));
     }
 
     #[DataProvider('activeNavigationLinkProvider')]
@@ -74,18 +82,22 @@ class NavigationTest extends TestCase
      */
     private function navigationLinks(string $html, string $href, string $label): array
     {
-        $document = new DOMDocument;
-        $document->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
-        $links = (new DOMXPath($document))->query('//nav//a[@href="'.$href.'"]');
-
-        if ($links === false) {
-            return [];
-        }
-
-        return collect(iterator_to_array($links))
+        return collect($this->navigationElements($html, '//a[@href="'.$href.'"]'))
             ->filter(fn (DOMElement $link): bool => trim($link->textContent) === $label)
             ->values()
             ->all();
+    }
+
+    /**
+     * @return list<DOMElement>
+     */
+    private function navigationElements(string $html, string $query): array
+    {
+        $document = new DOMDocument;
+        $document->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
+        $elements = (new DOMXPath($document))->query('//nav'.$query);
+
+        return $elements === false ? [] : iterator_to_array($elements);
     }
 
     /**
