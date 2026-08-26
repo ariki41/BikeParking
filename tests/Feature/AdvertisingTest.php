@@ -39,6 +39,41 @@ class AdvertisingTest extends TestCase
             ->assertDontSee('adsbygoogle.js', false);
     }
 
+    public function test_test_mode_renders_a_placeholder_without_loading_adsense(): void
+    {
+        config([
+            'advertising.enabled' => true,
+            'advertising.test_mode' => true,
+            'advertising.adsense.client' => 'ca-pub-1234567890123456',
+            'advertising.adsense.slots.home_footer' => '1234567890',
+        ]);
+
+        $this->view('components.ad-slot', ['placement' => 'home_footer'])
+            ->assertSee('広告（開発用）')
+            ->assertSee('AD PREVIEW')
+            ->assertSee('data-ad-placement="home_footer"', false)
+            ->assertSee('data-ad-mode="placeholder"', false)
+            ->assertDontSee('adsbygoogle')
+            ->assertDontSee('data-ad-client=')
+            ->assertDontSee('data-ad-slot=');
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertDontSee('adsbygoogle.js', false);
+    }
+
+    public function test_test_mode_is_not_rendered_until_advertising_is_enabled(): void
+    {
+        config([
+            'advertising.enabled' => false,
+            'advertising.test_mode' => true,
+        ]);
+
+        $this->view('components.ad-slot', ['placement' => 'home_footer'])
+            ->assertDontSee('data-ad-placement=', false)
+            ->assertDontSee('AD PREVIEW');
+    }
+
     public function test_ads_txt_uses_the_configured_adsense_publisher_id(): void
     {
         config([
