@@ -191,6 +191,77 @@ class ParkingSpotAuthorizationHistoryTest extends TestCase
             ->assertSee('料金');
     }
 
+    public function test_update_does_not_record_coordinates_with_only_different_trailing_zeroes(): void
+    {
+        [$parkingSpot, $owner, $postalcode] = $this->createParkingSpot();
+
+        ParkingSpotRates::create([
+            'parking_spot_id' => $parkingSpot->id,
+            'day_type' => '全日',
+            'start_time' => '00:00',
+            'end_time' => '00:00',
+            'unit_minutes' => 30,
+            'rate' => 100,
+            'free_minutes' => 0,
+            'max_rate' => 1000,
+        ]);
+
+        $input = $this->updateInput($parkingSpot, $postalcode, [
+            'name' => '表記ゆれを含む更新後の駐輪場',
+            'longitude' => (string) $parkingSpot->longitude.'0',
+            'latitude' => (string) $parkingSpot->latitude.'0',
+        ]);
+
+        $this->actingAs($owner)
+            ->withSession([
+                ParkingSpotConfirmationService::SESSION_KEY => [
+                    'mode' => ParkingSpotConfirmationService::MODE_EDIT,
+                    'parking_spot_id' => $parkingSpot->id,
+                    'input' => $input,
+                    'temporary_image_paths' => [],
+                    'expires_at' => now()->addDay()->getTimestamp(),
+                ],
+            ])
+            ->put(route('parking_spot.update', $parkingSpot))
+            ->assertRedirect(route('home'));
+
+        $history = ParkingSpotUpdateHistory::sole();
+
+        $this->assertSame(['name'], array_keys($history->changes));
+    }
+
+    public function test_update_records_actual_coordinate_changes(): void
+    {
+        [$parkingSpot, $owner, $postalcode] = $this->createParkingSpot();
+
+        $input = $this->updateInput($parkingSpot, $postalcode, [
+            'longitude' => '139.754000',
+            'latitude' => '35.686000',
+        ]);
+
+        $this->actingAs($owner)
+            ->withSession([
+                ParkingSpotConfirmationService::SESSION_KEY => [
+                    'mode' => ParkingSpotConfirmationService::MODE_EDIT,
+                    'parking_spot_id' => $parkingSpot->id,
+                    'input' => $input,
+                    'temporary_image_paths' => [],
+                    'expires_at' => now()->addDay()->getTimestamp(),
+                ],
+            ])
+            ->put(route('parking_spot.update', $parkingSpot))
+            ->assertRedirect(route('home'));
+
+        $history = ParkingSpotUpdateHistory::sole();
+
+        $this->assertArrayHasKey('longitude', $history->changes);
+        $this->assertArrayHasKey('latitude', $history->changes);
+        $this->assertEquals(139.753, $history->changes['longitude']['before']);
+        $this->assertEquals(139.754, $history->changes['longitude']['after']);
+        $this->assertEquals(35.685, $history->changes['latitude']['before']);
+        $this->assertEquals(35.686, $history->changes['latitude']['after']);
+    }
+
     private function createParkingSpot(): array
     {
         $prefecture = Prefecture::create([
