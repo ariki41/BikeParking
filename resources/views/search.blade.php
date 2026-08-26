@@ -48,9 +48,11 @@
 @endpush
 
 <x-app-layout>
-    <div class="grid min-h-[calc(100vh-4rem)] grid-cols-1 bg-stone-50 lg:grid-cols-[420px_minmax(0,1fr)]">
-        <div class="border-b border-slate-200 bg-white p-4 lg:border-b-0 lg:border-r">
-            <form method="GET" action="{{ route('search') }}">
+    <div
+        class="grid min-h-[calc(100vh-4rem)] grid-cols-1 bg-stone-50 lg:h-full lg:min-h-0 lg:grid-cols-[420px_minmax(0,1fr)]">
+        <div
+            class="border-b border-slate-200 bg-white p-4 lg:flex lg:min-h-0 lg:flex-col lg:border-b-0 lg:border-r">
+            <form class="lg:shrink-0" method="GET" action="{{ route('search') }}">
                 <div class="space-y-4">
                     <div>
                         <h1 class="text-2xl font-bold text-slate-900">駐輪場を探す</h1>
@@ -70,15 +72,19 @@
                 <input name="lon" type="hidden" value="{{ $yolpLocation['lon'] }}">
             </form>
             @if (session('favorite_success'))
-                <p class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
+                <p
+                    class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 lg:shrink-0">
                     {{ session('favorite_success') }}
                 </p>
             @endif
-            <div class="mt-5 h-[calc(100vh-17rem)] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50" id="parking-spots">
+            <div
+                class="mt-5 h-[calc(100vh-17rem)] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 lg:h-auto lg:min-h-0 lg:flex-1"
+                id="parking-spots">
                 @livewire('parking-spots')
             </div>
+            <x-ad-slot class="mt-4 lg:shrink-0" placement="search_footer" />
         </div>
 
-        <div class="h-[60vh] min-h-96 bg-slate-100 lg:h-[calc(100vh-4rem)]" id="map"></div>
+        <div class="h-[60vh] min-h-96 bg-slate-100 lg:h-full lg:min-h-0" id="map"></div>
     </div>
 </x-app-layout>

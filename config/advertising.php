@@ -33,6 +33,7 @@ return [
         'slots' => [
             'home_footer' => env('ADSENSE_SLOT_HOME_FOOTER'),
             'parking_spot_footer' => env('ADSENSE_SLOT_PARKING_SPOT_FOOTER'),
+            'search_footer' => env('ADSENSE_SLOT_SEARCH_FOOTER'),
         ],
     ],
 ];
