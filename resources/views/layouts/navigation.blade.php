@@ -15,7 +15,10 @@
                         <span class="sr-only">BikeParking</span>
                     </a>
                 </div>
-                <div class="hidden items-center space-x-4 sm:ms-10 sm:flex">
+                <div class="hidden items-center space-x-4 lg:ms-10 lg:flex">
+                    <x-nav-link :href="route('home')" :active="request()->routeIs('home')">
+                        ホーム
+                    </x-nav-link>
                     <x-nav-link :href="route('parking_spot.create')" :active="request()->routeIs('parking_spot.create')">
                         駐車場追加
                     </x-nav-link>
@@ -23,49 +26,32 @@
                         <x-nav-link :href="route('favorites.index')" :active="request()->routeIs('favorites.*')">
                             お気に入り ({{ $favoriteCount }})
                         </x-nav-link>
+                        <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.*')">
+                            マイページ
+                        </x-nav-link>
                     @endauth
                 </div>
             </div>
 
-            <!-- Settings Dropdown -->
+            <!-- User Information and Authentication -->
             @auth
-                <div class="hidden sm:ms-6 sm:flex sm:items-center">
-                    <x-dropdown align="right" width="48">
-                        <x-slot name="trigger">
-                            <button
-                                class="inline-flex items-center rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold leading-4 text-slate-600 shadow-sm transition hover:border-emerald-300 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
-                                <div>{{ Auth::user()->name }}</div>
-                                <div class="ms-1">
-                                    <svg class="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd"
-                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                            </button>
-                        </x-slot>
+                <div class="hidden items-center gap-4 lg:ms-6 lg:flex">
+                    <span class="max-w-40 truncate text-sm font-semibold text-slate-700" aria-label="ログイン中のユーザー"
+                        title="{{ Auth::user()->name }}">
+                        {{ Auth::user()->name }}
+                    </span>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
 
-                        <x-slot name="content">
-                            <x-dropdown-link :href="route('profile.edit')">
-                                マイページ
-                            </x-dropdown-link>
-
-                            <!-- Authentication -->
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-
-                                <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
-                                    ログアウト
-                                </x-dropdown-link>
-                            </form>
-                        </x-slot>
-                    </x-dropdown>
+                        <button
+                            class="inline-flex items-center rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-semibold leading-4 text-slate-600 shadow-sm transition hover:border-emerald-300 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                            type="submit">
+                            ログアウト
+                        </button>
+                    </form>
                 </div>
             @else
-                <div class="hidden items-center space-x-4 sm:ms-10 sm:flex">
+                <div class="hidden items-center space-x-4 lg:ms-10 lg:flex">
                     <x-nav-link :href="route('login')" :active="request()->routeIs('login')">
                         ログイン
                     </x-nav-link>
@@ -75,7 +61,7 @@
                 </div>
             @endauth
 
-            <div class="-me-2 flex items-center sm:hidden">
+            <div class="-me-2 flex items-center lg:hidden">
                 <button
                     class="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white p-2 text-slate-500 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     type="button" @click="open = ! open">
@@ -93,7 +79,7 @@
     </div>
 
     <!-- Responsive Navigation Menu -->
-    <div class="hidden border-t border-slate-100 bg-white sm:hidden" :class="{ 'block': open, 'hidden': !open }">
+    <div class="hidden border-t border-slate-100 bg-white lg:hidden" :class="{ 'block': open, 'hidden': !open }">
         <div class="space-y-1 pb-3 pt-2">
             <x-responsive-nav-link :href="route('home')" :active="request()->routeIs('home')">
                 ホーム
@@ -105,6 +91,9 @@
                 <x-responsive-nav-link :href="route('favorites.index')" :active="request()->routeIs('favorites.*')">
                     お気に入り ({{ $favoriteCount }})
                 </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.*')">
+                    マイページ
+                </x-responsive-nav-link>
             @endauth
         </div>
 
@@ -112,22 +101,20 @@
         @auth
             <div class="border-t border-slate-200 pb-1 pt-4">
                 <div class="px-4">
-                    <div class="text-base font-semibold text-slate-800">{{ Auth::user()->name }}</div>
+                    <div class="text-base font-semibold text-slate-800" aria-label="ログイン中のユーザー">
+                        {{ Auth::user()->name }}
+                    </div>
                 </div>
                 <div class="mt-3 space-y-1">
-                    <x-responsive-nav-link :href="route('profile.edit')">
-                        マイページ
-                    </x-responsive-nav-link>
-
                     <!-- Authentication -->
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
 
-                        <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
+                        <button
+                            class="block w-full border-l-4 border-transparent py-2 pe-4 ps-3 text-start text-base font-semibold text-slate-600 transition duration-150 ease-in-out hover:border-emerald-300 hover:bg-slate-50 hover:text-emerald-700 focus:outline-none focus:bg-slate-50 focus:text-emerald-700"
+                            type="submit">
                             ログアウト
-                        </x-responsive-nav-link>
+                        </button>
                     </form>
                 </div>
             </div>
