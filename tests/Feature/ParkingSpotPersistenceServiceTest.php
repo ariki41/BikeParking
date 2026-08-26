@@ -39,6 +39,8 @@ class ParkingSpotPersistenceServiceTest extends TestCase
 
         $this->assertSame($user->id, $parkingSpot->user_id);
         $this->assertSame('保存境界テスト駐輪場', $parkingSpot->name);
+        $this->assertSame($postalcode->id, $parkingSpot->postalcode_id);
+        $this->assertTrue($parkingSpot->postalcode->is($postalcode));
         $this->assertDatabaseHas('parking_spot_rates', [
             'parking_spot_id' => $parkingSpot->id,
             'rate' => 100,

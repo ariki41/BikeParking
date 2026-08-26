@@ -34,7 +34,7 @@ class ParkingSpotUpdateHistory extends Model
     {
         $labels = [
             'name' => '駐輪場名',
-            'postalcode' => '郵便番号',
+            'postalcode_id' => '郵便番号',
             'address' => '住所',
             'longitude' => '経度',
             'latitude' => '緯度',

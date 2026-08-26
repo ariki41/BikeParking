@@ -45,7 +45,7 @@ class ParkingSpotConfirmationSessionTest extends TestCase
         $otherParkingSpot = ParkingSpot::forceCreate([
             'user_id' => $user->id,
             'name' => '改ざん先の駐輪場',
-            'postalcode' => $postalcode->id,
+            'postalcode_id' => $postalcode->id,
             'address' => '東京都千代田区千代田2-1',
             'longitude' => 139.754000,
             'latitude' => 35.686000,
@@ -262,7 +262,7 @@ class ParkingSpotConfirmationSessionTest extends TestCase
         $parkingSpot = ParkingSpot::forceCreate([
             'user_id' => $user->id,
             'name' => '確認セッションテスト駐輪場',
-            'postalcode' => $postalcode->id,
+            'postalcode_id' => $postalcode->id,
             'address' => '東京都千代田区千代田1-1',
             'longitude' => 139.753000,
             'latitude' => 35.685000,

@@ -128,7 +128,7 @@ erDiagram
 | テーブル | 役割 | 主な項目 |
 | --- | --- | --- |
 | `users` | 利用者 | 認証情報、氏名、都道府県 |
-| `parking_spots` | 駐輪場本体 | 所有者、名称、住所、緯度経度、営業時間、収容台数、代表画像 |
+| `parking_spots` | 駐輪場本体 | 所有者、名称、`postalcode_id`、住所、緯度経度、営業時間、収容台数、代表画像 |
 | `parking_spot_images` | 駐輪場画像 | 対象駐輪場、保存パス、表示順 |
 | `parking_spot_rates` | 料金帯 | 曜日区分、時間帯、単位、料金、無料時間、最大料金 |
 | `parking_spot_update_histories` | 更新履歴 | 対象駐輪場、更新ユーザー、変更内容（JSON）、更新日時 |

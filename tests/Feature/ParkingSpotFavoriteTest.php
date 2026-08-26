@@ -183,7 +183,7 @@ class ParkingSpotFavoriteTest extends TestCase
         return ParkingSpot::forceCreate([
             'user_id' => $owner->id,
             'name' => $name,
-            'postalcode' => $this->postalcode->id,
+            'postalcode_id' => $this->postalcode->id,
             'address' => '東京都千代田区千代田1-1',
             'longitude' => 139.753000,
             'latitude' => 35.685000,

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
@@ -70,6 +71,11 @@ class ParkingSpot extends Model
     public function rates(): HasMany
     {
         return $this->hasMany(ParkingSpotRates::class);
+    }
+
+    public function postalcode(): BelongsTo
+    {
+        return $this->belongsTo(Postalcode::class);
     }
 
     public function images(): HasMany

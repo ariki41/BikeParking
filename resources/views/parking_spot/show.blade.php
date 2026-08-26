@@ -36,6 +36,9 @@
         <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
                 <h1 class="text-3xl font-bold text-slate-900">{{ $parkingSpot->name }}</h1>
+                <p class="mt-2 text-sm text-slate-500">
+                    〒{{ substr($parkingSpot->postalcode->postalcode, 0, 3) }}-{{ substr($parkingSpot->postalcode->postalcode, 3, 4) }}
+                </p>
                 <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{{ $parkingSpot->address }}</p>
                 <x-rating-summary class="mt-2" :parking-spot="$parkingSpot" />
             </div>
