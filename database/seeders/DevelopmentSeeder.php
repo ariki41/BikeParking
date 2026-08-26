@@ -92,7 +92,7 @@ class DevelopmentSeeder extends Seeder
             $parkingSpot->forceFill([
                 ...$attributes,
                 'user_id' => $owner->id,
-                'postalcode' => $postalcode->id,
+                'postalcode_id' => $postalcode->id,
             ])->save();
 
             foreach ($rates as $rate) {

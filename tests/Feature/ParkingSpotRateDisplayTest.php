@@ -42,6 +42,8 @@ class ParkingSpotRateDisplayTest extends TestCase
             ->get(route('parking_spot.show', $parkingSpot->id));
 
         $response->assertOk();
+        $response->assertSee('〒100-0001');
+        $response->assertSee('東京都千代田区千代田1-1');
         $response->assertSee('区分');
         $response->assertSee('時間帯');
         $response->assertSee('料金');
@@ -258,6 +260,7 @@ class ParkingSpotRateDisplayTest extends TestCase
         $this->assertDatabaseHas('parking_spots', [
             'name' => '登録Featureテスト駐車場',
             'user_id' => $user->id,
+            'postalcode_id' => $postalcode->id,
         ]);
         $parkingSpot = ParkingSpot::where('name', '登録Featureテスト駐車場')->firstOrFail();
         $this->assertNotNull($parkingSpot->image_path);
@@ -1037,7 +1040,7 @@ class ParkingSpotRateDisplayTest extends TestCase
         ParkingSpot::forceCreate([
             'user_id' => $user->id,
             'name' => '画像なし駐車場',
-            'postalcode' => $parkingSpot->postalcode,
+            'postalcode_id' => $parkingSpot->postalcode_id,
             'address' => '東京都千代田区千代田1-9',
             'longitude' => 139.759000,
             'latitude' => 35.689000,
@@ -1210,7 +1213,7 @@ class ParkingSpotRateDisplayTest extends TestCase
         $parkingSpot = ParkingSpot::forceCreate([
             'user_id' => $user->id,
             'name' => '料金表示テスト駐車場',
-            'postalcode' => $postalcode->id,
+            'postalcode_id' => $postalcode->id,
             'address' => '東京都千代田区千代田1-1',
             'longitude' => 139.753000,
             'latitude' => 35.685000,

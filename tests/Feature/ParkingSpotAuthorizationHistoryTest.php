@@ -92,7 +92,9 @@ class ParkingSpotAuthorizationHistoryTest extends TestCase
 
         $this->actingAs($owner)
             ->get(route('parking_spot.edit', $parkingSpot->id))
-            ->assertOk();
+            ->assertOk()
+            ->assertSee('value="1000001"', false)
+            ->assertSee('value="東京都千代田区千代田"', false);
     }
 
     public function test_authenticated_non_owner_can_edit_parking_spot(): void
@@ -287,7 +289,7 @@ class ParkingSpotAuthorizationHistoryTest extends TestCase
         $parkingSpot = ParkingSpot::forceCreate([
             'user_id' => $owner->id,
             'name' => '料金表示テスト駐輪場',
-            'postalcode' => $postalcode->id,
+            'postalcode_id' => $postalcode->id,
             'address' => '東京都千代田区千代田1-1',
             'longitude' => 139.753000,
             'latitude' => 35.685000,

@@ -39,7 +39,7 @@ class ReviewSeederTest extends TestCase
             ParkingSpot::forceCreate([
                 'user_id' => $users->first()->id,
                 'name' => "シーダーテスト駐輪場{$number}",
-                'postalcode' => $postalcode->id,
+                'postalcode_id' => $postalcode->id,
                 'address' => "東京都千代田区千代田1-{$number}",
                 'longitude' => 139.753000,
                 'latitude' => 35.685000,

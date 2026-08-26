@@ -3,27 +3,25 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Postalcode extends Model
 {
     protected $fillable = ['postalcode', 'city_id', 'name', 'name_kana'];
 
-    public function scopeGetAddress($query, $postalcode)
+    public function city(): BelongsTo
     {
-        return $query->where('postalcode', $postalcode)
-            ->join('cities', 'cities.id', '=', 'postalcodes.city_id')
-            ->join('prefectures', 'cities.prefecture_id', '=', 'prefectures.id')
-            ->select('prefectures.name as prefecture', 'cities.name as city', 'postalcodes.name as town');
+        return $this->belongsTo(City::class);
     }
 
-    public function scopeGetPostalcodeId($query, $postalcode)
+    public function parkingSpots(): HasMany
     {
-        return $query->where('postalcode', $postalcode)
-            ->select('id');
+        return $this->hasMany(ParkingSpot::class);
     }
 
-    public function scopeGetPostalcode($query, $id)
+    public function fullAddress(): string
     {
-        return $query->findOrFail($id);
+        return $this->city->prefecture->name.$this->city->name.$this->name;
     }
 }

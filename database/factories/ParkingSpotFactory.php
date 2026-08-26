@@ -23,7 +23,7 @@ class ParkingSpotFactory extends Factory
         $closingTime = ['18:00:00', '21:00:00', '00:00:00'];
 
         $postalcodes = $this->getRandomPostalCode();
-        $postalcode = $postalcodes->postalcode_id;
+        $postalcodeId = $postalcodes->postalcode_id;
         $prefecture = $postalcodes->prefecture;
         $city = $postalcodes->city;
         $town = $postalcodes->town;
@@ -34,7 +34,7 @@ class ParkingSpotFactory extends Factory
         return [
             'user_id' => User::inRandomOrder()->first()->id,
             'name' => fake()->numerify('#####駐車場'),
-            'postalcode' => $postalcode,
+            'postalcode_id' => $postalcodeId,
             'address' => $address,
             'longitude' => $longitude,
             'latitude' => $latitude,

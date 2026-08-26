@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ParkingSpotRequest;
 use App\Models\ParkingSpot;
-use App\Models\Postalcode;
 use App\Services\ParkingSpotConfirmationService;
 use App\Services\ParkingSpotGeocodingService;
 use App\Services\ParkingSpotImageService;
@@ -26,7 +25,7 @@ class ParkingSpotController extends Controller
     {
         $user = $request->user();
         $parkingSpot
-            ->load(['images', 'rates', 'reviews.user', 'updateHistories.user'])
+            ->load(['postalcode.city.prefecture', 'images', 'rates', 'reviews.user', 'updateHistories.user'])
             ->loadCount(['favorites', 'reviews'])
             ->loadAvg('reviews', 'rating');
 
@@ -36,12 +35,10 @@ class ParkingSpotController extends Controller
             ]);
         }
 
-        $postalcode = Postalcode::getPostalcode($parkingSpot->postalcode)->postalcode;
         $userReview = $user
             ? $parkingSpot->reviews->firstWhere('user_id', $user->id)
             : null;
 
-        $parkingSpot['postalcode'] = $postalcode;
         $parkingSpot['opening_time'] = date('H:i', strtotime($parkingSpot['opening_time']));
         $parkingSpot['closing_time'] = $parkingSpot['closing_time'] === '00:00:00' ? '24:00' : date('H:i', strtotime($parkingSpot['closing_time']));
 
@@ -152,7 +149,7 @@ class ParkingSpotController extends Controller
 
     public function edit(Request $request, ParkingSpot $parkingSpot)
     {
-        $parkingSpot->load(['images', 'rates']);
+        $parkingSpot->load(['postalcode.city.prefecture', 'images', 'rates']);
         Gate::authorize('update', $parkingSpot);
         $this->confirmation->beginEdit($request, $parkingSpot->id);
 
@@ -160,9 +157,8 @@ class ParkingSpotController extends Controller
         $rateDayTypes = config('categories.parking_spot_rate_day_types');
         $rateUnitMinutes = config('categories.parking_spot_rate_unit_minutes');
 
-        $postalcode = Postalcode::getPostalcode($parkingSpot->postalcode)->postalcode;
-        $address1Sql = Postalcode::getAddress($postalcode)->first();
-        $address1 = $address1Sql->prefecture.$address1Sql->city.$address1Sql->town;
+        $postalcode = $parkingSpot->postalcode->postalcode;
+        $address1 = $parkingSpot->postalcode->fullAddress();
         $address2 = str_replace($address1, '', $parkingSpot->address);
 
         // 時間フォーマット変換

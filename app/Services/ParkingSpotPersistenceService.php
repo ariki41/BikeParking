@@ -22,14 +22,14 @@ class ParkingSpotPersistenceService
      */
     public function create(array $input, User $createdBy): ParkingSpot
     {
-        $postalcodeId = $this->postalcodeId($input['postalcode']);
+        $postalcode = $this->postalcode($input['postalcode']);
         $persistedImages = null;
 
         try {
-            $parkingSpot = DB::transaction(function () use ($input, $postalcodeId, $createdBy, &$persistedImages): ParkingSpot {
+            $parkingSpot = DB::transaction(function () use ($input, $postalcode, $createdBy, &$persistedImages): ParkingSpot {
                 $parkingSpot = new ParkingSpot;
                 $parkingSpot->user_id = $createdBy->id;
-                $this->fillParkingSpot($parkingSpot, $input, $postalcodeId);
+                $this->fillParkingSpot($parkingSpot, $input, $postalcode);
                 $parkingSpot->save();
 
                 $persistedImages = $this->images->persistConfirmedImages(
@@ -61,12 +61,12 @@ class ParkingSpotPersistenceService
      */
     public function update(array $input, User $updatedBy): ParkingSpot
     {
-        $postalcodeId = $this->postalcodeId($input['postalcode']);
+        $postalcode = $this->postalcode($input['postalcode']);
         $persistedImages = null;
         $removedImagePaths = [];
 
         try {
-            $parkingSpot = DB::transaction(function () use ($input, $postalcodeId, $updatedBy, &$persistedImages, &$removedImagePaths): ParkingSpot {
+            $parkingSpot = DB::transaction(function () use ($input, $postalcode, $updatedBy, &$persistedImages, &$removedImagePaths): ParkingSpot {
                 $parkingSpot = ParkingSpot::query()
                     ->lockForUpdate()
                     ->findOrFail($input['id']);
@@ -74,7 +74,7 @@ class ParkingSpotPersistenceService
                 $originalImagePaths = $parkingSpot->image_paths;
                 $originalRates = $this->normalizeStoredRates($parkingSpot);
 
-                $this->fillParkingSpot($parkingSpot, $input, $postalcodeId);
+                $this->fillParkingSpot($parkingSpot, $input, $postalcode);
                 $persistedImages = $this->images->persistConfirmedImages(
                     $parkingSpot,
                     $this->confirmedImagePaths($input),
@@ -141,10 +141,10 @@ class ParkingSpotPersistenceService
     /**
      * @param  array<string, mixed>  $input
      */
-    private function fillParkingSpot(ParkingSpot $parkingSpot, array $input, int $postalcodeId): void
+    private function fillParkingSpot(ParkingSpot $parkingSpot, array $input, Postalcode $postalcode): void
     {
         $parkingSpot->name = $input['name'];
-        $parkingSpot->postalcode = $postalcodeId;
+        $parkingSpot->postalcode()->associate($postalcode);
         $parkingSpot->address = $input['address'];
         $parkingSpot->longitude = $input['longitude'];
         $parkingSpot->latitude = $input['latitude'];
@@ -153,17 +153,19 @@ class ParkingSpotPersistenceService
         $parkingSpot->capacity = $input['capacity'];
     }
 
-    private function postalcodeId(string $postalcode): int
+    private function postalcode(string $postalcode): Postalcode
     {
-        $postalcodeId = Postalcode::getPostalcodeId($postalcode)->value('id');
+        $postalcode = Postalcode::query()
+            ->where('postalcode', str_replace('-', '', $postalcode))
+            ->first();
 
-        if (! is_int($postalcodeId)) {
+        if ($postalcode === null) {
             throw ValidationException::withMessages([
                 'postalcode' => '郵便番号に対応する住所が見つかりません。',
             ]);
         }
 
-        return $postalcodeId;
+        return $postalcode;
     }
 
     private function normalizeStoredRates(ParkingSpot $parkingSpot): array

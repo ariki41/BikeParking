@@ -62,10 +62,12 @@ class ParkingSpotRequest extends FormRequest
             'postalcode' => 'required|regex:/^\d{3}-?\d{4}$/',
             'address1' => ['required', 'string', 'max:255',
                 function ($attribute, $value, $fail) {
-                    $postalcode = request()->input('postalcode');
-                    $address = Postalcode::getAddress($postalcode)->first();
+                    $postalcode = Postalcode::query()
+                        ->with('city.prefecture')
+                        ->where('postalcode', str_replace('-', '', (string) $this->input('postalcode')))
+                        ->first();
 
-                    if (! empty($address) && $address->prefecture.$address->city.$address->town != $value) {
+                    if ($postalcode !== null && $postalcode->fullAddress() !== $value) {
                         $fail('郵便番号と住所が一致しません。');
                     }
                 },

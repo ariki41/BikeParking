@@ -27,10 +27,13 @@ class AddressSearch extends Component
         // ハイフンが含まれている場合は削除
         $normalizedPostalcode = str_replace('-', '', $this->postalcode);
 
-        $addressSql = Postalcode::getAddress($normalizedPostalcode)->first();
+        $postalcode = Postalcode::query()
+            ->with('city.prefecture')
+            ->where('postalcode', $normalizedPostalcode)
+            ->first();
 
-        if ($addressSql) {
-            $this->address1 = $addressSql->prefecture.$addressSql->city.$addressSql->town;
+        if ($postalcode) {
+            $this->address1 = $postalcode->fullAddress();
         } else {
             $this->addError('postalcode', '郵便番号に対応する住所が見つかりません。');
             $this->address1 = '';

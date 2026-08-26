@@ -161,7 +161,7 @@ class ParkingSpotReviewTest extends TestCase
         $parkingSpot = ParkingSpot::forceCreate([
             'user_id' => $user->id,
             'name' => 'レビューテスト駐輪場',
-            'postalcode' => $postalcode->id,
+            'postalcode_id' => $postalcode->id,
             'address' => '東京都千代田区千代田1-1',
             'longitude' => 139.753000,
             'latitude' => 35.685000,
