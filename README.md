@@ -140,10 +140,15 @@ docker compose exec laravel.test php artisan test
 
 # 24時間以上経過した確認画面用の一時画像を削除
 docker compose exec laravel.test php artisan parking-spots:prune-temporary-images --hours=24
+
+# 日本郵便から最新の郵便番号データを取得して同期
+docker compose exec laravel.test php artisan postal-codes:sync
 ```
 
 Laravel Sailのショートカットを利用できる環境では、上記の `docker compose exec laravel.test` を `./vendor/bin/sail` に置き換えられます。
 一時画像の削除コマンドはLaravelのスケジューラにも1時間ごとで登録されています。本番・開発サーバーではスケジューラプロセスを常時実行してください。
+
+郵便番号同期は、日本郵便が公開する1レコード1行のUTF-8版ZIPをダウンロードし、内容を検証してから都道府県・市区町村・郵便番号をトランザクション内で更新します。`storage/app/private/x-ken-all.csv` の手動配置は不要です。廃止された郵便番号は、既存の駐輪場との関連を保つため削除せず無効化します。同期コマンドは毎月2日3時にも自動実行されます。ダウンロード元を変更する場合だけ `JAPAN_POST_POSTAL_CODE_URL` を設定してください。
 
 料金表示・入力・保存に関する変更では、まず次のfocused testを実行してください。
 

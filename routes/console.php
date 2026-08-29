@@ -9,3 +9,6 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote')->hourly();
 
 Schedule::command('parking-spots:prune-temporary-images')->hourly();
+Schedule::command('postal-codes:sync')
+    ->monthlyOn(2, '03:00')
+    ->withoutOverlapping();

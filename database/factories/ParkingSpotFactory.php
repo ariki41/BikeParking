@@ -45,6 +45,7 @@ class ParkingSpotFactory extends Factory
     {
         return Postalcode::query()
             ->with('city.prefecture')
+            ->active()
             ->inRandomOrder()
             ->firstOrFail();
     }

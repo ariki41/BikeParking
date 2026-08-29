@@ -131,7 +131,7 @@ TailscaleのTrust credentialはGitHub ActionsをIssuerとし、Subjectを `repo:
 サーバーでは `compose.deploy.yml` が次を管理します。
 
 - `app`: Apache + PHP 8.3で動くLaravelアプリケーション。`/up` のヘルスチェックを通過するまでデプロイ完了としません。
-- `scheduler`: Laravelスケジューラを常時実行し、24時間経過した駐輪場確認用の一時画像を1時間ごとに削除します。
+- `scheduler`: Laravelスケジューラを常時実行し、24時間経過した駐輪場確認用の一時画像を1時間ごとに削除し、日本郵便の最新郵便番号データを毎月2日3時に同期します。
 - `tailscale`: `bikeparking-dev` としてTailnetへ参加し、Tailscale FunnelからDocker内部の `app:80` へHTTPSで転送します。ホストポートは公開しません。
 - `mysql`: MySQL 8.0。データは名前付きボリューム `mysql-data` に保存されます。
 - `app-storage`: アップロード画像などLaravelの永続ストレージです。
