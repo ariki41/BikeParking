@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\DB;
 
 class ReviewSeeder extends Seeder
 {
+    private const BASE_REVIEW_COUNT = 12;
+
+    private const REVIEW_COUNT_VARIATION = 4;
+
     /**
      * Run the database seeds.
      */
@@ -39,7 +43,10 @@ class ReviewSeeder extends Seeder
                 $userCount = $userIds->count();
 
                 foreach ($parkingSpots as $parkingSpot) {
-                    $reviewCount = min(1 + ($parkingSpot->id % 5), $userCount);
+                    $reviewCount = min(
+                        self::BASE_REVIEW_COUNT + ($parkingSpot->id % self::REVIEW_COUNT_VARIATION),
+                        $userCount,
+                    );
                     $firstUserIndex = $parkingSpot->id % $userCount;
 
                     for ($offset = 0; $offset < $reviewCount; $offset++) {

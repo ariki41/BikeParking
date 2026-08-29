@@ -33,7 +33,7 @@ class ReviewSeederTest extends TestCase
             'name' => '千代田',
             'name_kana' => 'チヨダ',
         ]);
-        $users = User::factory(3)->create(['prefecture_id' => $prefecture->id]);
+        $users = User::factory(16)->create(['prefecture_id' => $prefecture->id]);
 
         foreach (range(1, 2) as $number) {
             ParkingSpot::forceCreate([
@@ -50,7 +50,7 @@ class ReviewSeederTest extends TestCase
         }
 
         $expectedReviewCount = ParkingSpot::query()->pluck('id')->sum(
-            fn (int $parkingSpotId): int => min(1 + ($parkingSpotId % 5), $users->count())
+            fn (int $parkingSpotId): int => min(12 + ($parkingSpotId % 4), $users->count())
         );
 
         $this->seed(ReviewSeeder::class);
@@ -64,6 +64,11 @@ class ReviewSeederTest extends TestCase
         $this->assertTrue(Review::all()
             ->groupBy(fn (Review $review): string => "{$review->user_id}-{$review->parking_spot_id}")
             ->every(fn ($reviews): bool => $reviews->count() === 1));
+        $this->assertTrue(ParkingSpot::query()
+            ->withCount('reviews')
+            ->get()
+            ->every(fn (ParkingSpot $parkingSpot): bool => $parkingSpot->reviews_count >= 12
+                && $parkingSpot->reviews_count <= 15));
 
         $this->seed(ReviewSeeder::class);
 
