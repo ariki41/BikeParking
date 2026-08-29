@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\ParkingSpot;
-use App\Models\PostalcodeLatLon;
+use App\Models\Postalcode;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -22,22 +22,16 @@ class ParkingSpotFactory extends Factory
         $openingTime = ['00:00:00', '06:00:00', '09:00:00'];
         $closingTime = ['18:00:00', '21:00:00', '00:00:00'];
 
-        $postalcodes = $this->getRandomPostalCode();
-        $postalcodeId = $postalcodes->postalcode_id;
-        $prefecture = $postalcodes->prefecture;
-        $city = $postalcodes->city;
-        $town = $postalcodes->town;
-        $address = $prefecture.$city.$town;
-        $latitude = $postalcodes->latitude;
-        $longitude = $postalcodes->longitude;
+        $postalcode = $this->getRandomPostalCode();
+        $address = $postalcode->city->prefecture->name.$postalcode->city->name.$postalcode->name;
 
         return [
             'user_id' => User::inRandomOrder()->first()->id,
             'name' => fake()->numerify('#####駐車場'),
-            'postalcode_id' => $postalcodeId,
+            'postalcode_id' => $postalcode->id,
             'address' => $address,
-            'longitude' => $longitude,
-            'latitude' => $latitude,
+            'longitude' => fake()->randomFloat(6, 123, 146),
+            'latitude' => fake()->randomFloat(6, 24, 46),
             'capacity' => fake()->numberBetween(1, 4),
             'opening_time' => fake()->randomElement($openingTime),
             'closing_time' => fake()->randomElement($closingTime),
@@ -47,13 +41,11 @@ class ParkingSpotFactory extends Factory
     /**
      * 郵便番号をランダムに取得する
      */
-    private function getRandomPostalCode(): PostalcodeLatLon
+    private function getRandomPostalCode(): Postalcode
     {
-        $postalcode = PostalcodeLatLon::join('postalcodes', 'postalcode_lat_lons.postalcode', '=', 'postalcodes.postalcode')
-            ->select('postalcode_lat_lons.*', 'postalcodes.id as postalcode_id')
+        return Postalcode::query()
+            ->with('city.prefecture')
             ->inRandomOrder()
-            ->first();
-
-        return $postalcode;
+            ->firstOrFail();
     }
 }
