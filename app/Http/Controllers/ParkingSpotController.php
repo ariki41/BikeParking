@@ -25,9 +25,14 @@ class ParkingSpotController extends Controller
     {
         $user = $request->user();
         $parkingSpot
-            ->load(['postalcode.city.prefecture', 'images', 'rates', 'reviews.user', 'updateHistories.user'])
+            ->load(['postalcode.city.prefecture', 'images', 'rates', 'updateHistories.user'])
             ->loadCount(['favorites', 'reviews'])
             ->loadAvg('reviews', 'rating');
+
+        $recentReviews = $parkingSpot->reviews()
+            ->with('user')
+            ->limit(10)
+            ->get();
 
         if ($user) {
             $parkingSpot->loadExists([
@@ -36,13 +41,13 @@ class ParkingSpotController extends Controller
         }
 
         $userReview = $user
-            ? $parkingSpot->reviews->firstWhere('user_id', $user->id)
+            ? $parkingSpot->reviews()->where('user_id', $user->id)->first()
             : null;
 
         $parkingSpot['opening_time'] = date('H:i', strtotime($parkingSpot['opening_time']));
         $parkingSpot['closing_time'] = $parkingSpot['closing_time'] === '00:00:00' ? '24:00' : date('H:i', strtotime($parkingSpot['closing_time']));
 
-        return view('parking_spot.show', compact('parkingSpot', 'userReview'));
+        return view('parking_spot.show', compact('parkingSpot', 'recentReviews', 'userReview'));
 
     }
 

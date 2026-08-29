@@ -10,6 +10,7 @@ use App\Models\Prefecture;
 use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -102,6 +103,63 @@ class ParkingSpotReviewTest extends TestCase
         ]);
     }
 
+    public function test_detail_shows_only_ten_most_recently_updated_reviews(): void
+    {
+        [$parkingSpot] = $this->createParkingSpot();
+        $this->createReviews($parkingSpot, 12);
+
+        $response = $this->get(route('parking_spot.show', $parkingSpot));
+
+        $response
+            ->assertOk()
+            ->assertSee('全12件')
+            ->assertSee('すべてのレビューを見る（12件）')
+            ->assertSee(route('reviews.index', $parkingSpot), false)
+            ->assertSeeInOrder(array_map(
+                fn (int $position): string => sprintf('レビューコメント-%02d', $position),
+                range(12, 3),
+            ))
+            ->assertDontSee('レビューコメント-02')
+            ->assertDontSee('レビューコメント-01');
+    }
+
+    public function test_all_reviews_link_is_hidden_when_there_are_ten_reviews(): void
+    {
+        [$parkingSpot] = $this->createParkingSpot();
+        $this->createReviews($parkingSpot, 10);
+
+        $this->get(route('parking_spot.show', $parkingSpot))
+            ->assertOk()
+            ->assertSee('全10件')
+            ->assertDontSee('すべてのレビューを見る');
+    }
+
+    public function test_review_index_paginates_all_reviews_in_updated_order(): void
+    {
+        [$parkingSpot] = $this->createParkingSpot();
+        $this->createReviews($parkingSpot, 12);
+
+        $firstPage = $this->get(route('reviews.index', $parkingSpot));
+
+        $firstPage
+            ->assertOk()
+            ->assertSee($parkingSpot->name.'のレビュー')
+            ->assertSee('4.0')
+            ->assertSee('全12件')
+            ->assertSee(route('reviews.index', ['parkingSpot' => $parkingSpot, 'page' => 2]), false)
+            ->assertSeeInOrder(array_map(
+                fn (int $position): string => sprintf('レビューコメント-%02d', $position),
+                range(12, 3),
+            ))
+            ->assertDontSee('レビューコメント-02')
+            ->assertDontSee('レビューコメント-01');
+
+        $this->get(route('reviews.index', ['parkingSpot' => $parkingSpot, 'page' => 2]))
+            ->assertOk()
+            ->assertSeeInOrder(['レビューコメント-02', 'レビューコメント-01'])
+            ->assertDontSee('レビューコメント-03');
+    }
+
     public function test_average_rating_and_count_are_displayed_on_main_lists(): void
     {
         [$parkingSpot, $firstUser] = $this->createParkingSpot();
@@ -171,5 +229,23 @@ class ParkingSpotReviewTest extends TestCase
         ]);
 
         return [$parkingSpot, $user];
+    }
+
+    private function createReviews(ParkingSpot $parkingSpot, int $count): void
+    {
+        $baseTime = Carbon::parse('2026-08-01 12:00:00');
+
+        foreach (range(1, $count) as $position) {
+            $reviewer = User::factory()->create();
+
+            Review::forceCreate([
+                'user_id' => $reviewer->id,
+                'parking_spot_id' => $parkingSpot->id,
+                'rating' => 4,
+                'comment' => sprintf('レビューコメント-%02d', $position),
+                'created_at' => $baseTime->copy()->addDays($count - $position),
+                'updated_at' => $baseTime->copy()->addDays($position),
+            ]);
+        }
     }
 }

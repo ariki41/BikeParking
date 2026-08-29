@@ -162,26 +162,27 @@
                         @endauth
                     </div>
 
+                    <div class="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3">
+                        <h3 class="text-sm font-semibold text-slate-700">レビュー</h3>
+                        <span class="text-sm text-slate-500">全{{ number_format($parkingSpot->reviews_count) }}件</span>
+                    </div>
+
                     <div class="divide-y divide-slate-100 px-5">
-                        @forelse ($parkingSpot->reviews as $review)
-                            <article class="py-5">
-                                <div class="flex flex-wrap items-start justify-between gap-2">
-                                    <div>
-                                        <p class="font-semibold text-slate-800">{{ $review->user?->name ?? '退会済みユーザー' }}</p>
-                                        <p class="mt-1 text-amber-500" aria-label="5段階中{{ $review->rating }}の評価">
-                                            <span aria-hidden="true">{{ str_repeat('★', $review->rating) }}{{ str_repeat('☆', 5 - $review->rating) }}</span>
-                                        </p>
-                                    </div>
-                                    <time class="text-xs text-slate-500" datetime="{{ $review->updated_at?->toIso8601String() }}">
-                                        {{ $review->updated_at?->format('Y-m-d H:i') }}
-                                    </time>
-                                </div>
-                                <p class="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $review->comment }}</p>
-                            </article>
+                        @forelse ($recentReviews as $review)
+                            <x-review-item :review="$review" />
                         @empty
                             <p class="py-5 text-sm text-slate-500">まだ評価はありません。</p>
                         @endforelse
                     </div>
+
+                    @if ($parkingSpot->reviews_count > 10)
+                        <div class="border-t border-slate-100 px-5 py-4 text-center">
+                            <a class="text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+                                href="{{ route('reviews.index', $parkingSpot) }}">
+                                すべてのレビューを見る（{{ number_format($parkingSpot->reviews_count) }}件）
+                            </a>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="bp-panel">

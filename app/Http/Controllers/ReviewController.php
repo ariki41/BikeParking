@@ -7,9 +7,23 @@ use App\Models\ParkingSpot;
 use App\Models\Review;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\View\View;
 
 class ReviewController extends Controller
 {
+    public function index(ParkingSpot $parkingSpot): View
+    {
+        $parkingSpot
+            ->loadCount('reviews')
+            ->loadAvg('reviews', 'rating');
+
+        $reviews = $parkingSpot->reviews()
+            ->with('user')
+            ->paginate(10);
+
+        return view('reviews.index', compact('parkingSpot', 'reviews'));
+    }
+
     public function store(ReviewRequest $request, ParkingSpot $parkingSpot): RedirectResponse
     {
         $review = Review::where('user_id', $request->user()->id)

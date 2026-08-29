@@ -102,7 +102,9 @@ class ParkingSpot extends Model
 
     public function reviews(): HasMany
     {
-        return $this->hasMany(Review::class)->latest();
+        return $this->hasMany(Review::class)
+            ->latest('updated_at')
+            ->latest('id');
     }
 
     public function favorites(): HasMany
