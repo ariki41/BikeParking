@@ -51,6 +51,7 @@ Route::middleware('auth')->group(function () {
     Route::match(['put', 'patch'], '/parking-spots/{parkingSpot}', [ParkingSpotController::class, 'update'])->block()->name('parking_spot.update');
 });
 
+Route::get('/parking-spots/{parkingSpot}/reviews', [ReviewController::class, 'index'])->name('reviews.index');
 Route::get('/parking-spots/{parkingSpot}', [ParkingSpotController::class, 'show'])->name('parking_spot.show');
 
 require __DIR__.'/auth.php';
