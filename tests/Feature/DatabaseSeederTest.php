@@ -6,6 +6,7 @@ use App\Models\ParkingSpot;
 use App\Models\Prefecture;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
+use Database\Seeders\PrefectureSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -14,6 +15,27 @@ use Tests\TestCase;
 class DatabaseSeederTest extends TestCase
 {
     use RefreshDatabase;
+
+    private ?string $postalcodeCsvPath = null;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(PrefectureSeeder::class);
+        $this->postalcodeCsvPath = $this->createNationwidePostalcodeCsv();
+        config()->set('parking_spot.sample_data.postalcode_csv_path', $this->postalcodeCsvPath);
+        config()->set('parking_spot.sample_data.location_buffer_per_prefecture', 0);
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->postalcodeCsvPath !== null) {
+            @unlink($this->postalcodeCsvPath);
+        }
+
+        parent::tearDown();
+    }
 
     public function test_it_seeds_users_with_the_existing_prefectures(): void
     {
@@ -57,5 +79,33 @@ class DatabaseSeederTest extends TestCase
             1,
             $parkingSpotCountsByPrefecture->max() - $parkingSpotCountsByPrefecture->min(),
         );
+    }
+
+    private function createNationwidePostalcodeCsv(): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'database-seeder-postalcode-');
+        $this->assertNotFalse($path);
+        $rows = [];
+
+        Prefecture::query()
+            ->where('name', '!=', '海外')
+            ->orderBy('id')
+            ->pluck('name')
+            ->each(function (string $prefecture, int $prefectureIndex) use (&$rows): void {
+                foreach (range(0, 212) as $locationIndex) {
+                    $rows[] = implode(',', [
+                        sprintf('%07d', 1_000_000 + ($prefectureIndex * 1_000) + $locationIndex),
+                        $prefecture,
+                        $prefecture.'テスト市',
+                        'テスト町',
+                        number_format(24 + ($prefectureIndex * 0.4) + ($locationIndex / 100_000), 6, '.', ''),
+                        number_format(123 + ($prefectureIndex * 0.4) + ($locationIndex / 100_000), 6, '.', ''),
+                    ]);
+                }
+            });
+
+        $this->assertNotFalse(file_put_contents($path, implode("\n", $rows)."\n"));
+
+        return $path;
     }
 }
