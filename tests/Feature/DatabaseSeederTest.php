@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\ParkingSpot;
 use App\Models\Prefecture;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class DatabaseSeederTest extends TestCase
@@ -17,6 +19,8 @@ class DatabaseSeederTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
+        $this->assertFalse(Schema::hasTable('postalcode_lat_lons'));
+        $this->assertNotNull(ParkingSpot::factory()->make()->postalcode_id);
         $this->assertSame(48, Prefecture::query()->count());
         $this->assertSame(100, User::query()->count());
         $this->assertDatabaseCount('parking_spots', 10_000);

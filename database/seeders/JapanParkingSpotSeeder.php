@@ -88,8 +88,6 @@ class JapanParkingSpotSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->ensureLocationsExist();
-
         $userIds = User::query()->pluck('id')->all();
         $locationsByPrefecture = $this->locationsByPrefecture();
 
@@ -152,8 +150,13 @@ class JapanParkingSpotSeeder extends Seeder
         $this->command?->info('Created 10,000 Japanese sample parking spots.');
     }
 
-    private function ensureLocationsExist(): void
+    /**
+     * @return array<string, list<array{postalcode_id: int, prefecture: string, city: string, town: string, latitude: float, longitude: float}>>
+     */
+    private function locationsByPrefecture(): array
     {
+        $locationsByPrefecture = [];
+
         foreach (self::LOCATIONS as $location) {
             $prefecture = Prefecture::query()->firstOrCreate(
                 ['name' => $location['prefecture']],
@@ -163,59 +166,19 @@ class JapanParkingSpotSeeder extends Seeder
                 ['prefecture_id' => $prefecture->id, 'name' => $location['city']],
                 ['name_kana' => $location['city_kana']],
             );
-            Postalcode::query()->firstOrCreate(
+            $postalcode = Postalcode::query()->firstOrCreate(
                 ['postalcode' => $location['postalcode'], 'city_id' => $city->id],
                 ['name' => $location['town'], 'name_kana' => $location['town_kana']],
             );
 
-            if (! DB::table('postalcode_lat_lons')->where('postalcode', $location['postalcode'])->exists()) {
-                DB::table('postalcode_lat_lons')->insert([
-                    'postalcode' => $location['postalcode'],
-                    'prefecture' => $location['prefecture'],
-                    'city' => $location['city'],
-                    'town' => $location['town'],
-                    'latitude' => $location['latitude'],
-                    'longitude' => $location['longitude'],
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
-        }
-    }
-
-    /**
-     * @return list<array{postalcode_id: int, prefecture: string, city: string, town: string, latitude: float, longitude: float}>
-     */
-    private function locationsByPrefecture(): array
-    {
-        $locations = DB::table('postalcode_lat_lons')
-            ->join('postalcodes', 'postalcode_lat_lons.postalcode', '=', 'postalcodes.postalcode')
-            ->join('cities', 'postalcodes.city_id', '=', 'cities.id')
-            ->join('prefectures', 'cities.prefecture_id', '=', 'prefectures.id')
-            ->where('prefectures.name', '!=', '海外')
-            ->select([
-                'postalcodes.id as postalcode_id',
-                'prefectures.name as prefecture',
-                'cities.name as city',
-                'postalcodes.name as town',
-                'postalcode_lat_lons.latitude',
-                'postalcode_lat_lons.longitude',
-            ])
-            ->get()
-            ->map(fn (object $location): array => [
-                'postalcode_id' => (int) $location->postalcode_id,
-                'prefecture' => $location->prefecture,
-                'city' => $location->city,
-                'town' => $location->town,
-                'latitude' => (float) $location->latitude,
-                'longitude' => (float) $location->longitude,
-            ])
-            ->all();
-
-        $locationsByPrefecture = [];
-
-        foreach ($locations as $location) {
-            $locationsByPrefecture[$location['prefecture']][] = $location;
+            $locationsByPrefecture[$location['prefecture']][] = [
+                'postalcode_id' => $postalcode->id,
+                'prefecture' => $location['prefecture'],
+                'city' => $location['city'],
+                'town' => $location['town'],
+                'latitude' => $location['latitude'],
+                'longitude' => $location['longitude'],
+            ];
         }
 
         return $locationsByPrefecture;
