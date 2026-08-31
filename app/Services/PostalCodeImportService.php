@@ -13,9 +13,26 @@ use ZipArchive;
 class PostalCodeImportService
 {
     /**
+     * @param  null|callable(array{
+     *     postalcode: string,
+     *     prefecture: string,
+     *     prefecture_kana: string,
+     *     city: string,
+     *     city_kana: string,
+     *     town: string,
+     *     town_kana: string
+     * }): array{
+     *     postalcode: string,
+     *     prefecture: string,
+     *     prefecture_kana: string,
+     *     city: string,
+     *     city_kana: string,
+     *     town: string,
+     *     town_kana: string
+     * }  $recordNormalizer
      * @return array{source_records: int, active_postalcodes: int, inactive_postalcodes: int}
      */
-    public function downloadAndImport(string $url): array
+    public function downloadAndImport(string $url, ?callable $recordNormalizer = null): array
     {
         $archivePath = null;
         $csvPath = null;
@@ -29,7 +46,7 @@ class PostalCodeImportService
 
             $analysis = $this->analyzeCsv($csvPath);
 
-            return $this->importCsv($csvPath, $analysis);
+            return $this->importCsv($csvPath, $analysis, $recordNormalizer);
         } finally {
             foreach ([$archivePath, $csvPath] as $path) {
                 if (is_string($path) && is_file($path)) {
@@ -189,9 +206,9 @@ class PostalCodeImportService
      * }  $analysis
      * @return array{source_records: int, active_postalcodes: int, inactive_postalcodes: int}
      */
-    private function importCsv(string $csvPath, array $analysis): array
+    private function importCsv(string $csvPath, array $analysis, ?callable $recordNormalizer): array
     {
-        return DB::transaction(function () use ($csvPath, $analysis): array {
+        return DB::transaction(function () use ($csvPath, $analysis, $recordNormalizer): array {
             $prefectureIds = [];
 
             foreach ($analysis['prefectures'] as $name => $nameKana) {
@@ -237,7 +254,12 @@ class PostalCodeImportService
                 $batchSize,
                 $cityIds,
                 $now,
+                $recordNormalizer,
             ): void {
+                if ($recordNormalizer !== null) {
+                    $record = $recordNormalizer($record);
+                }
+
                 $cityId = $cityIds[$this->cityKey($record['prefecture'], $record['city'])];
                 $postalcodeKey = $record['postalcode']."\0".$cityId;
 

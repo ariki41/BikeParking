@@ -76,6 +76,12 @@ class PostalCodeSyncCommandTest extends TestCase
             'name_kana' => 'チヨダク',
         ]);
         $this->assertDatabaseHas('postalcodes', [
+            'postalcode' => '0600000',
+            'name' => '',
+            'name_kana' => '',
+            'is_active' => true,
+        ]);
+        $this->assertDatabaseHas('postalcodes', [
             'id' => $existing->id,
             'postalcode' => '1000001',
             'name' => '千代田',
@@ -92,6 +98,33 @@ class PostalCodeSyncCommandTest extends TestCase
         $this->assertDatabaseCount('postalcodes', 3);
         $this->assertSame(2, Postalcode::query()->active()->count());
         Http::assertSentCount(2);
+    }
+
+    public function test_it_normalizes_official_town_notes_for_address_search(): void
+    {
+        Http::fake([
+            self::DOWNLOAD_URL => Http::response($this->postalCodeZip([
+                $this->csvRow('20482', '3998501', 'ナガノケン', 'キタアヅミグンマツカワムラ', 'マツカワムライチエン', '長野県', '北安曇郡松川村', '松川村一円'),
+                $this->csvRow('01649', '0881646', 'ホッカイドウ', 'トカチグンウラホロチョウ', 'アツナイ（ゼンイキ）', '北海道', '十勝郡浦幌町', '厚内（全域）'),
+                $this->csvRow('13113', '1506147', 'トウキョウト', 'シブヤク', 'シブヤシブヤスクランブルスクエア（４７カイ）', '東京都', '渋谷区', '渋谷渋谷スクランブルスクエア（４７階）'),
+                $this->csvRow('01407', '0482402', 'ホッカイドウ', 'ヨイチグンニキチョウ', 'オオエ（２チョウメ６５１バンチイガイ）', '北海道', '余市郡仁木町', '大江（２丁目６５１番地以外）'),
+                $this->csvRow('03366', '0295523', 'イワテケン', 'ワガグンニシワガマチ', 'エッチュウハタ６４チワリ〜エッチュウハタ６６チワリ', '岩手県', '和賀郡西和賀町', '越中畑６４地割〜越中畑６６地割'),
+                $this->csvRow('03366', '0295503', 'イワテケン', 'ワガグンニシワガマチ', 'アナアケ２２チワリ、アナアケ２３チワリ', '岩手県', '和賀郡西和賀町', '穴明２２地割、穴明２３地割'),
+                $this->csvRow('37322', '7614103', 'カガワケン', 'ショウズグントノショウチョウ', 'コウ、オツ（オオキド）', '香川県', '小豆郡土庄町', '甲、乙（大木戸）'),
+            ])),
+        ]);
+
+        $this->artisan('postal-codes:sync')
+            ->expectsOutputToContain('CSV: 7件、有効: 7件')
+            ->assertSuccessful();
+
+        $this->assertNormalizedTown('3998501', '', '');
+        $this->assertNormalizedTown('0881646', '厚内', 'アツナイ');
+        $this->assertNormalizedTown('1506147', '渋谷渋谷スクランブルスクエア４７階', 'シブヤシブヤスクランブルスクエア４７カイ');
+        $this->assertNormalizedTown('0482402', '大江', 'オオエ');
+        $this->assertNormalizedTown('0295523', '越中畑', 'エッチュウハタ');
+        $this->assertNormalizedTown('0295503', '穴明２２地割', 'アナアケ２２チワリ');
+        $this->assertNormalizedTown('7614103', '甲', 'コウ');
     }
 
     public function test_it_does_not_change_the_database_when_the_download_is_not_a_zip(): void
@@ -150,6 +183,16 @@ class PostalCodeSyncCommandTest extends TestCase
             'city_id' => $city->id,
             'name' => '千代田',
             'name_kana' => 'チヨダ',
+        ]);
+    }
+
+    private function assertNormalizedTown(string $postalcode, string $name, string $nameKana): void
+    {
+        $this->assertDatabaseHas('postalcodes', [
+            'postalcode' => $postalcode,
+            'name' => $name,
+            'name_kana' => $nameKana,
+            'is_active' => true,
         ]);
     }
 
