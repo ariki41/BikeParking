@@ -1,4 +1,5 @@
 const mapInstances = new Map();
+let livewireInitialized = false;
 
 const leafletTileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const leafletAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
@@ -73,16 +74,15 @@ const spotsFrom = (payload) => {
     return detail?.spots ?? [];
 };
 
-const dispatchBounds = (instance) => {
-    if (!window.Livewire) {
-        if (!instance.boundsDispatchPending) {
-            instance.boundsDispatchPending = true;
-            document.addEventListener('livewire:init', () => {
-                instance.boundsDispatchPending = false;
-                dispatchBounds(instance);
-            }, { once: true });
-        }
+const livewireIsReady = () => Boolean(
+    window.Livewire
+    && (livewireInitialized || window.Livewire.all?.().length > 0),
+);
 
+const dispatchBounds = (instance) => {
+    // livewire:init is too early: component event listeners are registered during initialization.
+    if (!livewireIsReady()) {
+        instance.boundsDispatchPending = true;
         return;
     }
 
@@ -103,9 +103,7 @@ const connectLivewire = (instance) => {
         return;
     }
 
-    if (!window.Livewire) {
-        document.addEventListener('livewire:init', () => connectLivewire(instance), { once: true });
-
+    if (!livewireIsReady()) {
         return;
     }
 
@@ -180,6 +178,19 @@ const initializeMap = (element) => {
 const initializeMaps = () => {
     document.querySelectorAll('[data-leaflet-map]').forEach(initializeMap);
 };
+
+document.addEventListener('livewire:initialized', () => {
+    livewireInitialized = true;
+
+    mapInstances.forEach((instance) => {
+        connectLivewire(instance);
+
+        if (instance.boundsDispatchPending) {
+            instance.boundsDispatchPending = false;
+            dispatchBounds(instance);
+        }
+    });
+});
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeMaps, { once: true });
