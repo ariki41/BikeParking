@@ -28,6 +28,8 @@
 | Development environment | Laravel Sail / Docker Compose |
 | Asset build | Vite |
 
+検索・詳細・登録確認画面のLeaflet地図は `x-leaflet-map` コンポーネントを使用します。中心座標、ズーム、固定・動的マーカー、Livewireへの表示範囲通知を画面ごとに設定でき、初期化できない場合は地図領域にエラーメッセージを表示します。
+
 ## 必要な環境
 
 - Docker Desktop または Docker Engine
@@ -179,6 +181,7 @@ app/
 └── ValueObjects/         サービス間で受け渡す型付き処理結果
 database/                 マイグレーション、ファクトリ、シーダー
 resources/views/          Bladeテンプレート
+resources/js/             Leaflet地図・料金フォームなどの共通フロントエンド処理
 routes/                   Web・認証ルート
 tests/                    Feature / Unitテスト
 doc/                      設計書・状態遷移図

@@ -1,52 +1,3 @@
-@push('link')
-    <!-- LeafletのCSS -->
-    <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-@endpush
-
-@push('script')
-    <!-- LeafletのJavaScript -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
-    <script>
-        // 地図を初期化
-        window.onload = function() {
-            window.map = L.map('map').setView([{{ $yolpLocation['lat'] }}, {{ $yolpLocation['lon'] }}],
-                15);
-
-            // OpenStreetMapタイルレイヤーを追加
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
-
-            // 地図が読み込まれた後に、表示されている範囲のマーカーを表示する
-            map.whenReady(function() {
-                getBoundsMap();
-            });
-
-            // 地図を動かしたときに、表示されている範囲のマーカーを更新する
-            map.on('moveend', function() {
-                getBoundsMap();
-            });
-        }
-
-        // 表示されている範囲を取得して、Livewireに送信する
-        function getBoundsMap() {
-            const bound = map.getBounds();
-            const bounds = {
-                north: bound.getNorth(),
-                east: bound.getEast(),
-                south: bound.getSouth(),
-                west: bound.getWest()
-            };
-            Livewire.dispatch('updateBounds', {
-                bounds
-            });
-        }
-    </script>
-@endpush
-
 <x-app-layout>
     <div
         class="grid min-h-[calc(100vh-4rem)] grid-cols-1 bg-stone-50 lg:h-full lg:min-h-0 lg:grid-cols-[420px_minmax(0,1fr)]">
@@ -85,6 +36,9 @@
             <x-ad-slot class="mt-4 lg:shrink-0" placement="search_footer" />
         </div>
 
-        <div class="h-[60vh] min-h-96 bg-slate-100 lg:h-full lg:min-h-0" id="map"></div>
+        <x-leaflet-map class="h-[60vh] min-h-96 bg-slate-100 lg:h-full lg:min-h-0"
+            :latitude="$yolpLocation['lat']" :longitude="$yolpLocation['lon']" :zoom="15"
+            bounds-event="updateBounds" markers-event="displayMarkers"
+            :marker-url-template="route('parking_spot.show', ['parkingSpot' => '__ID__'])" />
     </div>
 </x-app-layout>
