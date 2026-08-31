@@ -1,29 +1,4 @@
 <div>
-    @script
-        <script>
-            window.markers = [];
-            $wire.on('displayMarkers', (spots) => {
-                spots = spots[0].spots || [];
-
-                if (markers) {
-                    markers.forEach(marker => map.removeLayer(marker));
-                    markers = [];
-                }
-                // 新しいマーカーを追加
-                if (map && Array.isArray(spots)) {
-                    spots.forEach(spot => {
-                        if (spot.latitude && spot.longitude) {
-                            const popupContent =
-                                `<a href="/parking-spots/${spot.id}">${spot.name}</a>`;
-                            marker = L.marker([spot.latitude, spot.longitude]).addTo(map).bindPopup(
-                                popupContent);
-                            markers.push(marker);
-                        }
-                    });
-                }
-            });
-        </script>
-    @endscript
     <div class="space-y-3 p-3">
         @foreach ($spots as $spot)
             <article class="bp-card-link overflow-hidden">

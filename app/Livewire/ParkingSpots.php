@@ -13,7 +13,7 @@ class ParkingSpots extends Component
 
     public function render()
     {
-        $this->dispatch('displayMarkers', ['spots' => $this->spots]);
+        $this->dispatch('displayMarkers', spots: $this->spots);
 
         return view('livewire.parking-spots', ['spots' => $this->spots]);
     }
