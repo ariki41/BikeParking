@@ -58,10 +58,19 @@ class ParkingSpotController extends Controller
         $capacity = config('categories.parking_spot_capacity');
         $rateDayTypes = config('categories.parking_spot_rate_day_types');
         $rateUnitMinutes = config('categories.parking_spot_rate_unit_minutes');
-        $ratesInput = old('rates', [$this->defaultRateInput()]);
-        $imagePaths = old('image_paths', array_values(array_filter([old('image_path')])));
+        $formValues = [
+            'name' => '',
+            'postalcode' => '',
+            'address1' => '',
+            'address2' => '',
+            'capacity' => '',
+            'opening_time' => '00:00',
+            'closing_time' => '00:00',
+        ];
+        $ratesInput = [$this->defaultRateInput()];
+        $imagePaths = [];
 
-        return view('parking_spot.create', compact('capacity', 'rateDayTypes', 'rateUnitMinutes', 'ratesInput', 'imagePaths'));
+        return view('parking_spot.create', compact('capacity', 'rateDayTypes', 'rateUnitMinutes', 'formValues', 'ratesInput', 'imagePaths'));
     }
 
     public function confirm(ParkingSpotRequest $request)
@@ -162,15 +171,18 @@ class ParkingSpotController extends Controller
         $rateDayTypes = config('categories.parking_spot_rate_day_types');
         $rateUnitMinutes = config('categories.parking_spot_rate_unit_minutes');
 
-        $postalcode = $parkingSpot->postalcode->postalcode;
         $address1 = $parkingSpot->postalcode->fullAddress();
-        $address2 = str_replace($address1, '', $parkingSpot->address);
+        $formValues = [
+            'name' => $parkingSpot->name,
+            'postalcode' => $parkingSpot->postalcode->postalcode,
+            'address1' => $address1,
+            'address2' => str_replace($address1, '', $parkingSpot->address),
+            'capacity' => $parkingSpot->capacity,
+            'opening_time' => date('H:i', strtotime($parkingSpot->opening_time)),
+            'closing_time' => date('H:i', strtotime($parkingSpot->closing_time)),
+        ];
 
-        // 時間フォーマット変換
-        $parkingSpot['opening_time'] = date('H:i', strtotime($parkingSpot['opening_time']));
-        $parkingSpot['closing_time'] = date('H:i', strtotime($parkingSpot['closing_time']));
-
-        $ratesInput = old('rates', $parkingSpot->rates->map(fn ($rate) => [
+        $ratesInput = $parkingSpot->rates->map(fn ($rate) => [
             'day_type' => $rate->day_type,
             'start_time' => date('H:i', strtotime($rate->start_time)),
             'end_time' => date('H:i', strtotime($rate->end_time)),
@@ -180,13 +192,10 @@ class ParkingSpotController extends Controller
             'no_free_minutes' => $rate->free_minutes === 0 ? '1' : '0',
             'max_rate' => $rate->max_rate,
             'no_max_rate' => $rate->max_rate === null ? '1' : '0',
-        ])->values()->all() ?: [$this->defaultRateInput()]);
-        $imagePaths = old('image_paths');
-        if (! is_array($imagePaths)) {
-            $imagePaths = filled(old('image_path')) ? [old('image_path')] : $parkingSpot->image_paths;
-        }
+        ])->values()->all() ?: [$this->defaultRateInput()];
+        $imagePaths = $parkingSpot->image_paths;
 
-        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'rateDayTypes', 'rateUnitMinutes', 'postalcode', 'address1', 'address2', 'ratesInput', 'imagePaths'));
+        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'rateDayTypes', 'rateUnitMinutes', 'formValues', 'ratesInput', 'imagePaths'));
     }
 
     public function update(Request $request, ParkingSpot $parkingSpot)
