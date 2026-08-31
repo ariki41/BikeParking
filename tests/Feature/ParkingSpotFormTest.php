@@ -36,7 +36,10 @@ class ParkingSpotFormTest extends TestCase
             ->assertSee('name="closing_time"', false)
             ->assertSee('name="images[]"', false)
             ->assertSee('name="rates[0][rate]"', false)
+            ->assertSee('data-parking-spot-rates data-max-rates="4"', false)
+            ->assertSee('data-rate-template', false)
             ->assertSee('value="00:00"', false)
+            ->assertDontSee("document.addEventListener('DOMContentLoaded'", false)
             ->assertDontSee('name="id"', false);
     }
 
@@ -93,7 +96,10 @@ class ParkingSpotFormTest extends TestCase
             ->assertSee('value="東京都千代田区千代田"', false)
             ->assertSee('value="1-1"', false)
             ->assertSee('/storage/parking-spots/existing.webp')
-            ->assertSee('value="100"', false);
+            ->assertSee('value="100"', false)
+            ->assertSee('data-parking-spot-rates data-max-rates="4"', false)
+            ->assertSee('data-rate-template', false)
+            ->assertDontSee("document.addEventListener('DOMContentLoaded'", false);
 
         $this->from($editUrl)
             ->post(route('parking_spot.confirm'), $this->formInput($postalcode, [
