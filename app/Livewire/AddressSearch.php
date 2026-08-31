@@ -29,6 +29,7 @@ class AddressSearch extends Component
 
         $postalcode = Postalcode::query()
             ->with('city.prefecture')
+            ->active()
             ->where('postalcode', $normalizedPostalcode)
             ->first();
 

@@ -156,6 +156,7 @@ class ParkingSpotPersistenceService
     private function postalcode(string $postalcode): Postalcode
     {
         $postalcode = Postalcode::query()
+            ->active()
             ->where('postalcode', str_replace('-', '', $postalcode))
             ->first();
 

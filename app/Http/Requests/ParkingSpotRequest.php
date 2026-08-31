@@ -64,6 +64,7 @@ class ParkingSpotRequest extends FormRequest
                 function ($attribute, $value, $fail) {
                     $postalcode = Postalcode::query()
                         ->with('city.prefecture')
+                        ->active()
                         ->where('postalcode', str_replace('-', '', (string) $this->input('postalcode')))
                         ->first();
 
