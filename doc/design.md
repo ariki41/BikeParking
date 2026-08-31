@@ -108,6 +108,8 @@ Controller は `ParkingSpotPersistenceService`、`ParkingSpotGeocodingService`�
 
 登録・編集は共通の `parking_spot_confirmation` セッションを使用する。戻る操作や保存エラーでは確認状態を保持し、保存成功後だけ破棄する。確定ルートは同一セッションからの同時送信を直列化し、セッション欠落・期限切れ・二重送信時はDB更新を行わず入力画面またはホームへ案内する。離脱やセッション期限切れで残った仮画像は、1時間ごとに実行する `parking-spots:prune-temporary-images` が24時間経過後に削除する。
 
+登録・編集画面の入力HTMLは共通の `parking-spot-form` Bladeコンポーネントを使用する。確認画面から戻った入力やバリデーション失敗時のフラッシュ入力を最優先し、フラッシュ入力がない場合は新規登録の初期値または編集対象の既存値を表示する。画面モード、編集対象ID、確認送信先はコンポーネントの引数として渡す。
+
 ## 6. データ設計
 
 ```mermaid
@@ -172,9 +174,10 @@ erDiagram
 
 ## 9. テスト方針
 
-料金表示・入力・保存・日付またぎ・最大料金なしの主要ケースは `tests/Feature/ParkingSpotRateDisplayTest.php`、料金帯の曜日・時間範囲・重複判定の境界値は `tests/Unit/Domain/ParkingSpotRates/`、複数画像の主要フローは `tests/Feature/ParkingSpotImageTest.php`、確認セッションと一時画像清掃は `tests/Feature/ParkingSpotConfirmationSessionTest.php` に集約されている。保存更新・YOLP API・ジオコード・画像サービスの境界は `tests/Feature/ParkingSpotPersistenceServiceTest.php` と `tests/Unit/Services/` で確認する。変更時はまず次の focused test を実行し、必要に応じて全体テストを実行する。
+登録・編集フォームの共通表示と入力復元は `tests/Feature/ParkingSpotFormTest.php`、料金表示・入力・保存・日付またぎ・最大料金なしの主要ケースは `tests/Feature/ParkingSpotRateDisplayTest.php`、料金帯の曜日・時間範囲・重複判定の境界値は `tests/Unit/Domain/ParkingSpotRates/`、複数画像の主要フローは `tests/Feature/ParkingSpotImageTest.php`、確認セッションと一時画像清掃は `tests/Feature/ParkingSpotConfirmationSessionTest.php` に集約されている。保存更新・YOLP API・ジオコード・画像サービスの境界は `tests/Feature/ParkingSpotPersistenceServiceTest.php` と `tests/Unit/Services/` で確認する。変更時はまず次の focused test を実行し、必要に応じて全体テストを実行する。
 
 ```bash
+vendor/bin/sail test tests/Feature/ParkingSpotFormTest.php
 vendor/bin/sail test tests/Unit/Domain/ParkingSpotRates
 vendor/bin/sail test tests/Feature/ParkingSpotRateDisplayTest.php
 vendor/bin/sail test tests/Feature/ParkingSpotImageTest.php
