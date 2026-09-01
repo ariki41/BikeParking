@@ -151,6 +151,7 @@ class ParkingSpotPersistenceService
         $parkingSpot->opening_time = $this->normalizeDatabaseTime($input['opening_time']);
         $parkingSpot->closing_time = $this->normalizeDatabaseTime($input['closing_time']);
         $parkingSpot->capacity = $input['capacity'];
+        $parkingSpot->max_displacement_class = $input['max_displacement_class'];
     }
 
     private function postalcode(string $postalcode): Postalcode

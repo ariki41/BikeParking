@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Models\ParkingSpot;
 use App\Models\ParkingSpotRates;
 use App\Models\Review;
@@ -29,19 +30,28 @@ class DevelopmentSeederTest extends TestCase
         $this->assertTrue(Hash::check('development-test-password', $owner->password));
         $this->assertTrue(Hash::check('development-test-password', $reviewer->password));
         $this->assertDatabaseHas('users', ['id' => $existingUser->id]);
-        $this->assertDatabaseCount('parking_spots', 3);
-        $this->assertDatabaseCount('parking_spot_rates', 5);
-        $this->assertDatabaseCount('reviews', 3);
+        $this->assertDatabaseCount('parking_spots', 4);
+        $this->assertDatabaseCount('parking_spot_rates', 6);
+        $this->assertDatabaseCount('reviews', 4);
+        $this->assertEqualsCanonicalizing(
+            EngineDisplacementClass::values(),
+            ParkingSpot::query()
+                ->get(['max_displacement_class'])
+                ->pluck('max_displacement_class')
+                ->map(fn (EngineDisplacementClass $class): string => $class->value)
+                ->all(),
+        );
 
         $this->seed(DevelopmentSeeder::class);
 
         $this->assertDatabaseCount('users', 3);
-        $this->assertDatabaseCount('parking_spots', 3);
-        $this->assertDatabaseCount('parking_spot_rates', 5);
-        $this->assertDatabaseCount('reviews', 3);
-        $this->assertSame(3, ParkingSpot::query()->where('user_id', $owner->id)->count());
-        $this->assertSame(5, ParkingSpotRates::query()->count());
-        $this->assertSame(3, Review::query()->count());
+        $this->assertDatabaseCount('parking_spots', 4);
+        $this->assertDatabaseCount('parking_spot_rates', 6);
+        $this->assertDatabaseCount('reviews', 4);
+        $this->assertSame(4, ParkingSpot::query()->where('user_id', $owner->id)->count());
+        $this->assertSame(6, ParkingSpotRates::query()->count());
+        $this->assertSame(4, Review::query()->count());
+        $this->assertSame(0, ParkingSpot::query()->whereNull('max_displacement_class')->count());
     }
 
     public function test_it_requires_a_password_for_development_users(): void

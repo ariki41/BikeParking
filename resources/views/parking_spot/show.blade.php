@@ -200,6 +200,10 @@
                             <dt class="font-semibold text-slate-500">収容台数</dt>
                             <dd class="text-slate-900">{{ $parkingSpot->capacity_label }}</dd>
                         </div>
+                        <div class="grid grid-cols-[96px_1fr] gap-3 py-3">
+                            <dt class="font-semibold text-slate-500">駐車可能な排気量</dt>
+                            <dd class="text-slate-900">{{ $parkingSpot->max_displacement_class?->label() ?? '未設定' }}</dd>
+                        </div>
                         <div class="grid grid-cols-[96px_1fr] gap-3 pb-2 pt-3">
                             <dt class="font-semibold text-slate-500">営業時間</dt>
                             <dd class="text-slate-900">{{ $parkingSpot->opening_time }} ～ {{ $parkingSpot->closing_time }}</dd>

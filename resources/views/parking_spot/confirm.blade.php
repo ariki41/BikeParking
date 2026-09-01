@@ -35,6 +35,10 @@
                         <dd class="text-slate-900">{{ $capacity[$validatedData['capacity']] ?? '' }}</dd>
                     </div>
                     <div class="grid gap-1 py-3 sm:grid-cols-[140px_1fr] sm:gap-4">
+                        <dt class="font-semibold text-slate-500">駐車可能な排気量</dt>
+                        <dd class="text-slate-900">{{ $displacementClass->label() }}</dd>
+                    </div>
+                    <div class="grid gap-1 py-3 sm:grid-cols-[140px_1fr] sm:gap-4">
                         <dt class="font-semibold text-slate-500">画像</dt>
                         <dd class="text-slate-900">
                             {{ count($validatedData['image_paths'] ?? []) > 0 ? count($validatedData['image_paths']) . '枚' : '未設定' }}

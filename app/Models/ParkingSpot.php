@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\ParkingSpots\EngineDisplacementClass;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,7 +23,22 @@ class ParkingSpot extends Model
         return [
             'longitude' => 'float',
             'latitude' => 'float',
+            'max_displacement_class' => EngineDisplacementClass::class,
         ];
+    }
+
+    public function scopeSupportsEngineDisplacement(
+        Builder $query,
+        ?EngineDisplacementClass $engineDisplacement,
+    ): Builder {
+        if ($engineDisplacement === null) {
+            return $query;
+        }
+
+        return $query->whereIn(
+            'max_displacement_class',
+            $engineDisplacement->supportedByValues(),
+        );
     }
 
     public function getCapacityLabelAttribute(): string

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Http\Requests\ParkingSpotRequest;
 use App\Models\ParkingSpot;
 use App\Services\ParkingSpotConfirmationService;
@@ -56,6 +57,7 @@ class ParkingSpotController extends Controller
         $this->confirmation->beginCreate($request);
 
         $capacity = config('categories.parking_spot_capacity');
+        $displacementClasses = EngineDisplacementClass::cases();
         $rateDayTypes = config('categories.parking_spot_rate_day_types');
         $rateUnitMinutes = config('categories.parking_spot_rate_unit_minutes');
         $formValues = [
@@ -64,13 +66,14 @@ class ParkingSpotController extends Controller
             'address1' => '',
             'address2' => '',
             'capacity' => '',
+            'max_displacement_class' => '',
             'opening_time' => '00:00',
             'closing_time' => '00:00',
         ];
         $ratesInput = [$this->defaultRateInput()];
         $imagePaths = [];
 
-        return view('parking_spot.create', compact('capacity', 'rateDayTypes', 'rateUnitMinutes', 'formValues', 'ratesInput', 'imagePaths'));
+        return view('parking_spot.create', compact('capacity', 'displacementClasses', 'rateDayTypes', 'rateUnitMinutes', 'formValues', 'ratesInput', 'imagePaths'));
     }
 
     public function confirm(ParkingSpotRequest $request)
@@ -128,10 +131,11 @@ class ParkingSpotController extends Controller
         $validatedData['address'] = $yolpLocation['address'];
 
         $capacity = config('categories.parking_spot_capacity');
+        $displacementClass = EngineDisplacementClass::from($validatedData['max_displacement_class']);
 
         $this->confirmation->confirm($request, $mode, $validatedData['id'], $validatedData);
 
-        return view('parking_spot.confirm', compact('validatedData', 'capacity'));
+        return view('parking_spot.confirm', compact('validatedData', 'capacity', 'displacementClass'));
     }
 
     public function store(Request $request)
@@ -168,6 +172,7 @@ class ParkingSpotController extends Controller
         $this->confirmation->beginEdit($request, $parkingSpot->id);
 
         $capacity = config('categories.parking_spot_capacity');
+        $displacementClasses = EngineDisplacementClass::cases();
         $rateDayTypes = config('categories.parking_spot_rate_day_types');
         $rateUnitMinutes = config('categories.parking_spot_rate_unit_minutes');
 
@@ -178,6 +183,7 @@ class ParkingSpotController extends Controller
             'address1' => $address1,
             'address2' => str_replace($address1, '', $parkingSpot->address),
             'capacity' => $parkingSpot->capacity,
+            'max_displacement_class' => $parkingSpot->max_displacement_class?->value,
             'opening_time' => date('H:i', strtotime($parkingSpot->opening_time)),
             'closing_time' => date('H:i', strtotime($parkingSpot->closing_time)),
         ];
@@ -195,7 +201,7 @@ class ParkingSpotController extends Controller
         ])->values()->all() ?: [$this->defaultRateInput()];
         $imagePaths = $parkingSpot->image_paths;
 
-        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'rateDayTypes', 'rateUnitMinutes', 'formValues', 'ratesInput', 'imagePaths'));
+        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'displacementClasses', 'rateDayTypes', 'rateUnitMinutes', 'formValues', 'ratesInput', 'imagePaths'));
     }
 
     public function update(Request $request, ParkingSpot $parkingSpot)

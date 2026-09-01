@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Models\ParkingSpot;
 use App\Models\Postalcode;
 use App\Models\User;
@@ -33,6 +34,7 @@ class ParkingSpotFactory extends Factory
             'longitude' => fake()->randomFloat(6, 123, 146),
             'latitude' => fake()->randomFloat(6, 24, 46),
             'capacity' => fake()->numberBetween(1, 4),
+            'max_displacement_class' => fake()->randomElement(EngineDisplacementClass::values()),
             'opening_time' => fake()->randomElement($openingTime),
             'closing_time' => fake()->randomElement($closingTime),
         ];

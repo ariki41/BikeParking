@@ -55,7 +55,7 @@ flowchart LR
 | Controller | 入力受付、Policy による認可、画面遷移、セッション上の確認データ管理 | `app/Http/Controllers/` |
 | Policy | 駐輪場の共同編集とレビューの本人更新に関する認可 | `app/Policies/` |
 | Form Request | 駐輪場・料金帯・レビューの入力検証、ドメインエラーの入力項目への変換 | `app/Http/Requests/` |
-| Domain Rules | 料金帯の曜日区分、終日・日付またぎを含む時間範囲、重複判定 | `app/Domain/ParkingSpotRates/` |
+| Domain Rules | 料金帯の曜日区分・時間範囲・重複判定、駐車可能な排気量区分の順序と表示名 | `app/Domain/` |
 | Persistence Service | 駐輪場・料金・更新履歴のトランザクション制御 | `app/Services/ParkingSpotPersistenceService.php` |
 | Geocoding Service | 駐輪場登録用の住所ジオコード | `app/Services/ParkingSpotGeocodingService.php` |
 | Search Service | 検索位置と検索結果なしの場合の表示位置を決定 | `app/Services/SearchService.php` |
@@ -130,7 +130,7 @@ erDiagram
 | テーブル | 役割 | 主な項目 |
 | --- | --- | --- |
 | `users` | 利用者 | 認証情報、氏名、都道府県 |
-| `parking_spots` | 駐輪場本体 | 所有者、名称、`postalcode_id`、住所、緯度経度、営業時間、収容台数、代表画像 |
+| `parking_spots` | 駐輪場本体 | 所有者、名称、`postalcode_id`、住所、緯度経度、営業時間、収容台数、駐車可能な最大排気量区分、代表画像 |
 | `parking_spot_images` | 駐輪場画像 | 対象駐輪場、保存パス、表示順 |
 | `parking_spot_rates` | 料金帯 | 曜日区分、時間帯、単位、料金、無料時間、最大料金 |
 | `parking_spot_update_histories` | 更新履歴 | 対象駐輪場、更新ユーザー、変更内容（JSON）、更新日時 |
@@ -154,6 +154,7 @@ erDiagram
 - パスワードはログイン後のプロフィール画面から変更できる。メール確認とメール経由のパスワード再設定は提供しない。
 - 駐輪場名、住所、営業時間、料金は必須。
 - 収容台数は 1 以上。
+- 新規登録・編集では駐車可能な最大排気量区分を必須とする。既存の未設定データは表示可能とし、排気量指定検索からは除外する。
 - 駐輪場画像は0〜4枚、jpg / jpeg / png / webp、1枚あたりアップロード時20MB以下とする。
 - 料金帯は 1〜4 件。
 - 料金は 0 円以上、最大料金は設定する場合 1 円以上。
@@ -170,6 +171,7 @@ erDiagram
 - レビューは駐輪場詳細から投稿・更新でき、平均評価と件数をトップ・検索一覧・詳細に表示する。投稿にはログインが必要で、既存レビューを更新できるのは投稿者本人のみとする。
 - 駐輪場は共同編集方式であり、`ParkingSpotPolicy` がログイン済みユーザー全員の編集を許可する。履歴は駐輪場詳細画面に新しい順で最大10件表示し、全件は `ParkingSpot::updateHistories()` から参照できる。
 - トップ画面は新着 3 件、地図表示の範囲検索は最大 50 件に制限される。
+- 地図検索で排気量を指定した場合、指定区分以上に対応する駐輪場だけを一覧とマーカーへ表示する。指定なしの場合は排気量未設定の既存データも含め、検索条件はGETクエリへ保持する。
 - 検索・詳細・登録確認画面の地図は共通の `x-leaflet-map` を利用する。中心座標、ズーム、マーカー、Livewireへの表示範囲通知はコンポーネントの設定として渡し、Leafletの初期化とマーカー更新は `resources/js/leaflet-map.js` が担当する。初期化に失敗した場合は地図領域にエラーを表示し、`leaflet-map:error` イベントを発火する。
 - 外部YOLP APIの設定（`YOLP_URL` / `YOLP_GEOCODE_URL` / `YOLP_CLIENT_ID`）は `config/services.php` を経由し、検索と登録で共通クライアントを利用する。
 

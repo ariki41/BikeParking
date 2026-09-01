@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Models\City;
 use App\Models\Postalcode;
 use App\Models\Prefecture;
@@ -70,6 +71,7 @@ class JapanParkingSpotSeeder extends Seeder
                     'longitude' => $this->randomizedCoordinate($location['longitude']),
                     'latitude' => $this->randomizedCoordinate($location['latitude']),
                     'capacity' => random_int(1, 4),
+                    'max_displacement_class' => EngineDisplacementClass::cases()[$position % count(EngineDisplacementClass::cases())]->value,
                     ...$this->openingHours(),
                     'created_at' => $now,
                     'updated_at' => $now,

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Models\City;
 use App\Models\ParkingSpot;
 use App\Models\Postalcode;
@@ -78,6 +79,7 @@ class ParkingSpotPersistenceServiceTest extends TestCase
             'longitude' => 139.753000,
             'latitude' => 35.685000,
             'capacity' => 1,
+            'max_displacement_class' => EngineDisplacementClass::UpTo400cc->value,
             'opening_time' => '00:00',
             'closing_time' => '00:00',
             'rates' => [[
