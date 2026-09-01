@@ -196,16 +196,16 @@
                         <h2 class="bp-section-title">基本情報</h2>
                     </div>
                     <dl class="divide-y divide-slate-100 p-5 text-sm">
-                        <div class="grid grid-cols-[96px_1fr] gap-3 py-3 first:pt-0">
-                            <dt class="font-semibold text-slate-500">収容台数</dt>
+                        <div class="grid grid-cols-[140px_minmax(0,1fr)] gap-3 py-3 first:pt-0">
+                            <dt class="whitespace-nowrap font-semibold text-slate-500">収容台数</dt>
                             <dd class="text-slate-900">{{ $parkingSpot->capacity_label }}</dd>
                         </div>
-                        <div class="grid grid-cols-[96px_1fr] gap-3 py-3">
-                            <dt class="font-semibold text-slate-500">駐車可能な排気量</dt>
+                        <div class="grid grid-cols-[140px_minmax(0,1fr)] gap-3 py-3">
+                            <dt class="whitespace-nowrap font-semibold text-slate-500">駐車可能な排気量</dt>
                             <dd class="text-slate-900">{{ $parkingSpot->max_displacement_class?->label() ?? '未設定' }}</dd>
                         </div>
-                        <div class="grid grid-cols-[96px_1fr] gap-3 pb-2 pt-3">
-                            <dt class="font-semibold text-slate-500">営業時間</dt>
+                        <div class="grid grid-cols-[140px_minmax(0,1fr)] gap-3 pb-2 pt-3">
+                            <dt class="whitespace-nowrap font-semibold text-slate-500">営業時間</dt>
                             <dd class="text-slate-900">{{ $parkingSpot->opening_time }} ～ {{ $parkingSpot->closing_time }}</dd>
                         </div>
                     </dl>

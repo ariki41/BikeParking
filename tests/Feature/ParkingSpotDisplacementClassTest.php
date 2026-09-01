@@ -38,6 +38,7 @@ class ParkingSpotDisplacementClassTest extends TestCase
         $this->get(route('parking_spot.show', $parkingSpot))
             ->assertOk()
             ->assertSee('駐車可能な排気量')
+            ->assertSee('grid-cols-[140px_minmax(0,1fr)]', false)
             ->assertSee('未設定');
     }
 
