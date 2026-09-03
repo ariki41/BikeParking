@@ -16,10 +16,9 @@ class SearchController extends Controller
         $engineDisplacement = EngineDisplacementClass::tryFrom(
             (string) $request->query('engine_displacement'),
         )?->value;
-        $displacementClasses = EngineDisplacementClass::cases();
 
         $yolpLocation = $this->service->getYolpLocation($request);
 
-        return view('search', compact('keyword', 'engineDisplacement', 'displacementClasses', 'yolpLocation'));
+        return view('search', compact('keyword', 'engineDisplacement', 'yolpLocation'));
     }
 }

@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+[x-cloak] {
+    display: none !important;
+}
+
 @layer components {
     .bp-page {
         @apply min-h-screen bg-stone-50 text-slate-900;
