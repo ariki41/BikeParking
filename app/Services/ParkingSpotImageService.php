@@ -17,6 +17,8 @@ use Intervention\Image\ImageManager;
 
 class ParkingSpotImageService
 {
+    private const MAX_IMAGES = 4;
+
     private const MAX_FINAL_IMAGE_BYTES = 5 * 1024 * 1024;
 
     /**
@@ -39,19 +41,25 @@ class ParkingSpotImageService
             $uploadedImages[] = $request->file('image');
         }
 
-        if ($uploadedImages === []) {
-            foreach ($currentPaths as $path) {
-                $allowed = $this->isTemporaryImagePath($path)
-                    ? in_array($path, $allowedTemporaryPaths, true)
-                    : in_array($path, $allowedPermanentPaths, true);
+        foreach ($currentPaths as $path) {
+            $allowed = $this->isTemporaryImagePath($path)
+                ? in_array($path, $allowedTemporaryPaths, true)
+                : in_array($path, $allowedPermanentPaths, true);
 
-                if (! $allowed) {
-                    throw ValidationException::withMessages([
-                        'image_paths' => '保持している画像情報が正しくありません。',
-                    ]);
-                }
+            if (! $allowed) {
+                throw ValidationException::withMessages([
+                    'image_paths' => '保持している画像情報が正しくありません。',
+                ]);
             }
+        }
 
+        if (count($currentPaths) + count($uploadedImages) > self::MAX_IMAGES) {
+            throw ValidationException::withMessages([
+                'images' => '保持する画像と追加する画像の合計は4枚までです。',
+            ]);
+        }
+
+        if ($uploadedImages === []) {
             return $currentPaths;
         }
 
@@ -77,12 +85,7 @@ class ParkingSpotImageService
             ]);
         }
 
-        $this->deleteImagePaths(array_filter(
-            $currentPaths,
-            fn (string $path) => $this->isTemporaryImagePath($path),
-        ));
-
-        return $tempPaths;
+        return [...$currentPaths, ...$tempPaths];
     }
 
     /**

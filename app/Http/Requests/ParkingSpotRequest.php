@@ -40,10 +40,19 @@ class ParkingSpotRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
-            $imageCount = count((array) $this->file('images', [])) + ($this->hasFile('image') ? 1 : 0);
+            $imagePaths = is_array($this->input('image_paths'))
+                ? $this->normalizeImagePaths($this->input('image_paths'))
+                : $this->normalizeImagePaths([$this->input('image_path')]);
+            $deleteImagePaths = $this->normalizeImagePaths(
+                is_array($this->input('delete_image_paths')) ? $this->input('delete_image_paths') : [],
+            );
+            $retainedImageCount = count(array_diff($imagePaths, $deleteImagePaths));
+            $uploadedImages = $this->file('images', []);
+            $uploadedImageCount = is_array($uploadedImages) ? count($uploadedImages) : 0;
+            $imageCount = $retainedImageCount + $uploadedImageCount + ($this->hasFile('image') ? 1 : 0);
 
             if ($imageCount > 4) {
-                $validator->errors()->add('images', '画像は4枚までアップロードできます。');
+                $validator->errors()->add('images', '保持する画像と追加する画像の合計は4枚までです。');
             }
 
             $this->validateRateTimeConflicts($validator);
@@ -83,6 +92,8 @@ class ParkingSpotRequest extends FormRequest
             'image_paths' => 'nullable|array|max:4',
             'image_paths.*' => 'string|max:255',
             'image_path' => 'nullable|string|max:255',
+            'delete_image_paths' => 'nullable|array|max:4',
+            'delete_image_paths.*' => 'string|max:255',
             'opening_time' => 'required|date_format:H:i',
             'closing_time' => 'required|date_format:H:i',
             'rates' => 'required|array|min:1|max:4',
@@ -144,6 +155,10 @@ class ParkingSpotRequest extends FormRequest
             'image_paths.*.max' => '画像の保持情報が長すぎます。',
             'image_path.string' => '画像の保持情報が正しくありません。',
             'image_path.max' => '画像の保持情報が長すぎます。',
+            'delete_image_paths.array' => '画像の削除情報が正しくありません。',
+            'delete_image_paths.max' => '削除する画像は4枚まで選択できます。',
+            'delete_image_paths.*.string' => '画像の削除情報が正しくありません。',
+            'delete_image_paths.*.max' => '画像の削除情報が長すぎます。',
 
             'opening_time.required' => '開場時間は必須です。',
             'opening_time.date_format' => '開場時間の形式が正しくありません。例: 10:00',
@@ -216,6 +231,19 @@ class ParkingSpotRequest extends FormRequest
             $validator->errors()->add("rates.{$leftIndex}.time_conflict", $message);
             $validator->errors()->add("rates.{$rightIndex}.time_conflict", $message);
         }
+    }
+
+    /**
+     * @param  array<int, mixed>  $imagePaths
+     * @return list<string>
+     */
+    private function normalizeImagePaths(array $imagePaths): array
+    {
+        return collect($imagePaths)
+            ->filter(fn ($path) => is_string($path) && filled($path))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function isReadyForTimeConflictCheck(array $rate, int $index, Validator $validator): bool
