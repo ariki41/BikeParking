@@ -272,6 +272,7 @@ class ParkingSpotSearchFilterTest extends TestCase
             'open_24_hours' => 1,
             'has_free_time' => 1,
             'max_rate' => 1200,
+            'engine_displacement' => 'over_400cc,up_to_125cc',
             'zoom' => 17,
         ]);
 
@@ -290,9 +291,12 @@ class ParkingSpotSearchFilterTest extends TestCase
             ->assertSee('name="open_24_hours"', false)
             ->assertSee('name="has_free_time"', false)
             ->assertSee('name="max_rate"', false)
+            ->assertSee('name="engine_displacement" type="hidden" value="up_to_125cc,over_400cc"', false)
             ->assertSee('name="zoom" type="hidden" value="17"', false)
             ->assertDontSee('name="filters[', false)
-            ->assertSee('5件適用中');
+            ->assertSee('7件適用中')
+            ->assertSee('排気量: 125cc以下')
+            ->assertSee('排気量: 400cc超');
     }
 
     public function test_map_view_is_kept_in_the_flat_query_string_and_get_form(): void

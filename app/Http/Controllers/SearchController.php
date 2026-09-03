@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Services\SearchService;
 use Illuminate\Http\Request;
 
@@ -13,9 +12,7 @@ class SearchController extends Controller
     public function index(Request $request)
     {
         $keyword = $request->get('keyword');
-        $engineDisplacement = EngineDisplacementClass::tryFrom(
-            (string) $request->query('engine_displacement'),
-        )?->value;
+        $engineDisplacement = $request->query('engine_displacement');
         $zoom = $this->normalizeZoom($request->query('zoom'));
 
         $yolpLocation = $this->service->getYolpLocation($request);

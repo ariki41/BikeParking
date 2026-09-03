@@ -7,32 +7,9 @@
                     :value="$keyword" />
                 <x-primary-button class="shrink-0">検索</x-primary-button>
             </div>
-            <fieldset>
-                <legend class="sr-only">駐車したいバイクの排気量</legend>
-                <div class="flex min-h-5 items-center justify-between gap-3 text-sm leading-5">
-                    <span class="font-medium text-slate-700" aria-hidden="true">駐車したいバイクの排気量</span>
-                    @if ($engineDisplacement !== null)
-                        <button class="shrink-0 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
-                            type="button" wire:click="clearEngineDisplacement" aria-label="排気量条件をクリア">
-                            クリア
-                        </button>
-                    @endif
-                </div>
-                <div class="mt-2 grid grid-cols-2 gap-2">
-                    @foreach ($displacementClasses as $displacementClass)
-                        <label class="cursor-pointer">
-                            <input class="peer sr-only" name="engine_displacement" type="radio"
-                                value="{{ $displacementClass->value }}" @checked($engineDisplacement === $displacementClass->value)
-                                wire:model.live="engineDisplacementQuery">
-                            <span
-                                class="flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 transition hover:border-emerald-400 hover:bg-emerald-50 peer-checked:border-emerald-600 peer-checked:bg-emerald-600 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500 peer-focus-visible:ring-offset-2">
-                                {{ $displacementClass->searchLabel() }}
-                            </span>
-                        </label>
-                    @endforeach
-                </div>
-            </fieldset>
-
+            @if ($engineDisplacementQuery !== '')
+                <input name="engine_displacement" type="hidden" value="{{ $engineDisplacementQuery }}">
+            @endif
             @if ($capacityQuery !== '')
                 <input name="capacity" type="hidden" value="{{ $capacityQuery }}">
             @endif
@@ -80,6 +57,22 @@
 
         <form class="space-y-4 border-t border-slate-200 p-3" id="parking-spot-filters" wire:submit="applyFilters"
             x-show="open" x-cloak>
+            <fieldset>
+                <legend class="text-sm font-semibold text-slate-800">駐車したいバイクの排気量（複数選択可）</legend>
+                <div class="mt-2 grid grid-cols-2 gap-2">
+                    @foreach ($displacementClasses as $displacementClass)
+                        <label
+                            class="flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
+                            <input class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" type="checkbox"
+                                value="{{ $displacementClass->value }}" wire:model="engineDisplacementDraft">
+                            <span>
+                                {{ $displacementClass->searchLabel() }}
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+            </fieldset>
+
             <fieldset>
                 <legend class="text-sm font-semibold text-slate-800">収容台数（複数選択可）</legend>
                 <div class="mt-2 grid grid-cols-2 gap-2">

@@ -21,7 +21,7 @@ class ParkingSpots extends Component
     #[Url(as: 'lon', keep: true)]
     public $longitude;
 
-    public ?string $engineDisplacement = null;
+    public array $engineDisplacements = [];
 
     #[Url(as: 'engine_displacement', history: true, except: '')]
     public $engineDisplacementQuery = '';
@@ -51,6 +51,8 @@ class ParkingSpots extends Component
 
     public $maxRateDraft = null;
 
+    public array $engineDisplacementDraft = [];
+
     public array $bounds = [];
 
     public bool $hasSearched = false;
@@ -61,13 +63,13 @@ class ParkingSpots extends Component
         ?string $keyword = null,
         $latitude = null,
         $longitude = null,
-        ?string $engineDisplacement = null,
+        $engineDisplacement = null,
         $zoom = null,
     ): void {
         $this->keyword = $keyword;
         $this->latitude = $latitude ?? $this->latitude;
         $this->longitude = $longitude ?? $this->longitude;
-        $this->syncEngineDisplacement($engineDisplacement ?? $this->engineDisplacementQuery);
+        $this->syncEngineDisplacements($engineDisplacement ?? $this->engineDisplacementQuery);
         $this->zoom = $this->normalizeZoom($zoom ?? $this->zoom);
 
         $this->syncAppliedFiltersFromQuery();
@@ -154,6 +156,7 @@ class ParkingSpots extends Component
             'has_free_time' => $this->hasFreeTimeDraft,
             'max_rate' => $this->maxRateDraft,
         ]);
+        $this->syncEngineDisplacements($this->engineDisplacementDraft);
 
         $this->syncQueryFromAppliedFilters();
         $this->syncDraftsFromFilters($this->filters);
@@ -167,6 +170,9 @@ class ParkingSpots extends Component
         $this->open24HoursDraft = false;
         $this->hasFreeTimeDraft = false;
         $this->maxRateDraft = null;
+        $this->engineDisplacements = [];
+        $this->engineDisplacementQuery = '';
+        $this->engineDisplacementDraft = [];
         $this->capacityQuery = '';
         $this->open24HoursQuery = '';
         $this->hasFreeTimeQuery = '';
@@ -176,17 +182,9 @@ class ParkingSpots extends Component
         $this->refreshSpots();
     }
 
-    public function clearEngineDisplacement(): void
-    {
-        $this->engineDisplacement = null;
-        $this->engineDisplacementQuery = '';
-
-        $this->refreshSpots();
-    }
-
     public function updatedEngineDisplacementQuery(): void
     {
-        $this->syncEngineDisplacement($this->engineDisplacementQuery);
+        $this->syncEngineDisplacements($this->engineDisplacementQuery);
         $this->refreshSpots();
     }
 
@@ -210,12 +208,11 @@ class ParkingSpots extends Component
         $this->syncAppliedFiltersFromQuery();
     }
 
-    private function syncEngineDisplacement(mixed $engineDisplacement): void
+    private function syncEngineDisplacements(mixed $engineDisplacements): void
     {
-        $this->engineDisplacement = EngineDisplacementClass::tryFrom(
-            (string) $engineDisplacement,
-        )?->value;
-        $this->engineDisplacementQuery = $this->engineDisplacement ?? '';
+        $this->engineDisplacements = $this->normalizedEngineDisplacements($engineDisplacements);
+        $this->engineDisplacementQuery = implode(',', $this->engineDisplacements);
+        $this->engineDisplacementDraft = $this->engineDisplacements;
     }
 
     private function refreshSpots(): void
@@ -235,9 +232,7 @@ class ParkingSpots extends Component
             ->withAvg('reviews', 'rating')
             ->whereBetween('latitude', [$this->bounds['south'], $this->bounds['north']])
             ->whereBetween('longitude', [$this->bounds['west'], $this->bounds['east']])
-            ->supportsEngineDisplacement(
-                EngineDisplacementClass::tryFrom((string) $this->engineDisplacement),
-            )
+            ->supportsEngineDisplacements($this->engineDisplacements)
             ->when($capacityFilters !== [], fn (Builder $query) => $query->whereIn('capacity', $capacityFilters))
             ->when($open24Hours, fn (Builder $query) => $query
                 ->where('opening_time', '00:00:00')
@@ -352,6 +347,22 @@ class ParkingSpots extends Component
         return $normalized;
     }
 
+    private function normalizedEngineDisplacements(mixed $engineDisplacements): array
+    {
+        $values = is_string($engineDisplacements)
+            ? explode(',', $engineDisplacements)
+            : Arr::wrap($engineDisplacements);
+        $selectedValues = collect($values)
+            ->filter(fn ($value): bool => is_scalar($value))
+            ->map(fn ($value): string => (string) $value)
+            ->all();
+
+        return collect(EngineDisplacementClass::values())
+            ->filter(fn (string $value): bool => in_array($value, $selectedValues, true))
+            ->values()
+            ->all();
+    }
+
     private function filterIsEnabled($value): bool
     {
         return in_array($value, [true, 1, '1', 'true', 'on'], true);
@@ -371,6 +382,12 @@ class ParkingSpots extends Component
         $labels = collect($this->filters['capacity'] ?? [])
             ->map(fn (int $capacity): string => '収容台数: '.config("categories.parking_spot_capacity.{$capacity}"))
             ->all();
+
+        foreach ($this->engineDisplacements as $value) {
+            if ($engineDisplacement = EngineDisplacementClass::tryFrom($value)) {
+                $labels[] = '排気量: '.$engineDisplacement->searchLabel();
+            }
+        }
 
         if ($this->filters['open_24_hours'] ?? false) {
             $labels[] = '24時間営業';
