@@ -3,7 +3,7 @@
         class="grid min-h-[calc(100vh-4rem)] grid-cols-1 bg-stone-50 lg:h-full lg:min-h-0 lg:grid-cols-[420px_minmax(0,1fr)]">
         <div
             class="border-b border-slate-200 bg-white p-4 lg:flex lg:min-h-0 lg:flex-col lg:border-b-0 lg:border-r">
-            <form class="lg:shrink-0" method="GET" action="{{ route('search') }}">
+            <form class="lg:shrink-0" method="GET" action="{{ route('search') }}" x-data>
                 <div class="space-y-4">
                     <div>
                         <h1 class="text-2xl font-bold text-slate-900">駐輪場を探す</h1>
@@ -13,18 +13,37 @@
                             placeholder="駅名・地名を入力" :value="$keyword" />
                         <x-primary-button class="shrink-0">検索</x-primary-button>
                     </div>
-                    <div>
-                        <x-input-label for="engine_displacement">駐車したいバイクの排気量</x-input-label>
-                        <select class="bp-select mt-1" id="engine_displacement" name="engine_displacement">
-                            <option value="">指定なし</option>
+                    <fieldset>
+                        <legend class="sr-only">駐車したいバイクの排気量</legend>
+                        <div class="flex min-h-5 items-center justify-between gap-3 text-sm leading-5">
+                            <span class="font-medium text-slate-700" aria-hidden="true">駐車したいバイクの排気量</span>
+                            @if ($engineDisplacement !== null)
+                                <a class="shrink-0 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
+                                    href="{{ route('search', array_filter([
+                                        'keyword' => $keyword,
+                                        'lat' => $yolpLocation['lat'],
+                                        'lon' => $yolpLocation['lon'],
+                                    ], fn ($value) => $value !== null && $value !== '')) }}"
+                                    aria-label="排気量条件をクリア">
+                                    クリア
+                                </a>
+                            @endif
+                        </div>
+                        <div class="mt-2 grid grid-cols-2 gap-2">
                             @foreach ($displacementClasses as $displacementClass)
-                                <option value="{{ $displacementClass->value }}"
-                                    @selected($engineDisplacement === $displacementClass->value)>
-                                    {{ $displacementClass->searchLabel() }}
-                                </option>
+                                <label class="cursor-pointer">
+                                    <input class="peer sr-only" name="engine_displacement" type="radio"
+                                        value="{{ $displacementClass->value }}"
+                                        @checked($engineDisplacement === $displacementClass->value)
+                                        x-on:change="$el.form.requestSubmit()">
+                                    <span
+                                        class="flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 transition hover:border-emerald-400 hover:bg-emerald-50 peer-checked:border-emerald-600 peer-checked:bg-emerald-600 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500 peer-focus-visible:ring-offset-2">
+                                        {{ $displacementClass->searchLabel() }}
+                                    </span>
+                                </label>
                             @endforeach
-                        </select>
-                    </div>
+                        </div>
+                    </fieldset>
                     @if (session('error'))
                         <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2">
                             <p class="text-sm text-red-600">{{ session('error') }}</p>

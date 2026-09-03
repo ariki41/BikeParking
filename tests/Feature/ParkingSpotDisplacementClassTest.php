@@ -228,10 +228,13 @@ class ParkingSpotDisplacementClassTest extends TestCase
 
         $response
             ->assertSee('name="engine_displacement"', false)
+            ->assertSee('type="radio"', false)
+            ->assertSee('x-on:change="$el.form.requestSubmit()"', false)
+            ->assertSee('排気量条件をクリア')
             ->assertSee('400cc超');
 
         $this->assertMatchesRegularExpression(
-            '/<option value="over_400cc"\s+selected>/',
+            '/<input[^>]+value="over_400cc"[^>]+checked/',
             $response->getContent(),
         );
 
