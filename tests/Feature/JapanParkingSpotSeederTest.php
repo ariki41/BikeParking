@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Models\ParkingSpot;
 use App\Models\Prefecture;
 use App\Models\User;
@@ -57,6 +58,17 @@ class JapanParkingSpotSeederTest extends TestCase
 
         $this->assertDatabaseCount('parking_spots', 12);
         $this->assertGreaterThan(0, DB::table('parking_spot_rates')->count());
+        $this->assertSame(
+            collect(array_fill_keys(EngineDisplacementClass::values(), 3))->sortKeys()->all(),
+            DB::table('parking_spots')
+                ->selectRaw('max_displacement_class, COUNT(*) as aggregate')
+                ->groupBy('max_displacement_class')
+                ->orderBy('max_displacement_class')
+                ->pluck('aggregate', 'max_displacement_class')
+                ->map(fn (int $count): int => $count)
+                ->sortKeys()
+                ->all(),
+        );
 
         $parkingSpotCountsByPrefecture = DB::table('parking_spots')
             ->join('postalcodes', 'parking_spots.postalcode_id', '=', 'postalcodes.id')

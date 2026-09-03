@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Domain\ParkingSpotRates\RateConflictDetector;
 use App\Domain\ParkingSpotRates\RateDayType;
 use App\Domain\ParkingSpotRates\RatePeriod;
+use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Models\Postalcode;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -75,6 +76,7 @@ class ParkingSpotRequest extends FormRequest
             ],
             'address2' => 'required|string|max:255',
             'capacity' => 'required|integer|min:1',
+            'max_displacement_class' => ['required', Rule::enum(EngineDisplacementClass::class)],
             'images' => 'nullable|array|max:4',
             'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:20480',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:20480',
@@ -124,6 +126,9 @@ class ParkingSpotRequest extends FormRequest
             'capacity.required' => '駐車場台数は必須です。',
             'capacity.integer' => '駐車場台数は整数で入力してください。',
             'capacity.min' => '駐車場台数を設定してください。',
+
+            'max_displacement_class.required' => '駐車可能な排気量区分は必須です。',
+            'max_displacement_class.enum' => '駐車可能な排気量区分を選択してください。',
 
             'images.array' => '画像の選択内容が正しくありません。',
             'images.max' => '画像は4枚までアップロードできます。',

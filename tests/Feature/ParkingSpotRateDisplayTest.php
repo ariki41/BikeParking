@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Livewire\ParkingSpots;
 use App\Models\City;
 use App\Models\ParkingSpot;
@@ -185,6 +186,7 @@ class ParkingSpotRateDisplayTest extends TestCase
             'longitude' => 139.753000,
             'latitude' => 35.685000,
             'capacity' => 1,
+            'max_displacement_class' => EngineDisplacementClass::UpTo400cc->value,
             'opening_time' => '00:00',
             'closing_time' => '00:00',
             'rates' => [
@@ -236,6 +238,7 @@ class ParkingSpotRateDisplayTest extends TestCase
             'longitude' => 139.753000,
             'latitude' => 35.685000,
             'capacity' => 1,
+            'max_displacement_class' => EngineDisplacementClass::UpTo400cc->value,
             'image_path' => $tempImagePath,
             'opening_time' => '00:00',
             'closing_time' => '00:00',
@@ -428,6 +431,7 @@ class ParkingSpotRateDisplayTest extends TestCase
             'longitude' => 139.753000,
             'latitude' => 35.685000,
             'capacity' => 1,
+            'max_displacement_class' => EngineDisplacementClass::UpTo400cc->value,
             'opening_time' => '00:00',
             'closing_time' => '00:00',
             'rates' => [
@@ -492,6 +496,8 @@ class ParkingSpotRateDisplayTest extends TestCase
             'longitude' => $parkingSpot->longitude,
             'latitude' => $parkingSpot->latitude,
             'capacity' => $parkingSpot->capacity,
+            'max_displacement_class' => $parkingSpot->max_displacement_class?->value
+                ?? EngineDisplacementClass::UpTo400cc->value,
             'opening_time' => '00:00',
             'closing_time' => '00:00',
             'rates' => [
@@ -560,6 +566,7 @@ class ParkingSpotRateDisplayTest extends TestCase
             'longitude' => 139.754000,
             'latitude' => 35.686000,
             'capacity' => 1,
+            'max_displacement_class' => EngineDisplacementClass::UpTo400cc->value,
             'image_path' => $tempImagePath,
             'opening_time' => '00:00',
             'closing_time' => '00:00',
@@ -1045,6 +1052,7 @@ class ParkingSpotRateDisplayTest extends TestCase
             'longitude' => 139.759000,
             'latitude' => 35.689000,
             'capacity' => 2,
+            'max_displacement_class' => EngineDisplacementClass::UpTo400cc->value,
             'opening_time' => '00:00:00',
             'closing_time' => '00:00:00',
         ]);
@@ -1218,6 +1226,7 @@ class ParkingSpotRateDisplayTest extends TestCase
             'longitude' => 139.753000,
             'latitude' => 35.685000,
             'capacity' => 1,
+            'max_displacement_class' => EngineDisplacementClass::UpTo400cc->value,
             'opening_time' => '00:00:00',
             'closing_time' => '00:00:00',
         ]);
@@ -1233,6 +1242,7 @@ class ParkingSpotRateDisplayTest extends TestCase
             'address1' => '東京都千代田区千代田',
             'address2' => '1-2',
             'capacity' => 1,
+            'max_displacement_class' => EngineDisplacementClass::UpTo400cc->value,
             'opening_time' => '00:00',
             'closing_time' => '00:00',
             'rates' => [$this->validRateInput()],

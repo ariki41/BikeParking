@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Models\City;
 use App\Models\ParkingSpot;
 use App\Models\ParkingSpotRates;
@@ -55,6 +56,7 @@ class ParkingSpotFormTest extends TestCase
                 'name' => '',
                 'address2' => '9-8-7 セッション入力',
                 'capacity' => 2,
+                'max_displacement_class' => EngineDisplacementClass::UpTo125cc->value,
                 'opening_time' => '08:15',
                 'closing_time' => '21:45',
                 'rates' => [$this->rateInput(['rate' => 250])],
@@ -107,6 +109,7 @@ class ParkingSpotFormTest extends TestCase
                 'name' => 'セッションから復元した駐車場',
                 'address2' => '2-3-4',
                 'capacity' => 3,
+                'max_displacement_class' => EngineDisplacementClass::Over400cc->value,
                 'opening_time' => '06:30',
                 'closing_time' => 'invalid',
                 'image_paths' => ['temp/parking-spots/restored.webp'],
@@ -160,6 +163,7 @@ class ParkingSpotFormTest extends TestCase
             'longitude' => 139.753000,
             'latitude' => 35.685000,
             'capacity' => 1,
+            'max_displacement_class' => EngineDisplacementClass::UpTo50cc->value,
             'opening_time' => '00:00:00',
             'closing_time' => '00:00:00',
         ]);
@@ -175,6 +179,7 @@ class ParkingSpotFormTest extends TestCase
             'address1' => '東京都千代田区千代田',
             'address2' => '1-2',
             'capacity' => 1,
+            'max_displacement_class' => EngineDisplacementClass::UpTo50cc->value,
             'opening_time' => '00:00',
             'closing_time' => '00:00',
             'rates' => [$this->rateInput()],

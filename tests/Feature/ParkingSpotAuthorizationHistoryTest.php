@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Livewire\ParkingSpots;
 use App\Models\City;
 use App\Models\ParkingSpot;
@@ -147,6 +148,7 @@ class ParkingSpotAuthorizationHistoryTest extends TestCase
         $input = $this->updateInput($parkingSpot, $postalcode, [
             'name' => '共同編集後の駐輪場',
             'capacity' => 2,
+            'max_displacement_class' => EngineDisplacementClass::UpTo400cc->value,
             'rates' => [[
                 'day_type' => '平日',
                 'start_time' => '08:00',
@@ -294,6 +296,7 @@ class ParkingSpotAuthorizationHistoryTest extends TestCase
             'longitude' => 139.753000,
             'latitude' => 35.685000,
             'capacity' => 1,
+            'max_displacement_class' => EngineDisplacementClass::UpTo400cc->value,
             'opening_time' => '00:00:00',
             'closing_time' => '00:00:00',
         ]);
@@ -321,6 +324,8 @@ class ParkingSpotAuthorizationHistoryTest extends TestCase
             'longitude' => $parkingSpot->longitude,
             'latitude' => $parkingSpot->latitude,
             'capacity' => $parkingSpot->capacity,
+            'max_displacement_class' => $parkingSpot->max_displacement_class?->value
+                ?? EngineDisplacementClass::UpTo400cc->value,
             'image_path' => $parkingSpot->image_path,
             'opening_time' => '00:00',
             'closing_time' => '00:00',

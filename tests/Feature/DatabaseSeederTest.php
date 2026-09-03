@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Models\ParkingSpot;
 use App\Models\Prefecture;
 use App\Models\User;
@@ -42,7 +43,9 @@ class DatabaseSeederTest extends TestCase
         $this->seed(DatabaseSeeder::class);
 
         $this->assertFalse(Schema::hasTable('postalcode_lat_lons'));
-        $this->assertNotNull(ParkingSpot::factory()->make()->postalcode_id);
+        $factoryParkingSpot = ParkingSpot::factory()->make();
+        $this->assertNotNull($factoryParkingSpot->postalcode_id);
+        $this->assertContains($factoryParkingSpot->max_displacement_class->value, EngineDisplacementClass::values());
         $this->assertSame(48, Prefecture::query()->count());
         $this->assertSame(100, User::query()->count());
         $this->assertDatabaseCount('parking_spots', 10_000);
@@ -50,6 +53,16 @@ class DatabaseSeederTest extends TestCase
         $this->assertGreaterThan(1, DB::table('parking_spots')->distinct()->count('capacity'));
         $this->assertGreaterThan(1, DB::table('parking_spots')->distinct()->count('opening_time'));
         $this->assertGreaterThan(1, DB::table('parking_spot_rates')->distinct()->count('rate'));
+        $this->assertSame(
+            collect(array_fill_keys(EngineDisplacementClass::values(), 2_500))->sortKeys()->all(),
+            DB::table('parking_spots')
+                ->selectRaw('max_displacement_class, COUNT(*) as aggregate')
+                ->groupBy('max_displacement_class')
+                ->pluck('aggregate', 'max_displacement_class')
+                ->map(fn (int $count): int => $count)
+                ->sortKeys()
+                ->all(),
+        );
         $this->assertSame(
             0,
             User::query()

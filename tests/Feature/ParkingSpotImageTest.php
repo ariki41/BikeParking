@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Models\City;
 use App\Models\ParkingSpot;
 use App\Models\ParkingSpotUpdateHistory;
@@ -242,6 +243,7 @@ class ParkingSpotImageTest extends TestCase
             'longitude' => 139.753000,
             'latitude' => 35.685000,
             'capacity' => 1,
+            'max_displacement_class' => EngineDisplacementClass::UpTo400cc->value,
             'opening_time' => '00:00:00',
             'closing_time' => '00:00:00',
         ]);
@@ -287,6 +289,7 @@ class ParkingSpotImageTest extends TestCase
             'address1' => '東京都千代田区千代田',
             'address2' => '1-2',
             'capacity' => 1,
+            'max_displacement_class' => EngineDisplacementClass::UpTo400cc->value,
             'opening_time' => '00:00',
             'closing_time' => '00:00',
             'rates' => [$this->validRateInput()],
@@ -302,6 +305,7 @@ class ParkingSpotImageTest extends TestCase
             'longitude' => 139.753000,
             'latitude' => 35.685000,
             'capacity' => 1,
+            'max_displacement_class' => EngineDisplacementClass::UpTo400cc->value,
             'opening_time' => '00:00',
             'closing_time' => '00:00',
             'rates' => [$this->validRateInput()],

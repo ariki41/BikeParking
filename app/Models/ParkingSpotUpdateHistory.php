@@ -41,6 +41,7 @@ class ParkingSpotUpdateHistory extends Model
             'opening_time' => '開場時間',
             'closing_time' => '閉場時間',
             'capacity' => '収容台数',
+            'max_displacement_class' => '駐車可能な排気量区分',
             'image_path' => '画像',
             'images' => '画像',
             'rates' => '料金',

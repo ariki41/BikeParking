@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Models\City;
 use App\Models\ParkingSpot;
 use App\Models\ParkingSpotRates;
@@ -49,6 +50,7 @@ class DevelopmentSeeder extends Seeder
                 'longitude' => 139.767125,
                 'latitude' => 35.681236,
                 'capacity' => 1,
+                'max_displacement_class' => EngineDisplacementClass::UpTo50cc->value,
                 'opening_time' => '00:00:00',
                 'closing_time' => '00:00:00',
                 'rates' => [
@@ -61,6 +63,7 @@ class DevelopmentSeeder extends Seeder
                 'longitude' => 139.770700,
                 'latitude' => 35.691500,
                 'capacity' => 2,
+                'max_displacement_class' => EngineDisplacementClass::UpTo125cc->value,
                 'opening_time' => '06:00:00',
                 'closing_time' => '23:00:00',
                 'rates' => [
@@ -74,11 +77,25 @@ class DevelopmentSeeder extends Seeder
                 'longitude' => 139.752800,
                 'latitude' => 35.673900,
                 'capacity' => 3,
+                'max_displacement_class' => EngineDisplacementClass::UpTo400cc->value,
                 'opening_time' => '00:00:00',
                 'closing_time' => '00:00:00',
                 'rates' => [
                     ['day_type' => '平日', 'start_time' => '09:00:00', 'end_time' => '18:00:00', 'unit_minutes' => 30, 'rate' => 100, 'free_minutes' => 30, 'max_rate' => null],
                     ['day_type' => '夜間', 'start_time' => '18:00:00', 'end_time' => '09:00:00', 'unit_minutes' => 60, 'rate' => 100, 'free_minutes' => 0, 'max_rate' => 700],
+                ],
+            ],
+            [
+                'name' => '開発用 秋葉原駅前駐輪場',
+                'address' => '東京都千代田区外神田1-17-6',
+                'longitude' => 139.773100,
+                'latitude' => 35.698400,
+                'capacity' => 4,
+                'max_displacement_class' => EngineDisplacementClass::Over400cc->value,
+                'opening_time' => '07:00:00',
+                'closing_time' => '22:00:00',
+                'rates' => [
+                    ['day_type' => '全日', 'start_time' => '00:00:00', 'end_time' => '00:00:00', 'unit_minutes' => 60, 'rate' => 200, 'free_minutes' => 0, 'max_rate' => 1800],
                 ],
             ],
         ])->mapWithKeys(function (array $attributes) use ($owner, $postalcode): array {
@@ -127,6 +144,12 @@ class DevelopmentSeeder extends Seeder
             $parkingSpots['開発用 霞が関駐輪場'],
             4,
             '無料時間、最大料金なし、日付またぎの料金を含むテストデータです。',
+        );
+        $this->upsertReview(
+            $reviewer,
+            $parkingSpots['開発用 秋葉原駅前駐輪場'],
+            4,
+            '大型バイクの検索表示を確認できる開発用データです。',
         );
 
         $this->command?->info('Development sample data is ready.');

@@ -1,6 +1,7 @@
 @props([
     'action',
     'capacity',
+    'displacementClasses',
     'formValues',
     'imagePaths',
     'mode',
@@ -18,6 +19,7 @@
         'address1' => old('address1', $formValues['address1'] ?? ''),
         'address2' => old('address2', $formValues['address2'] ?? ''),
         'capacity' => old('capacity', $formValues['capacity'] ?? ''),
+        'max_displacement_class' => old('max_displacement_class', $formValues['max_displacement_class'] ?? ''),
         'opening_time' => old('opening_time', $formValues['opening_time'] ?? '00:00'),
         'closing_time' => old('closing_time', $formValues['closing_time'] ?? '00:00'),
     ];
@@ -103,6 +105,24 @@
                                 @endforeach
                             </select>
                             <x-input-error class="mt-1" id="capacity-error" :messages="$errors->get('capacity')" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="max_displacement_class">駐車可能な排気量区分</x-input-label>
+                            <select class="bp-select" id="max_displacement_class" name="max_displacement_class" required
+                                aria-invalid="{{ $errors->has('max_displacement_class') ? 'true' : 'false' }}"
+                                @if ($errors->has('max_displacement_class')) aria-describedby="max-displacement-class-error" @endif>
+                                <option value="" disabled @selected($values['max_displacement_class'] === '')>排気量区分を選択</option>
+                                @foreach ($displacementClasses as $displacementClass)
+                                    <option value="{{ $displacementClass->value }}"
+                                        @selected($values['max_displacement_class'] === $displacementClass->value)>
+                                        {{ $displacementClass->label() }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="mt-1 text-xs text-slate-500">選択した区分以下の排気量に対応します。</p>
+                            <x-input-error class="mt-1" id="max-displacement-class-error"
+                                :messages="$errors->get('max_displacement_class')" />
                         </div>
 
                         @include('parking_spot.partials.images-form', ['isEdit' => $isEdit])

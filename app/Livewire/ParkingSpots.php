@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Models\ParkingSpot;
 use Livewire\Component;
 
@@ -9,7 +10,14 @@ class ParkingSpots extends Component
 {
     public $spots = [];
 
+    public ?string $engineDisplacement = null;
+
     protected $listeners = ['updateBounds'];
+
+    public function mount(?string $engineDisplacement = null): void
+    {
+        $this->engineDisplacement = EngineDisplacementClass::tryFrom((string) $engineDisplacement)?->value;
+    }
 
     public function render()
     {
@@ -26,6 +34,9 @@ class ParkingSpots extends Component
             ->withAvg('reviews', 'rating')
             ->whereBetween('latitude', [$bounds['south'], $bounds['north']])
             ->whereBetween('longitude', [$bounds['west'], $bounds['east']])
+            ->supportsEngineDisplacement(
+                EngineDisplacementClass::tryFrom((string) $this->engineDisplacement),
+            )
             ->limit(50);
 
         if ($user = auth()->user()) {
