@@ -33,7 +33,12 @@
             </label>
         </div>
 
-        <div class="mt-4 flex items-center justify-end">
+        <div class="mt-4 flex items-center justify-between gap-4">
+            <a class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
+                href="{{ route('register') }}">
+                アカウントをお持ちでない方は新規登録
+            </a>
+
             <x-primary-button class="ms-3">
                 ログイン
             </x-primary-button>
