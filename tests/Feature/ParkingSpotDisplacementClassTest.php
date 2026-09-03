@@ -342,6 +342,7 @@ class ParkingSpotDisplacementClassTest extends TestCase
             ->assertSet('engineDisplacements', [])
             ->assertSet('engineDisplacementQuery', '')
             ->assertSet('engineDisplacementDraft', [])
+            ->assertSet('filterFormVersion', 1)
             ->assertSet('latitude', 35.700123)
             ->assertSet('longitude', 139.800568)
             ->assertSet('zoom', 18)

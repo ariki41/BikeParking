@@ -56,7 +56,7 @@
         @endif
 
         <form class="space-y-4 border-t border-slate-200 p-3" id="parking-spot-filters" wire:submit="applyFilters"
-            x-show="open" x-cloak>
+            wire:key="parking-spot-filters-{{ $filterFormVersion }}" x-show="open" x-cloak>
             <fieldset>
                 <legend class="text-sm font-semibold text-slate-800">駐車したいバイクの排気量（複数選択可）</legend>
                 <div class="mt-2 grid grid-cols-2 gap-2">
@@ -116,7 +116,7 @@
             <div class="flex flex-col gap-2 sm:flex-row">
                 <x-primary-button class="justify-center" type="submit">この条件で絞り込む</x-primary-button>
                 <button class="min-h-10 rounded-md px-4 text-sm font-semibold text-slate-600 hover:bg-slate-200 hover:text-slate-900"
-                    type="button" wire:click="clearFilters">
+                    type="reset" wire:click="clearFilters">
                     条件をクリア
                 </button>
             </div>

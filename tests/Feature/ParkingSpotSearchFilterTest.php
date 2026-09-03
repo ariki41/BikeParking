@@ -369,6 +369,8 @@ class ParkingSpotSearchFilterTest extends TestCase
         $this->createParkingSpot('大規模', ['capacity' => 3]);
 
         $component = Livewire::test(ParkingSpots::class)
+            ->assertSee('type="reset" wire:click="clearFilters"', false)
+            ->assertSet('filterFormVersion', 0)
             ->set('capacityDraft', ['1'])
             ->set('open24HoursDraft', true)
             ->call('applyFilters')
@@ -385,6 +387,8 @@ class ParkingSpotSearchFilterTest extends TestCase
             ->assertSet('open24HoursQuery', '')
             ->assertSet('hasFreeTimeQuery', '')
             ->assertSet('maxRateQuery', '')
+            ->assertSet('filterFormVersion', 1)
+            ->assertSee('wire:key="parking-spot-filters-1"', false)
             ->assertSee('小規模')
             ->assertSee('大規模')
             ->assertDontSee('件適用中')

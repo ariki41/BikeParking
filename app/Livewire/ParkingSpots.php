@@ -53,6 +53,8 @@ class ParkingSpots extends Component
 
     public array $engineDisplacementDraft = [];
 
+    public int $filterFormVersion = 0;
+
     public array $bounds = [];
 
     public bool $hasSearched = false;
@@ -177,6 +179,7 @@ class ParkingSpots extends Component
         $this->open24HoursQuery = '';
         $this->hasFreeTimeQuery = '';
         $this->maxRateQuery = '';
+        $this->filterFormVersion++;
         $this->resetValidation();
 
         $this->refreshSpots();
