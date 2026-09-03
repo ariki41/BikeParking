@@ -70,7 +70,6 @@ flowchart LR
 | --- | --- | --- | --- |
 | トップ | GET | `/` | 不要 |
 | 検索 | GET | `/search` | 不要 |
-| ダッシュボード | GET | `/dashboard` | 必須 |
 | 駐輪場詳細 | GET | `/parking-spots/{parkingSpot}` | 不要 |
 | レビュー投稿・更新 | POST | `/parking-spot/{parkingSpot}/reviews` | 必須 |
 | お気に入り一覧 | GET | `/favorites` | 必須 |
