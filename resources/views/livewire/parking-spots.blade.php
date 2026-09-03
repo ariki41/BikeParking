@@ -86,18 +86,21 @@
                 </div>
             </fieldset>
 
-            <div class="grid gap-2 sm:grid-cols-2">
-                <label class="flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
-                    <input class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" type="checkbox"
-                        wire:model="open24HoursDraft">
-                    <span>24時間営業</span>
-                </label>
-                <label class="flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
-                    <input class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" type="checkbox"
-                        wire:model="hasFreeTimeDraft">
-                    <span>無料時間あり</span>
-                </label>
-            </div>
+            <fieldset>
+                <legend class="text-sm font-semibold text-slate-800">その他の条件（複数選択可）</legend>
+                <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                    <label class="flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
+                        <input class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" type="checkbox"
+                            wire:model="open24HoursDraft">
+                        <span>24時間営業</span>
+                    </label>
+                    <label class="flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
+                        <input class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" type="checkbox"
+                            wire:model="hasFreeTimeDraft">
+                        <span>無料時間あり</span>
+                    </label>
+                </div>
+            </fieldset>
 
             <div>
                 <label class="text-sm font-semibold text-slate-800" for="max-rate-filter">最大料金上限</label>

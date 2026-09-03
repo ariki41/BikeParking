@@ -285,6 +285,7 @@ class ParkingSpotSearchFilterTest extends TestCase
             ->assertSee('絞り込み')
             ->assertSee('この条件で絞り込む')
             ->assertSee('条件をクリア')
+            ->assertSee('その他の条件（複数選択可）')
             ->assertSee('x-bind:aria-expanded="open.toString()"', false)
             ->assertSee('name="capacity"', false)
             ->assertSee('value="1,3"', false)
