@@ -19,6 +19,7 @@ class LeafletMapTest extends TestCase
         $response = $this->get(route('search', [
             'lat' => '35.681167',
             'lon' => '139.767052',
+            'zoom' => '17',
         ]))->assertOk();
 
         $html = html_entity_decode($response->getContent(), ENT_QUOTES | ENT_HTML5);
@@ -27,12 +28,32 @@ class LeafletMapTest extends TestCase
         $this->assertSame(1, substr_count($html, 'leaflet@1.9.4/dist/leaflet.js'));
         $this->assertStringContainsString('data-leaflet-map', $html);
         $this->assertStringContainsString('"center":{"latitude":35.681167,"longitude":139.767052}', $html);
+        $this->assertStringContainsString('"zoom":17', $html);
         $this->assertStringContainsString('"boundsEvent":"updateBounds"', $html);
         $this->assertStringContainsString('"markersEvent":"displayMarkers"', $html);
         $this->assertStringContainsString('parking-spots\/__ID__', $html);
         $this->assertStringContainsString('地図を読み込めませんでした。', $html);
         $this->assertStringNotContainsString('window.onload', $html);
         $this->assertStringNotContainsString('window.markers', $html);
+
+        $mapScript = file_get_contents(resource_path('js/leaflet-map.js'));
+        $this->assertStringContainsString('zoom: instance.map.getZoom()', $mapScript);
+    }
+
+    public function test_search_falls_back_to_the_default_zoom_for_invalid_values(): void
+    {
+        foreach (['invalid', '-1', '19'] as $zoom) {
+            $response = $this->get(route('search', [
+                'lat' => '35.681167',
+                'lon' => '139.767052',
+                'zoom' => $zoom,
+            ]))->assertOk();
+
+            $html = html_entity_decode($response->getContent(), ENT_QUOTES | ENT_HTML5);
+
+            $this->assertStringContainsString('"zoom":15', $html);
+            $this->assertStringContainsString('name="zoom" type="hidden" value="15"', $html);
+        }
     }
 
     public function test_parking_spot_detail_configures_a_static_marker(): void

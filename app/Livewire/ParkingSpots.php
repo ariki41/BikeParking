@@ -21,6 +21,9 @@ class ParkingSpots extends Component
 
     public ?string $engineDisplacement = null;
 
+    #[Url(as: 'zoom', keep: true)]
+    public $zoom = 15;
+
     #[Url(as: 'capacity', history: true, except: '')]
     public $capacityQuery = '';
 
@@ -54,11 +57,13 @@ class ParkingSpots extends Component
         $latitude = null,
         $longitude = null,
         ?string $engineDisplacement = null,
+        $zoom = null,
     ): void {
         $this->keyword = $keyword;
         $this->latitude = $latitude;
         $this->longitude = $longitude;
         $this->engineDisplacement = EngineDisplacementClass::tryFrom((string) $engineDisplacement)?->value;
+        $this->zoom = $this->normalizeZoom($zoom ?? $this->zoom);
 
         $this->syncAppliedFiltersFromQuery();
     }
@@ -74,8 +79,12 @@ class ParkingSpots extends Component
         ]);
     }
 
-    public function updateBounds($bounds): void
+    public function updateBounds($bounds, $zoom = null): void
     {
+        if ($zoom !== null) {
+            $this->zoom = $this->normalizeZoom($zoom);
+        }
+
         if (! is_array($bounds) || collect(['south', 'north', 'west', 'east'])->contains(
             fn (string $key): bool => ! isset($bounds[$key]) || ! is_numeric($bounds[$key]),
         )) {
@@ -87,6 +96,20 @@ class ParkingSpots extends Component
             ->all();
 
         $this->refreshSpots();
+    }
+
+    private function normalizeZoom(mixed $zoom): int
+    {
+        $normalizedZoom = filter_var($zoom, FILTER_VALIDATE_INT, [
+            'options' => [
+                'min_range' => config('parking_spot.search_map.min_zoom'),
+                'max_range' => config('parking_spot.search_map.max_zoom'),
+            ],
+        ]);
+
+        return $normalizedZoom === false
+            ? config('parking_spot.search_map.default_zoom')
+            : $normalizedZoom;
     }
 
     public function applyFilters(): void

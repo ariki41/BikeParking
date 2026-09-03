@@ -21,6 +21,7 @@
                                 'open_24_hours' => $open24HoursQuery,
                                 'has_free_time' => $hasFreeTimeQuery,
                                 'max_rate' => $maxRateQuery,
+                                'zoom' => $zoom,
                             ], fn ($value) => $value !== null && $value !== '' && $value !== [])) }}"
                             aria-label="排気量条件をクリア">
                             クリア
@@ -57,6 +58,7 @@
 
             <input name="lat" type="hidden" value="{{ $latitude }}">
             <input name="lon" type="hidden" value="{{ $longitude }}">
+            <input name="zoom" type="hidden" value="{{ $zoom }}">
 
             @if (session('error'))
                 <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2">

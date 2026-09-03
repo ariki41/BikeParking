@@ -16,9 +16,24 @@ class SearchController extends Controller
         $engineDisplacement = EngineDisplacementClass::tryFrom(
             (string) $request->query('engine_displacement'),
         )?->value;
+        $zoom = $this->normalizeZoom($request->query('zoom'));
 
         $yolpLocation = $this->service->getYolpLocation($request);
 
-        return view('search', compact('keyword', 'engineDisplacement', 'yolpLocation'));
+        return view('search', compact('keyword', 'engineDisplacement', 'yolpLocation', 'zoom'));
+    }
+
+    private function normalizeZoom(mixed $zoom): int
+    {
+        $normalizedZoom = filter_var($zoom, FILTER_VALIDATE_INT, [
+            'options' => [
+                'min_range' => config('parking_spot.search_map.min_zoom'),
+                'max_range' => config('parking_spot.search_map.max_zoom'),
+            ],
+        ]);
+
+        return $normalizedZoom === false
+            ? config('parking_spot.search_map.default_zoom')
+            : $normalizedZoom;
     }
 }

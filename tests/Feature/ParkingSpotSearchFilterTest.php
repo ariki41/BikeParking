@@ -272,6 +272,7 @@ class ParkingSpotSearchFilterTest extends TestCase
             'open_24_hours' => 1,
             'has_free_time' => 1,
             'max_rate' => 1200,
+            'zoom' => 17,
         ]);
 
         $this->assertStringNotContainsString('[', $url);
@@ -289,8 +290,29 @@ class ParkingSpotSearchFilterTest extends TestCase
             ->assertSee('name="open_24_hours"', false)
             ->assertSee('name="has_free_time"', false)
             ->assertSee('name="max_rate"', false)
+            ->assertSee('name="zoom" type="hidden" value="17"', false)
             ->assertDontSee('name="filters[', false)
             ->assertSee('5件適用中');
+    }
+
+    public function test_map_zoom_is_kept_in_the_flat_query_string_and_keyword_form(): void
+    {
+        $component = Livewire::withQueryParams(['zoom' => '17'])
+            ->test(ParkingSpots::class)
+            ->assertSet('zoom', 17)
+            ->assertSee('name="zoom" type="hidden" value="17"', false);
+
+        $effects = html_entity_decode($component->html());
+
+        $this->assertStringContainsString('"as":"zoom"', $effects);
+        $this->assertStringContainsString('"use":"replace"', $effects);
+        $this->assertStringContainsString('"alwaysShow":true', $effects);
+        $this->assertStringNotContainsString('"as":"zoom[', $effects);
+
+        $component
+            ->call('updateBounds', $this->mapBounds(), 18)
+            ->assertSet('zoom', 18)
+            ->assertSee('name="zoom" type="hidden" value="18"', false);
     }
 
     public function test_invalid_max_rate_is_shown_near_the_input_without_changing_applied_results(): void

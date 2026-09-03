@@ -89,6 +89,7 @@ const dispatchBounds = (instance) => {
     const bounds = instance.map.getBounds();
 
     window.Livewire.dispatch(instance.configuration.boundsEvent, {
+        zoom: instance.map.getZoom(),
         bounds: {
             north: bounds.getNorth(),
             east: bounds.getEast(),
