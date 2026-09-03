@@ -38,6 +38,8 @@ class LeafletMapTest extends TestCase
 
         $mapScript = file_get_contents(resource_path('js/leaflet-map.js'));
         $this->assertStringContainsString('zoom: instance.map.getZoom()', $mapScript);
+        $this->assertStringContainsString('latitude: center.lat', $mapScript);
+        $this->assertStringContainsString('longitude: center.lng', $mapScript);
     }
 
     public function test_search_falls_back_to_the_default_zoom_for_invalid_values(): void

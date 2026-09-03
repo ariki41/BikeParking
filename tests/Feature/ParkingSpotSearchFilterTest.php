@@ -295,24 +295,47 @@ class ParkingSpotSearchFilterTest extends TestCase
             ->assertSee('5件適用中');
     }
 
-    public function test_map_zoom_is_kept_in_the_flat_query_string_and_keyword_form(): void
+    public function test_map_view_is_kept_in_the_flat_query_string_and_get_form(): void
     {
-        $component = Livewire::withQueryParams(['zoom' => '17'])
+        $component = Livewire::withQueryParams([
+            'lat' => '35.681167',
+            'lon' => '139.767052',
+            'zoom' => '17',
+        ])
             ->test(ParkingSpots::class)
+            ->assertSet('latitude', 35.681167)
+            ->assertSet('longitude', 139.767052)
             ->assertSet('zoom', 17)
             ->assertSee('name="zoom" type="hidden" value="17"', false);
 
         $effects = html_entity_decode($component->html());
 
+        $this->assertStringContainsString('"as":"lat"', $effects);
+        $this->assertStringContainsString('"as":"lon"', $effects);
         $this->assertStringContainsString('"as":"zoom"', $effects);
         $this->assertStringContainsString('"use":"replace"', $effects);
         $this->assertStringContainsString('"alwaysShow":true', $effects);
+        $this->assertStringNotContainsString('"as":"lat[', $effects);
+        $this->assertStringNotContainsString('"as":"lon[', $effects);
         $this->assertStringNotContainsString('"as":"zoom[', $effects);
 
         $component
-            ->call('updateBounds', $this->mapBounds(), 18)
+            ->call('updateBounds', $this->mapBounds(), 18, [
+                'latitude' => 35.7001234,
+                'longitude' => 139.8005678,
+            ])
+            ->assertSet('latitude', 35.700123)
+            ->assertSet('longitude', 139.800568)
             ->assertSet('zoom', 18)
-            ->assertSee('name="zoom" type="hidden" value="18"', false);
+            ->assertSee('name="lat" type="hidden" value="35.700123"', false)
+            ->assertSee('name="lon" type="hidden" value="139.800568"', false)
+            ->assertSee('name="zoom" type="hidden" value="18"', false)
+            ->call('updateBounds', $this->mapBounds(), 18, [
+                'latitude' => 91,
+                'longitude' => 181,
+            ])
+            ->assertSet('latitude', 35.700123)
+            ->assertSet('longitude', 139.800568);
     }
 
     public function test_invalid_max_rate_is_shown_near_the_input_without_changing_applied_results(): void

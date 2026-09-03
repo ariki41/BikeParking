@@ -15,11 +15,16 @@ class ParkingSpots extends Component
 
     public ?string $keyword = null;
 
+    #[Url(as: 'lat', keep: true)]
     public $latitude;
 
+    #[Url(as: 'lon', keep: true)]
     public $longitude;
 
     public ?string $engineDisplacement = null;
+
+    #[Url(as: 'engine_displacement', history: true, except: '')]
+    public $engineDisplacementQuery = '';
 
     #[Url(as: 'zoom', keep: true)]
     public $zoom = 15;
@@ -60,9 +65,9 @@ class ParkingSpots extends Component
         $zoom = null,
     ): void {
         $this->keyword = $keyword;
-        $this->latitude = $latitude;
-        $this->longitude = $longitude;
-        $this->engineDisplacement = EngineDisplacementClass::tryFrom((string) $engineDisplacement)?->value;
+        $this->latitude = $latitude ?? $this->latitude;
+        $this->longitude = $longitude ?? $this->longitude;
+        $this->syncEngineDisplacement($engineDisplacement ?? $this->engineDisplacementQuery);
         $this->zoom = $this->normalizeZoom($zoom ?? $this->zoom);
 
         $this->syncAppliedFiltersFromQuery();
@@ -79,11 +84,13 @@ class ParkingSpots extends Component
         ]);
     }
 
-    public function updateBounds($bounds, $zoom = null): void
+    public function updateBounds($bounds, $zoom = null, $center = null): void
     {
         if ($zoom !== null) {
             $this->zoom = $this->normalizeZoom($zoom);
         }
+
+        $this->syncCenter($center);
 
         if (! is_array($bounds) || collect(['south', 'north', 'west', 'east'])->contains(
             fn (string $key): bool => ! isset($bounds[$key]) || ! is_numeric($bounds[$key]),
@@ -96,6 +103,25 @@ class ParkingSpots extends Component
             ->all();
 
         $this->refreshSpots();
+    }
+
+    private function syncCenter(mixed $center): void
+    {
+        if (! is_array($center)
+            || ! is_numeric($center['latitude'] ?? null)
+            || ! is_numeric($center['longitude'] ?? null)) {
+            return;
+        }
+
+        $latitude = (float) $center['latitude'];
+        $longitude = (float) $center['longitude'];
+
+        if ($latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
+            return;
+        }
+
+        $this->latitude = round($latitude, 6);
+        $this->longitude = round($longitude, 6);
     }
 
     private function normalizeZoom(mixed $zoom): int
@@ -150,6 +176,20 @@ class ParkingSpots extends Component
         $this->refreshSpots();
     }
 
+    public function clearEngineDisplacement(): void
+    {
+        $this->engineDisplacement = null;
+        $this->engineDisplacementQuery = '';
+
+        $this->refreshSpots();
+    }
+
+    public function updatedEngineDisplacementQuery(): void
+    {
+        $this->syncEngineDisplacement($this->engineDisplacementQuery);
+        $this->refreshSpots();
+    }
+
     public function updatedCapacityQuery(): void
     {
         $this->syncAppliedFiltersFromQuery();
@@ -168,6 +208,14 @@ class ParkingSpots extends Component
     public function updatedMaxRateQuery(): void
     {
         $this->syncAppliedFiltersFromQuery();
+    }
+
+    private function syncEngineDisplacement(mixed $engineDisplacement): void
+    {
+        $this->engineDisplacement = EngineDisplacementClass::tryFrom(
+            (string) $engineDisplacement,
+        )?->value;
+        $this->engineDisplacementQuery = $this->engineDisplacement ?? '';
     }
 
     private function refreshSpots(): void

@@ -1,5 +1,5 @@
 <div class="flex min-h-0 flex-1 flex-col">
-    <form class="shrink-0" method="GET" action="{{ route('search') }}" x-data>
+    <form class="shrink-0" method="GET" action="{{ route('search') }}">
         <div class="space-y-4">
             <h1 class="text-2xl font-bold text-slate-900">駐輪場を探す</h1>
             <div class="flex items-center gap-2">
@@ -12,20 +12,10 @@
                 <div class="flex min-h-5 items-center justify-between gap-3 text-sm leading-5">
                     <span class="font-medium text-slate-700" aria-hidden="true">駐車したいバイクの排気量</span>
                     @if ($engineDisplacement !== null)
-                        <a class="shrink-0 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
-                            href="{{ route('search', array_filter([
-                                'keyword' => $keyword,
-                                'lat' => $latitude,
-                                'lon' => $longitude,
-                                'capacity' => $capacityQuery,
-                                'open_24_hours' => $open24HoursQuery,
-                                'has_free_time' => $hasFreeTimeQuery,
-                                'max_rate' => $maxRateQuery,
-                                'zoom' => $zoom,
-                            ], fn ($value) => $value !== null && $value !== '' && $value !== [])) }}"
-                            aria-label="排気量条件をクリア">
+                        <button class="shrink-0 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
+                            type="button" wire:click="clearEngineDisplacement" aria-label="排気量条件をクリア">
                             クリア
-                        </a>
+                        </button>
                     @endif
                 </div>
                 <div class="mt-2 grid grid-cols-2 gap-2">
@@ -33,7 +23,7 @@
                         <label class="cursor-pointer">
                             <input class="peer sr-only" name="engine_displacement" type="radio"
                                 value="{{ $displacementClass->value }}" @checked($engineDisplacement === $displacementClass->value)
-                                x-on:change="$el.form.requestSubmit()">
+                                wire:model.live="engineDisplacementQuery">
                             <span
                                 class="flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 transition hover:border-emerald-400 hover:bg-emerald-50 peer-checked:border-emerald-600 peer-checked:bg-emerald-600 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500 peer-focus-visible:ring-offset-2">
                                 {{ $displacementClass->searchLabel() }}
