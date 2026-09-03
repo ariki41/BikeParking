@@ -17,7 +17,10 @@
                                 'keyword' => $keyword,
                                 'lat' => $latitude,
                                 'lon' => $longitude,
-                                'filters' => $filters,
+                                'capacity' => $capacityQuery,
+                                'open_24_hours' => $open24HoursQuery,
+                                'has_free_time' => $hasFreeTimeQuery,
+                                'max_rate' => $maxRateQuery,
                             ], fn ($value) => $value !== null && $value !== '' && $value !== [])) }}"
                             aria-label="排気量条件をクリア">
                             クリア
@@ -39,17 +42,17 @@
                 </div>
             </fieldset>
 
-            @foreach ($filters['capacity'] ?? [] as $capacity)
-                <input name="filters[capacity][]" type="hidden" value="{{ $capacity }}">
-            @endforeach
-            @if ($filters['open_24_hours'] ?? false)
-                <input name="filters[open_24_hours]" type="hidden" value="1">
+            @if ($capacityQuery !== '')
+                <input name="capacity" type="hidden" value="{{ $capacityQuery }}">
             @endif
-            @if ($filters['has_free_time'] ?? false)
-                <input name="filters[has_free_time]" type="hidden" value="1">
+            @if ($open24HoursQuery !== '')
+                <input name="open_24_hours" type="hidden" value="1">
             @endif
-            @if (isset($filters['max_rate']))
-                <input name="filters[max_rate]" type="hidden" value="{{ $filters['max_rate'] }}">
+            @if ($hasFreeTimeQuery !== '')
+                <input name="has_free_time" type="hidden" value="1">
+            @endif
+            @if ($maxRateQuery !== '')
+                <input name="max_rate" type="hidden" value="{{ $maxRateQuery }}">
             @endif
 
             <input name="lat" type="hidden" value="{{ $latitude }}">
