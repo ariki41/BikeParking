@@ -27,18 +27,26 @@ class ParkingSpot extends Model
         ];
     }
 
-    public function scopeSupportsEngineDisplacement(
+    /**
+     * @param  list<string>  $engineDisplacements
+     */
+    public function scopeSupportsEngineDisplacements(
         Builder $query,
-        ?EngineDisplacementClass $engineDisplacement,
+        array $engineDisplacements,
     ): Builder {
-        if ($engineDisplacement === null) {
+        $supportedValues = collect($engineDisplacements)
+            ->map(fn (string $value): ?EngineDisplacementClass => EngineDisplacementClass::tryFrom($value))
+            ->filter()
+            ->flatMap(fn (EngineDisplacementClass $class): array => $class->supportedByValues())
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($supportedValues === []) {
             return $query;
         }
 
-        return $query->whereIn(
-            'max_displacement_class',
-            $engineDisplacement->supportedByValues(),
-        );
+        return $query->whereIn('max_displacement_class', $supportedValues);
     }
 
     public function getCapacityLabelAttribute(): string

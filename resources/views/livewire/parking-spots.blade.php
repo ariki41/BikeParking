@@ -1,5 +1,5 @@
 <div class="flex min-h-0 flex-1 flex-col">
-    <form class="shrink-0" method="GET" action="{{ route('search') }}" x-data>
+    <form class="shrink-0" method="GET" action="{{ route('search') }}">
         <div class="space-y-4">
             <h1 class="text-2xl font-bold text-slate-900">駐輪場を探す</h1>
             <div class="flex items-center gap-2">
@@ -7,53 +7,25 @@
                     :value="$keyword" />
                 <x-primary-button class="shrink-0">検索</x-primary-button>
             </div>
-            <fieldset>
-                <legend class="sr-only">駐車したいバイクの排気量</legend>
-                <div class="flex min-h-5 items-center justify-between gap-3 text-sm leading-5">
-                    <span class="font-medium text-slate-700" aria-hidden="true">駐車したいバイクの排気量</span>
-                    @if ($engineDisplacement !== null)
-                        <a class="shrink-0 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
-                            href="{{ route('search', array_filter([
-                                'keyword' => $keyword,
-                                'lat' => $latitude,
-                                'lon' => $longitude,
-                                'filters' => $filters,
-                            ], fn ($value) => $value !== null && $value !== '' && $value !== [])) }}"
-                            aria-label="排気量条件をクリア">
-                            クリア
-                        </a>
-                    @endif
-                </div>
-                <div class="mt-2 grid grid-cols-2 gap-2">
-                    @foreach ($displacementClasses as $displacementClass)
-                        <label class="cursor-pointer">
-                            <input class="peer sr-only" name="engine_displacement" type="radio"
-                                value="{{ $displacementClass->value }}" @checked($engineDisplacement === $displacementClass->value)
-                                x-on:change="$el.form.requestSubmit()">
-                            <span
-                                class="flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-center text-sm font-semibold text-slate-700 transition hover:border-emerald-400 hover:bg-emerald-50 peer-checked:border-emerald-600 peer-checked:bg-emerald-600 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500 peer-focus-visible:ring-offset-2">
-                                {{ $displacementClass->searchLabel() }}
-                            </span>
-                        </label>
-                    @endforeach
-                </div>
-            </fieldset>
-
-            @foreach ($filters['capacity'] ?? [] as $capacity)
-                <input name="filters[capacity][]" type="hidden" value="{{ $capacity }}">
-            @endforeach
-            @if ($filters['open_24_hours'] ?? false)
-                <input name="filters[open_24_hours]" type="hidden" value="1">
+            @if ($engineDisplacementQuery !== '')
+                <input name="engine_displacement" type="hidden" value="{{ $engineDisplacementQuery }}">
             @endif
-            @if ($filters['has_free_time'] ?? false)
-                <input name="filters[has_free_time]" type="hidden" value="1">
+            @if ($capacityQuery !== '')
+                <input name="capacity" type="hidden" value="{{ $capacityQuery }}">
             @endif
-            @if (isset($filters['max_rate']))
-                <input name="filters[max_rate]" type="hidden" value="{{ $filters['max_rate'] }}">
+            @if ($open24HoursQuery !== '')
+                <input name="open_24_hours" type="hidden" value="1">
+            @endif
+            @if ($hasFreeTimeQuery !== '')
+                <input name="has_free_time" type="hidden" value="1">
+            @endif
+            @if ($maxRateQuery !== '')
+                <input name="max_rate" type="hidden" value="{{ $maxRateQuery }}">
             @endif
 
             <input name="lat" type="hidden" value="{{ $latitude }}">
             <input name="lon" type="hidden" value="{{ $longitude }}">
+            <input name="zoom" type="hidden" value="{{ $zoom }}">
 
             @if (session('error'))
                 <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2">
@@ -84,7 +56,23 @@
         @endif
 
         <form class="space-y-4 border-t border-slate-200 p-3" id="parking-spot-filters" wire:submit="applyFilters"
-            x-show="open" x-cloak>
+            wire:key="parking-spot-filters-{{ $filterFormVersion }}" x-show="open" x-cloak>
+            <fieldset>
+                <legend class="text-sm font-semibold text-slate-800">駐車したいバイクの排気量（複数選択可）</legend>
+                <div class="mt-2 grid grid-cols-2 gap-2">
+                    @foreach ($displacementClasses as $displacementClass)
+                        <label
+                            class="flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
+                            <input class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" type="checkbox"
+                                value="{{ $displacementClass->value }}" wire:model="engineDisplacementDraft">
+                            <span>
+                                {{ $displacementClass->searchLabel() }}
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+            </fieldset>
+
             <fieldset>
                 <legend class="text-sm font-semibold text-slate-800">収容台数（複数選択可）</legend>
                 <div class="mt-2 grid grid-cols-2 gap-2">
@@ -98,18 +86,21 @@
                 </div>
             </fieldset>
 
-            <div class="grid gap-2 sm:grid-cols-2">
-                <label class="flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
-                    <input class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" type="checkbox"
-                        wire:model="open24HoursDraft">
-                    <span>24時間営業</span>
-                </label>
-                <label class="flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
-                    <input class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" type="checkbox"
-                        wire:model="hasFreeTimeDraft">
-                    <span>無料時間あり</span>
-                </label>
-            </div>
+            <fieldset>
+                <legend class="text-sm font-semibold text-slate-800">その他の条件（複数選択可）</legend>
+                <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                    <label class="flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
+                        <input class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" type="checkbox"
+                            wire:model="open24HoursDraft">
+                        <span>24時間営業</span>
+                    </label>
+                    <label class="flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
+                        <input class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" type="checkbox"
+                            wire:model="hasFreeTimeDraft">
+                        <span>無料時間あり</span>
+                    </label>
+                </div>
+            </fieldset>
 
             <div>
                 <label class="text-sm font-semibold text-slate-800" for="max-rate-filter">最大料金上限</label>
@@ -128,7 +119,7 @@
             <div class="flex flex-col gap-2 sm:flex-row">
                 <x-primary-button class="justify-center" type="submit">この条件で絞り込む</x-primary-button>
                 <button class="min-h-10 rounded-md px-4 text-sm font-semibold text-slate-600 hover:bg-slate-200 hover:text-slate-900"
-                    type="button" wire:click="clearFilters">
+                    type="reset" wire:click="clearFilters">
                     条件をクリア
                 </button>
             </div>

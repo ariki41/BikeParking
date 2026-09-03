@@ -65,6 +65,7 @@ class ParkingSpotSearchFilterTest extends TestCase
             ->assertDontSee('収容区分4');
 
         $this->assertSame([1, 3], $component->get('filters')['capacity']);
+        $this->assertSame('1,3', $component->get('capacityQuery'));
         $this->assertMarkerNames($component, ['収容区分1', '収容区分3']);
     }
 
@@ -219,16 +220,18 @@ class ParkingSpotSearchFilterTest extends TestCase
         $this->createRate($unknown, ['free_minutes' => 1, 'max_rate' => 900]);
 
         $component = Livewire::withQueryParams([
-            'filters' => [
-                'capacity' => ['2', '1'],
-                'open_24_hours' => '1',
-                'has_free_time' => '1',
-                'max_rate' => '1000',
-            ],
+            'capacity' => '2,1',
+            'open_24_hours' => '1',
+            'has_free_time' => '1',
+            'max_rate' => '1000',
         ])->test(ParkingSpots::class);
 
         $component
             ->assertSet('filters.capacity', [1, 2])
+            ->assertSet('capacityQuery', '1,2')
+            ->assertSet('open24HoursQuery', '1')
+            ->assertSet('hasFreeTimeQuery', '1')
+            ->assertSet('maxRateQuery', '1000')
             ->assertSet('capacityDraft', [1, 2])
             ->assertSet('open24HoursDraft', true)
             ->assertSet('hasFreeTimeDraft', true)
@@ -238,12 +241,19 @@ class ParkingSpotSearchFilterTest extends TestCase
 
         $effects = html_entity_decode($component->html());
         $this->assertStringContainsString('"use":"push"', $effects);
+        $this->assertStringContainsString('"as":"capacity"', $effects);
+        $this->assertStringNotContainsString('"as":"filters"', $effects);
 
         $component
             ->call('updateBounds', $this->mapBounds())
             ->assertSee('小規模')
             ->assertDontSee('不明規模')
-            ->set('filters', ['capacity' => ['4']])
+            ->set([
+                'capacityQuery' => '4',
+                'open24HoursQuery' => '',
+                'hasFreeTimeQuery' => '',
+                'maxRateQuery' => '',
+            ])
             ->assertSet('filters', ['capacity' => [4]])
             ->assertSet('capacityDraft', [4])
             ->assertSet('open24HoursDraft', false)
@@ -255,27 +265,82 @@ class ParkingSpotSearchFilterTest extends TestCase
 
     public function test_keyword_form_preserves_applied_filters_and_search_ui_is_available(): void
     {
-        $response = $this->get(route('search', [
+        $url = route('search', [
             'lat' => 35.681167,
             'lon' => 139.767052,
-            'filters' => [
-                'capacity' => [1, 3],
-                'open_24_hours' => 1,
-                'has_free_time' => 1,
-                'max_rate' => 1200,
-            ],
-        ]))->assertOk();
+            'capacity' => '1,3',
+            'open_24_hours' => 1,
+            'has_free_time' => 1,
+            'max_rate' => 1200,
+            'engine_displacement' => 'over_400cc,up_to_125cc',
+            'zoom' => 17,
+        ]);
+
+        $this->assertStringNotContainsString('[', $url);
+        $this->assertStringNotContainsString('%5B', $url);
+
+        $response = $this->get($url)->assertOk();
 
         $response
             ->assertSee('絞り込み')
             ->assertSee('この条件で絞り込む')
             ->assertSee('条件をクリア')
+            ->assertSee('その他の条件（複数選択可）')
             ->assertSee('x-bind:aria-expanded="open.toString()"', false)
-            ->assertSee('name="filters[capacity][]"', false)
-            ->assertSee('name="filters[open_24_hours]"', false)
-            ->assertSee('name="filters[has_free_time]"', false)
-            ->assertSee('name="filters[max_rate]"', false)
-            ->assertSee('5件適用中');
+            ->assertSee('name="capacity"', false)
+            ->assertSee('value="1,3"', false)
+            ->assertSee('name="open_24_hours"', false)
+            ->assertSee('name="has_free_time"', false)
+            ->assertSee('name="max_rate"', false)
+            ->assertSee('name="engine_displacement" type="hidden" value="up_to_125cc,over_400cc"', false)
+            ->assertSee('name="zoom" type="hidden" value="17"', false)
+            ->assertDontSee('name="filters[', false)
+            ->assertSee('7件適用中')
+            ->assertSee('排気量: 125cc以下')
+            ->assertSee('排気量: 400cc超');
+    }
+
+    public function test_map_view_is_kept_in_the_flat_query_string_and_get_form(): void
+    {
+        $component = Livewire::withQueryParams([
+            'lat' => '35.681167',
+            'lon' => '139.767052',
+            'zoom' => '17',
+        ])
+            ->test(ParkingSpots::class)
+            ->assertSet('latitude', 35.681167)
+            ->assertSet('longitude', 139.767052)
+            ->assertSet('zoom', 17)
+            ->assertSee('name="zoom" type="hidden" value="17"', false);
+
+        $effects = html_entity_decode($component->html());
+
+        $this->assertStringContainsString('"as":"lat"', $effects);
+        $this->assertStringContainsString('"as":"lon"', $effects);
+        $this->assertStringContainsString('"as":"zoom"', $effects);
+        $this->assertStringContainsString('"use":"replace"', $effects);
+        $this->assertStringContainsString('"alwaysShow":true', $effects);
+        $this->assertStringNotContainsString('"as":"lat[', $effects);
+        $this->assertStringNotContainsString('"as":"lon[', $effects);
+        $this->assertStringNotContainsString('"as":"zoom[', $effects);
+
+        $component
+            ->call('updateBounds', $this->mapBounds(), 18, [
+                'latitude' => 35.7001234,
+                'longitude' => 139.8005678,
+            ])
+            ->assertSet('latitude', 35.700123)
+            ->assertSet('longitude', 139.800568)
+            ->assertSet('zoom', 18)
+            ->assertSee('name="lat" type="hidden" value="35.700123"', false)
+            ->assertSee('name="lon" type="hidden" value="139.800568"', false)
+            ->assertSee('name="zoom" type="hidden" value="18"', false)
+            ->call('updateBounds', $this->mapBounds(), 18, [
+                'latitude' => 91,
+                'longitude' => 181,
+            ])
+            ->assertSet('latitude', 35.700123)
+            ->assertSet('longitude', 139.800568);
     }
 
     public function test_invalid_max_rate_is_shown_near_the_input_without_changing_applied_results(): void
@@ -293,7 +358,7 @@ class ParkingSpotSearchFilterTest extends TestCase
 
         $this->assertSame([], $component->get('filters'));
 
-        Livewire::withQueryParams(['filters' => ['max_rate' => 'invalid']])
+        Livewire::withQueryParams(['max_rate' => 'invalid'])
             ->test(ParkingSpots::class)
             ->assertHasErrors('maxRateDraft')
             ->assertSee('最大料金上限は1円以上の整数で入力してください。');
@@ -305,6 +370,8 @@ class ParkingSpotSearchFilterTest extends TestCase
         $this->createParkingSpot('大規模', ['capacity' => 3]);
 
         $component = Livewire::test(ParkingSpots::class)
+            ->assertSee('type="reset" wire:click="clearFilters"', false)
+            ->assertSet('filterFormVersion', 0)
             ->set('capacityDraft', ['1'])
             ->set('open24HoursDraft', true)
             ->call('applyFilters')
@@ -317,10 +384,16 @@ class ParkingSpotSearchFilterTest extends TestCase
             ->assertSet('open24HoursDraft', false)
             ->assertSet('hasFreeTimeDraft', false)
             ->assertSet('maxRateDraft', null)
+            ->assertSet('capacityQuery', '')
+            ->assertSet('open24HoursQuery', '')
+            ->assertSet('hasFreeTimeQuery', '')
+            ->assertSet('maxRateQuery', '')
+            ->assertSet('filterFormVersion', 1)
+            ->assertSee('wire:key="parking-spot-filters-1"', false)
             ->assertSee('小規模')
             ->assertSee('大規模')
             ->assertDontSee('件適用中')
-            ->assertDontSee('name="filters[capacity][]"', false);
+            ->assertDontSee('name="capacity"', false);
 
         $this->assertMarkerNames($component, ['大規模', '小規模']);
     }

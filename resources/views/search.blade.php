@@ -8,12 +8,13 @@
                 'latitude' => $yolpLocation['lat'],
                 'longitude' => $yolpLocation['lon'],
                 'engineDisplacement' => $engineDisplacement,
+                'zoom' => $zoom,
             ])
             <x-ad-slot class="mt-4 lg:shrink-0" placement="search_footer" />
         </div>
 
         <x-leaflet-map class="h-[60vh] min-h-96 bg-slate-100 lg:h-full lg:min-h-0"
-            :latitude="$yolpLocation['lat']" :longitude="$yolpLocation['lon']" :zoom="15"
+            :latitude="$yolpLocation['lat']" :longitude="$yolpLocation['lon']" :zoom="$zoom"
             bounds-event="updateBounds" markers-event="displayMarkers"
             :marker-url-template="route('parking_spot.show', ['parkingSpot' => '__ID__'])" />
     </div>

@@ -215,33 +215,139 @@ class ParkingSpotDisplacementClassTest extends TestCase
             ->assertSee('400cc対応')
             ->assertSee('大型対応')
             ->assertSee('区分未設定');
+
+        Livewire::test(ParkingSpots::class, [
+            'engineDisplacement' => implode(',', [
+                EngineDisplacementClass::UpTo125cc->value,
+                EngineDisplacementClass::Over400cc->value,
+            ]),
+        ])->call('updateBounds', $this->mapBounds())
+            ->assertDontSee('50cc対応')
+            ->assertSee('125cc対応')
+            ->assertSee('400cc対応')
+            ->assertSee('大型対応')
+            ->assertDontSee('区分未設定');
     }
 
-    public function test_search_query_restores_the_selected_class_in_form_and_livewire(): void
+    public function test_search_query_restores_selected_classes_in_form_and_livewire(): void
     {
         $response = $this->get(route('search', [
             'keyword' => null,
             'lat' => 35.681167,
             'lon' => 139.767052,
-            'engine_displacement' => EngineDisplacementClass::Over400cc->value,
+            'engine_displacement' => implode(',', [
+                EngineDisplacementClass::Over400cc->value,
+                EngineDisplacementClass::UpTo125cc->value,
+            ]),
         ]))->assertOk();
 
         $response
             ->assertSee('name="engine_displacement"', false)
-            ->assertSee('type="radio"', false)
-            ->assertSee('x-on:change="$el.form.requestSubmit()"', false)
-            ->assertSee('排気量条件をクリア')
+            ->assertSee('type="checkbox"', false)
+            ->assertSee('wire:model="engineDisplacementDraft"', false)
+            ->assertSee('駐車したいバイクの排気量（複数選択可）')
+            ->assertDontSee('指定なし')
+            ->assertDontSee('type="radio"', false)
+            ->assertDontSee('wire:model.live="engineDisplacementQuery"', false)
+            ->assertDontSee('wire:click="clearEngineDisplacement"', false)
+            ->assertDontSee('x-on:change="$el.form.requestSubmit()"', false)
+            ->assertSee('排気量: 125cc以下')
+            ->assertSee('排気量: 400cc超')
+            ->assertSee('2件適用中')
             ->assertSee('400cc超');
 
-        $this->assertMatchesRegularExpression(
-            '/<input[^>]+value="over_400cc"[^>]+checked/',
-            $response->getContent(),
+        $html = $response->getContent();
+        $this->assertLessThan(
+            strpos($html, '駐車したいバイクの排気量'),
+            strpos($html, 'id="parking-spot-filters"'),
         );
 
-        $this->assertStringContainsString(
-            '&quot;engineDisplacement&quot;:&quot;over_400cc&quot;',
-            $response->getContent(),
+        $response->assertSee(
+            'name="engine_displacement" type="hidden" value="up_to_125cc,over_400cc"',
+            false,
         );
+
+        Livewire::withQueryParams([
+            'engine_displacement' => implode(',', [
+                EngineDisplacementClass::Over400cc->value,
+                'invalid',
+                EngineDisplacementClass::UpTo125cc->value,
+                EngineDisplacementClass::Over400cc->value,
+            ]),
+        ])->test(ParkingSpots::class)
+            ->assertSet('engineDisplacements', [
+                EngineDisplacementClass::UpTo125cc->value,
+                EngineDisplacementClass::Over400cc->value,
+            ])
+            ->assertSet('engineDisplacementQuery', implode(',', [
+                EngineDisplacementClass::UpTo125cc->value,
+                EngineDisplacementClass::Over400cc->value,
+            ]))
+            ->assertSet('engineDisplacementDraft', [
+                EngineDisplacementClass::UpTo125cc->value,
+                EngineDisplacementClass::Over400cc->value,
+            ]);
+    }
+
+    public function test_changing_search_displacement_keeps_the_current_map_view(): void
+    {
+        [$user, $postalcode] = $this->createUserAndPostalcode();
+        $this->createParkingSpot(
+            $user,
+            $postalcode,
+            '原付対応',
+            EngineDisplacementClass::UpTo50cc,
+        );
+        $this->createParkingSpot(
+            $user,
+            $postalcode,
+            '大型対応',
+            EngineDisplacementClass::Over400cc,
+        );
+
+        $component = Livewire::withQueryParams([
+            'lat' => '35.681167',
+            'lon' => '139.767052',
+            'zoom' => '17',
+        ])->test(ParkingSpots::class, ['keyword' => '東京駅']);
+
+        $effects = html_entity_decode($component->html());
+        $this->assertStringContainsString('"as":"engine_displacement"', $effects);
+        $this->assertStringContainsString('"use":"push"', $effects);
+
+        $component
+            ->call('updateBounds', $this->mapBounds(), 18, [
+                'latitude' => 35.7001234,
+                'longitude' => 139.8005678,
+            ])
+            ->assertSee('大型対応')
+            ->assertSee('原付対応')
+            ->set('engineDisplacementDraft', [EngineDisplacementClass::Over400cc->value])
+            ->assertSet('engineDisplacements', [])
+            ->call('applyFilters')
+            ->assertSet('engineDisplacements', [EngineDisplacementClass::Over400cc->value])
+            ->assertSet('engineDisplacementQuery', EngineDisplacementClass::Over400cc->value)
+            ->assertSet('engineDisplacementDraft', [EngineDisplacementClass::Over400cc->value])
+            ->assertSet('latitude', 35.700123)
+            ->assertSet('longitude', 139.800568)
+            ->assertSet('zoom', 18)
+            ->assertSee('大型対応')
+            ->assertDontSee('原付対応')
+            ->assertSee('1件適用中')
+            ->assertSee('排気量: 400cc超')
+            ->assertSee('name="lat" type="hidden" value="35.700123"', false)
+            ->assertSee('name="lon" type="hidden" value="139.800568"', false)
+            ->assertSee('name="engine_displacement" type="hidden" value="over_400cc"', false)
+            ->call('clearFilters')
+            ->assertSet('engineDisplacements', [])
+            ->assertSet('engineDisplacementQuery', '')
+            ->assertSet('engineDisplacementDraft', [])
+            ->assertSet('filterFormVersion', 1)
+            ->assertSet('latitude', 35.700123)
+            ->assertSet('longitude', 139.800568)
+            ->assertSet('zoom', 18)
+            ->assertSee('大型対応')
+            ->assertSee('原付対応');
     }
 
     /**

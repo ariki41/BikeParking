@@ -15,14 +15,33 @@ class ParkingSpots extends Component
 
     public ?string $keyword = null;
 
+    #[Url(as: 'lat', keep: true)]
     public $latitude;
 
+    #[Url(as: 'lon', keep: true)]
     public $longitude;
 
-    public ?string $engineDisplacement = null;
+    public array $engineDisplacements = [];
 
-    #[Url(as: 'filters', history: true, except: [])]
-    public $filters = [];
+    #[Url(as: 'engine_displacement', history: true, except: '')]
+    public $engineDisplacementQuery = '';
+
+    #[Url(as: 'zoom', keep: true)]
+    public $zoom = 15;
+
+    #[Url(as: 'capacity', history: true, except: '')]
+    public $capacityQuery = '';
+
+    #[Url(as: 'open_24_hours', history: true, except: '')]
+    public $open24HoursQuery = '';
+
+    #[Url(as: 'has_free_time', history: true, except: '')]
+    public $hasFreeTimeQuery = '';
+
+    #[Url(as: 'max_rate', history: true, except: '')]
+    public $maxRateQuery = '';
+
+    public array $filters = [];
 
     public array $capacityDraft = [];
 
@@ -31,6 +50,10 @@ class ParkingSpots extends Component
     public bool $hasFreeTimeDraft = false;
 
     public $maxRateDraft = null;
+
+    public array $engineDisplacementDraft = [];
+
+    public int $filterFormVersion = 0;
 
     public array $bounds = [];
 
@@ -42,21 +65,16 @@ class ParkingSpots extends Component
         ?string $keyword = null,
         $latitude = null,
         $longitude = null,
-        ?string $engineDisplacement = null,
+        $engineDisplacement = null,
+        $zoom = null,
     ): void {
         $this->keyword = $keyword;
-        $this->latitude = $latitude;
-        $this->longitude = $longitude;
-        $this->engineDisplacement = EngineDisplacementClass::tryFrom((string) $engineDisplacement)?->value;
+        $this->latitude = $latitude ?? $this->latitude;
+        $this->longitude = $longitude ?? $this->longitude;
+        $this->syncEngineDisplacements($engineDisplacement ?? $this->engineDisplacementQuery);
+        $this->zoom = $this->normalizeZoom($zoom ?? $this->zoom);
 
-        $rawFilters = is_array($this->filters) ? $this->filters : [];
-
-        $this->syncDraftsFromFilters($rawFilters);
-        $this->filters = $this->normalizeFilters($rawFilters);
-
-        if (! $this->maxRateIsValid($this->maxRateDraft)) {
-            $this->addError('maxRateDraft', '最大料金上限は1円以上の整数で入力してください。');
-        }
+        $this->syncAppliedFiltersFromQuery();
     }
 
     public function render()
@@ -70,8 +88,14 @@ class ParkingSpots extends Component
         ]);
     }
 
-    public function updateBounds($bounds): void
+    public function updateBounds($bounds, $zoom = null, $center = null): void
     {
+        if ($zoom !== null) {
+            $this->zoom = $this->normalizeZoom($zoom);
+        }
+
+        $this->syncCenter($center);
+
         if (! is_array($bounds) || collect(['south', 'north', 'west', 'east'])->contains(
             fn (string $key): bool => ! isset($bounds[$key]) || ! is_numeric($bounds[$key]),
         )) {
@@ -83,6 +107,39 @@ class ParkingSpots extends Component
             ->all();
 
         $this->refreshSpots();
+    }
+
+    private function syncCenter(mixed $center): void
+    {
+        if (! is_array($center)
+            || ! is_numeric($center['latitude'] ?? null)
+            || ! is_numeric($center['longitude'] ?? null)) {
+            return;
+        }
+
+        $latitude = (float) $center['latitude'];
+        $longitude = (float) $center['longitude'];
+
+        if ($latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
+            return;
+        }
+
+        $this->latitude = round($latitude, 6);
+        $this->longitude = round($longitude, 6);
+    }
+
+    private function normalizeZoom(mixed $zoom): int
+    {
+        $normalizedZoom = filter_var($zoom, FILTER_VALIDATE_INT, [
+            'options' => [
+                'min_range' => config('parking_spot.search_map.min_zoom'),
+                'max_range' => config('parking_spot.search_map.max_zoom'),
+            ],
+        ]);
+
+        return $normalizedZoom === false
+            ? config('parking_spot.search_map.default_zoom')
+            : $normalizedZoom;
     }
 
     public function applyFilters(): void
@@ -101,7 +158,9 @@ class ParkingSpots extends Component
             'has_free_time' => $this->hasFreeTimeDraft,
             'max_rate' => $this->maxRateDraft,
         ]);
+        $this->syncEngineDisplacements($this->engineDisplacementDraft);
 
+        $this->syncQueryFromAppliedFilters();
         $this->syncDraftsFromFilters($this->filters);
         $this->refreshSpots();
     }
@@ -113,24 +172,50 @@ class ParkingSpots extends Component
         $this->open24HoursDraft = false;
         $this->hasFreeTimeDraft = false;
         $this->maxRateDraft = null;
+        $this->engineDisplacements = [];
+        $this->engineDisplacementQuery = '';
+        $this->engineDisplacementDraft = [];
+        $this->capacityQuery = '';
+        $this->open24HoursQuery = '';
+        $this->hasFreeTimeQuery = '';
+        $this->maxRateQuery = '';
+        $this->filterFormVersion++;
         $this->resetValidation();
 
         $this->refreshSpots();
     }
 
-    public function updatedFilters($value): void
+    public function updatedEngineDisplacementQuery(): void
     {
-        $rawFilters = is_array($value) ? $value : [];
-
-        $this->filters = $this->normalizeFilters($rawFilters);
-        $this->syncDraftsFromFilters($rawFilters);
-        $this->resetValidation();
-
-        if (! $this->maxRateIsValid($this->maxRateDraft)) {
-            $this->addError('maxRateDraft', '最大料金上限は1円以上の整数で入力してください。');
-        }
-
+        $this->syncEngineDisplacements($this->engineDisplacementQuery);
         $this->refreshSpots();
+    }
+
+    public function updatedCapacityQuery(): void
+    {
+        $this->syncAppliedFiltersFromQuery();
+    }
+
+    public function updatedOpen24HoursQuery(): void
+    {
+        $this->syncAppliedFiltersFromQuery();
+    }
+
+    public function updatedHasFreeTimeQuery(): void
+    {
+        $this->syncAppliedFiltersFromQuery();
+    }
+
+    public function updatedMaxRateQuery(): void
+    {
+        $this->syncAppliedFiltersFromQuery();
+    }
+
+    private function syncEngineDisplacements(mixed $engineDisplacements): void
+    {
+        $this->engineDisplacements = $this->normalizedEngineDisplacements($engineDisplacements);
+        $this->engineDisplacementQuery = implode(',', $this->engineDisplacements);
+        $this->engineDisplacementDraft = $this->engineDisplacements;
     }
 
     private function refreshSpots(): void
@@ -150,9 +235,7 @@ class ParkingSpots extends Component
             ->withAvg('reviews', 'rating')
             ->whereBetween('latitude', [$this->bounds['south'], $this->bounds['north']])
             ->whereBetween('longitude', [$this->bounds['west'], $this->bounds['east']])
-            ->supportsEngineDisplacement(
-                EngineDisplacementClass::tryFrom((string) $this->engineDisplacement),
-            )
+            ->supportsEngineDisplacements($this->engineDisplacements)
             ->when($capacityFilters !== [], fn (Builder $query) => $query->whereIn('capacity', $capacityFilters))
             ->when($open24Hours, fn (Builder $query) => $query
                 ->where('opening_time', '00:00:00')
@@ -191,6 +274,40 @@ class ParkingSpots extends Component
         $this->maxRateDraft = is_scalar($maxRate) ? $maxRate : null;
     }
 
+    private function syncAppliedFiltersFromQuery(): void
+    {
+        $rawFilters = [
+            'capacity' => $this->capacityQuery,
+            'open_24_hours' => $this->open24HoursQuery,
+            'has_free_time' => $this->hasFreeTimeQuery,
+            'max_rate' => $this->maxRateQuery,
+        ];
+
+        $this->filters = $this->normalizeFilters($rawFilters);
+        $this->syncDraftsFromFilters($rawFilters);
+        $this->syncQueryFromAppliedFilters(preserveInvalidMaxRate: true);
+        $this->resetValidation();
+
+        if (! $this->maxRateIsValid($this->maxRateDraft)) {
+            $this->addError('maxRateDraft', '最大料金上限は1円以上の整数で入力してください。');
+        }
+
+        $this->refreshSpots();
+    }
+
+    private function syncQueryFromAppliedFilters(bool $preserveInvalidMaxRate = false): void
+    {
+        $this->capacityQuery = implode(',', $this->filters['capacity'] ?? []);
+        $this->open24HoursQuery = ($this->filters['open_24_hours'] ?? false) ? '1' : '';
+        $this->hasFreeTimeQuery = ($this->filters['has_free_time'] ?? false) ? '1' : '';
+
+        if (! $preserveInvalidMaxRate || $this->maxRateIsValid($this->maxRateQuery)) {
+            $this->maxRateQuery = isset($this->filters['max_rate'])
+                ? (string) $this->filters['max_rate']
+                : '';
+        }
+    }
+
     private function normalizeFilters(array $filters): array
     {
         $normalized = [];
@@ -220,8 +337,9 @@ class ParkingSpots extends Component
     private function normalizedCapacities($capacities): array
     {
         $allowed = array_map('intval', array_keys(config('categories.parking_spot_capacity')));
+        $values = is_string($capacities) ? explode(',', $capacities) : Arr::wrap($capacities);
 
-        $normalized = collect(Arr::wrap($capacities))
+        $normalized = collect($values)
             ->filter(fn ($capacity): bool => is_scalar($capacity) && in_array((int) $capacity, $allowed, true))
             ->map(fn ($capacity): int => (int) $capacity)
             ->unique()
@@ -230,6 +348,22 @@ class ParkingSpots extends Component
             ->all();
 
         return $normalized;
+    }
+
+    private function normalizedEngineDisplacements(mixed $engineDisplacements): array
+    {
+        $values = is_string($engineDisplacements)
+            ? explode(',', $engineDisplacements)
+            : Arr::wrap($engineDisplacements);
+        $selectedValues = collect($values)
+            ->filter(fn ($value): bool => is_scalar($value))
+            ->map(fn ($value): string => (string) $value)
+            ->all();
+
+        return collect(EngineDisplacementClass::values())
+            ->filter(fn (string $value): bool => in_array($value, $selectedValues, true))
+            ->values()
+            ->all();
     }
 
     private function filterIsEnabled($value): bool
@@ -251,6 +385,12 @@ class ParkingSpots extends Component
         $labels = collect($this->filters['capacity'] ?? [])
             ->map(fn (int $capacity): string => '収容台数: '.config("categories.parking_spot_capacity.{$capacity}"))
             ->all();
+
+        foreach ($this->engineDisplacements as $value) {
+            if ($engineDisplacement = EngineDisplacementClass::tryFrom($value)) {
+                $labels[] = '排気量: '.$engineDisplacement->searchLabel();
+            }
+        }
 
         if ($this->filters['open_24_hours'] ?? false) {
             $labels[] = '24時間営業';
