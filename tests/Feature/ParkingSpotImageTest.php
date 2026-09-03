@@ -42,7 +42,10 @@ class ParkingSpotImageTest extends TestCase
             ->assertSee('name="images[]"', false)
             ->assertSee('/storage/parking-spots/edit-1.webp')
             ->assertSee('/storage/parking-spots/edit-2.webp')
-            ->assertSee('現在の画像を選択した画像へすべて置き換えます。');
+            ->assertSee('name="delete_image_paths[]"', false)
+            ->assertSee('この画像を削除')
+            ->assertSee('新しい画像は、削除しない現在の画像の末尾に追加されます。')
+            ->assertDontSee('現在の画像を選択した画像へすべて置き換えます。');
     }
 
     public function test_confirm_accepts_and_previews_four_images(): void
@@ -131,7 +134,7 @@ class ParkingSpotImageTest extends TestCase
             ->assertDontSee('/storage/'.$parkingSpot->images[1]->path);
     }
 
-    public function test_edit_confirmation_and_update_replace_all_images(): void
+    public function test_edit_confirmation_and_update_append_images_after_existing_images(): void
     {
         [$parkingSpot, $user, $postalcode] = $this->createParkingSpot();
         Storage::fake('public');
@@ -151,31 +154,109 @@ class ParkingSpotImageTest extends TestCase
             ->post(route('parking_spot.confirm'), $this->validFormInput($postalcode, [
                 'id' => $parkingSpot->id,
                 'image_paths' => $originalPaths,
-                'images' => $this->fakeImages(3),
+                'images' => $this->fakeImages(2),
             ]));
 
-        $confirmResponse->assertOk()->assertSee('3枚');
-        $tempPaths = session(ParkingSpotConfirmationService::SESSION_KEY.'.input.image_paths');
-        $this->assertCount(3, $tempPaths);
+        $confirmResponse->assertOk()->assertSee('4枚');
+        $confirmedPaths = session(ParkingSpotConfirmationService::SESSION_KEY.'.input.image_paths');
+        $tempPaths = array_slice($confirmedPaths, 2);
+        $this->assertCount(4, $confirmedPaths);
+        $this->assertSame($originalPaths, array_slice($confirmedPaths, 0, 2));
 
         $this->actingAs($user)
             ->put(route('parking_spot.update', $parkingSpot))
             ->assertRedirect(route('home'));
 
         $parkingSpot->refresh()->load('images');
-        $this->assertCount(3, $parkingSpot->images);
+        $updatedPaths = $parkingSpot->images->pluck('path')->all();
+        $this->assertCount(4, $parkingSpot->images);
+        $this->assertSame($originalPaths, array_slice($updatedPaths, 0, 2));
         $this->assertSame($parkingSpot->images[0]->path, $parkingSpot->image_path);
 
         foreach ($originalPaths as $path) {
-            Storage::disk('public')->assertMissing($path);
+            Storage::disk('public')->assertExists($path);
         }
-        foreach ($parkingSpot->images as $image) {
-            Storage::disk('public')->assertExists($image->path);
+        foreach ($tempPaths as $path) {
+            Storage::disk('public')->assertMissing($path);
         }
 
         $history = ParkingSpotUpdateHistory::sole();
         $this->assertSame($originalPaths, $history->changes['images']['before']);
-        $this->assertSame($parkingSpot->images->pluck('path')->all(), $history->changes['images']['after']);
+        $this->assertSame($updatedPaths, $history->changes['images']['after']);
+    }
+
+    public function test_edit_deletes_only_selected_image_and_appends_new_images_in_the_same_update(): void
+    {
+        [$parkingSpot, $user, $postalcode] = $this->createParkingSpot();
+        Storage::fake('public');
+        $originalPaths = [
+            'parking-spots/original-1.webp',
+            'parking-spots/original-2.webp',
+            'parking-spots/original-3.webp',
+        ];
+        foreach ($originalPaths as $path) {
+            Storage::disk('public')->put($path, 'original');
+        }
+        $this->setImages($parkingSpot, $originalPaths);
+        $this->fakeGeocode();
+
+        $this->actingAs($user)->get(route('parking_spot.edit', $parkingSpot->id))->assertOk();
+
+        $confirmResponse = $this->actingAs($user)
+            ->post(route('parking_spot.confirm'), $this->validFormInput($postalcode, [
+                'id' => $parkingSpot->id,
+                'image_paths' => $originalPaths,
+                'delete_image_paths' => [$originalPaths[1]],
+                'images' => $this->fakeImages(2),
+            ]));
+
+        $confirmResponse->assertOk()->assertSee('4枚');
+        $confirmedPaths = session(ParkingSpotConfirmationService::SESSION_KEY.'.input.image_paths');
+        $tempPaths = array_slice($confirmedPaths, 2);
+        $this->assertSame([$originalPaths[0], $originalPaths[2]], array_slice($confirmedPaths, 0, 2));
+        $this->assertCount(2, $tempPaths);
+
+        $this->actingAs($user)
+            ->put(route('parking_spot.update', $parkingSpot))
+            ->assertRedirect(route('home'));
+
+        $parkingSpot->refresh()->load('images');
+        $updatedPaths = $parkingSpot->images->pluck('path')->all();
+        $this->assertCount(4, $updatedPaths);
+        $this->assertSame([$originalPaths[0], $originalPaths[2]], array_slice($updatedPaths, 0, 2));
+        $this->assertSame([0, 1, 2, 3], $parkingSpot->images->pluck('position')->all());
+        Storage::disk('public')->assertExists([$originalPaths[0], $originalPaths[2]]);
+        Storage::disk('public')->assertMissing([$originalPaths[1], ...$tempPaths]);
+        Storage::disk('public')->assertExists(array_slice($updatedPaths, 2));
+
+        $history = ParkingSpotUpdateHistory::sole();
+        $this->assertSame($originalPaths, $history->changes['images']['before']);
+        $this->assertSame($updatedPaths, $history->changes['images']['after']);
+    }
+
+    public function test_edit_confirmation_rejects_more_than_four_retained_and_uploaded_images(): void
+    {
+        [$parkingSpot, $user, $postalcode] = $this->createParkingSpot();
+        $originalPaths = [
+            'parking-spots/original-1.webp',
+            'parking-spots/original-2.webp',
+            'parking-spots/original-3.webp',
+        ];
+        $this->setImages($parkingSpot, $originalPaths);
+
+        $editUrl = route('parking_spot.edit', $parkingSpot->id);
+        $this->actingAs($user)->get($editUrl)->assertOk();
+
+        $this->from($editUrl)
+            ->post(route('parking_spot.confirm'), $this->validFormInput($postalcode, [
+                'id' => $parkingSpot->id,
+                'image_paths' => $originalPaths,
+                'images' => $this->fakeImages(2),
+            ]))
+            ->assertRedirect($editUrl)
+            ->assertSessionHasErrors([
+                'images' => '保持する画像と追加する画像の合計は4枚までです。',
+            ]);
     }
 
     public function test_detail_displays_all_images_and_legacy_records_keep_their_fallbacks(): void
