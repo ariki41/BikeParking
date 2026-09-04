@@ -1,6 +1,5 @@
 const selectedImageKind = 'selected';
 const storedImageKind = 'stored';
-const fileKey = (file) => JSON.stringify([file.name, file.size, file.type, file.lastModified]);
 
 export const initParkingSpotImages = (root) => {
     if (root.dataset.imageFormInitialized === 'true') {
@@ -72,7 +71,8 @@ export const initParkingSpotImages = (root) => {
 
     const showLimitError = () => {
         limitError.classList.remove('hidden');
-        input.setCustomValidity(`画像は合計${maxImages}枚までです。`);
+        // 超過分は input.files へ戻さないため、現在の有効な画像まで送信不能にしない。
+        input.setCustomValidity('');
     };
 
     const renderSelectedPreviews = () => {
@@ -107,18 +107,7 @@ export const initParkingSpotImages = (root) => {
     };
 
     input.addEventListener('change', () => {
-        const nextSelectedFiles = [...selectedFiles];
-        const selectedFileKeys = new Set(nextSelectedFiles.map(fileKey));
-
-        [...(input.files ?? [])].forEach((file) => {
-            const key = fileKey(file);
-            if (selectedFileKeys.has(key)) {
-                return;
-            }
-
-            nextSelectedFiles.push(file);
-            selectedFileKeys.add(key);
-        });
+        const nextSelectedFiles = [...selectedFiles, ...(input.files ?? [])];
 
         const storedImageCount = previewItems()
             .filter((item) => item.dataset.imageKind === storedImageKind)
