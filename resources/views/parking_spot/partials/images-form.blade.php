@@ -4,10 +4,15 @@
 
 <div class="md:col-span-2" data-parking-spot-images data-max-images="4">
     <x-input-label for="images">駐輪場画像（最大4枚）</x-input-label>
-    <input class="bp-input" id="images" name="images[]" type="file" accept="image/jpeg,image/png,image/webp" multiple
+    <input class="peer sr-only" id="images" name="images[]" type="file" accept="image/jpeg,image/png,image/webp" multiple
         data-image-input
         aria-describedby="images-help images-limit-error images-errors"
         aria-invalid="{{ $errors->hasAny(['images', 'images.*', 'image_paths', 'image_paths.*', 'image', 'image_path']) ? 'true' : 'false' }}">
+    <label
+        class="mt-2 inline-flex cursor-pointer items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500 peer-focus-visible:ring-offset-2 peer-invalid:border-red-400 peer-invalid:text-red-700"
+        for="images" data-image-picker>
+        画像を選択
+    </label>
     <p class="bp-muted mt-1" id="images-help">jpg / jpeg / png / webp、1枚あたり20MBまで選択できます。</p>
 
     <p class="bp-muted mt-2" data-image-count aria-live="polite">表示中の画像: {{ count($imagePaths) }} / 4枚</p>
