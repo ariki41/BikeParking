@@ -102,9 +102,6 @@ class ParkingSpotController extends Controller
 
         $currentImagePaths = $validatedData['image_paths']
             ?? array_values(array_filter([$validatedData['image_path'] ?? null]));
-        $deleteImagePaths = $validatedData['delete_image_paths'] ?? [];
-        $currentImagePaths = array_values(array_diff($currentImagePaths, $deleteImagePaths));
-        unset($validatedData['delete_image_paths']);
         $validatedData['image_paths'] = $this->images->prepareForConfirmation(
             $request,
             $currentImagePaths,

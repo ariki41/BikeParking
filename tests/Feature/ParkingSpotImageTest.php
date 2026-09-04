@@ -32,7 +32,16 @@ class ParkingSpotImageTest extends TestCase
         $this->actingAs($user)
             ->get(route('parking_spot.create'))
             ->assertOk()
+            ->assertSee('data-parking-spot-images data-max-images="4"', false)
             ->assertSee('name="images[]"', false)
+            ->assertSee('data-image-input', false)
+            ->assertSee('data-image-preview-list', false)
+            ->assertSee('data-image-preview-template', false)
+            ->assertSee('data-image-limit-error', false)
+            ->assertSee('表示中の画像: 0 / 4枚')
+            ->assertSee('この画像を削除')
+            ->assertDontSee('ファイル選択を繰り返して画像を追加でき、選択した画像はすぐ下に表示されます。削除ボタンで送信対象から外せます。')
+            ->assertSee('jpg / jpeg / png / webp、1枚あたり20MBまで選択できます。')
             ->assertSee('multiple', false)
             ->assertSee('最大4枚');
 
@@ -42,9 +51,12 @@ class ParkingSpotImageTest extends TestCase
             ->assertSee('name="images[]"', false)
             ->assertSee('/storage/parking-spots/edit-1.webp')
             ->assertSee('/storage/parking-spots/edit-2.webp')
-            ->assertSee('name="delete_image_paths[]"', false)
+            ->assertSee('data-image-kind="stored"', false)
+            ->assertSee('data-delete-image type="button"', false)
+            ->assertSee('表示中の画像: 2 / 4枚')
             ->assertSee('この画像を削除')
             ->assertSee('新しい画像は、削除しない現在の画像の末尾に追加されます。')
+            ->assertDontSee('name="delete_image_paths[]"', false)
             ->assertDontSee('現在の画像を選択した画像へすべて置き換えます。');
     }
 
@@ -205,8 +217,7 @@ class ParkingSpotImageTest extends TestCase
         $confirmResponse = $this->actingAs($user)
             ->post(route('parking_spot.confirm'), $this->validFormInput($postalcode, [
                 'id' => $parkingSpot->id,
-                'image_paths' => $originalPaths,
-                'delete_image_paths' => [$originalPaths[1]],
+                'image_paths' => [$originalPaths[0], $originalPaths[2]],
                 'images' => $this->fakeImages(2),
             ]));
 
