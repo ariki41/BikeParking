@@ -1,5 +1,6 @@
 import './bootstrap';
 import './leaflet-map';
+import './parking-spot-images';
 import './parking-spot-rates';
 
 import Alpine from 'alpinejs';
