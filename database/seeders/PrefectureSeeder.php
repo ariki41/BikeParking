@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class PrefectureSeeder extends Seeder
 {
@@ -14,11 +13,6 @@ class PrefectureSeeder extends Seeder
      */
     public function run(): void
     {
-        // 外部キー制約を無効化してデータを削除、その後制約を有効化
-        Schema::disableForeignKeyConstraints();
-        DB::table('prefectures')->truncate();
-        Schema::enableForeignKeyConstraints();
-
         // 現在時刻を取得
         $now = Carbon::now();
 
@@ -82,6 +76,10 @@ class PrefectureSeeder extends Seeder
             ]);
         }, $prefectures);
 
-        DB::table('prefectures')->insert($prefectures);
+        DB::table('prefectures')->upsert(
+            $prefectures,
+            ['name'],
+            ['name_kana', 'updated_at'],
+        );
     }
 }

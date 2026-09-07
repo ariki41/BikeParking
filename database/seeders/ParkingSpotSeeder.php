@@ -3,8 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class ParkingSpotSeeder extends Seeder
 {
@@ -13,9 +11,14 @@ class ParkingSpotSeeder extends Seeder
      */
     public function run(): void
     {
-        // 外部キー制約を無効化してデータを削除、その後制約を有効化
-        Schema::disableForeignKeyConstraints();
-        DB::table('parking_spots')->truncate();
-        Schema::enableForeignKeyConstraints();
+        $sourcePath = config('parking_spot.sample_data.postalcode_csv_path');
+
+        if (! is_string($sourcePath) || ! is_readable($sourcePath)) {
+            $this->command?->warn('Skipped parking-spot samples because the optional coordinate CSV is unavailable.');
+
+            return;
+        }
+
+        $this->call(JapanParkingSpotSeeder::class);
     }
 }

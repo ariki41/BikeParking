@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Models\ParkingSpot;
+use App\Models\Postalcode;
 use App\Models\Prefecture;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
@@ -43,7 +44,10 @@ class DatabaseSeederTest extends TestCase
         $this->seed(DatabaseSeeder::class);
 
         $this->assertFalse(Schema::hasTable('postalcode_lat_lons'));
-        $factoryParkingSpot = ParkingSpot::factory()->make();
+        $factoryParkingSpot = ParkingSpot::factory()
+            ->for(User::query()->firstOrFail())
+            ->for(Postalcode::query()->firstOrFail())
+            ->make();
         $this->assertNotNull($factoryParkingSpot->postalcode_id);
         $this->assertContains($factoryParkingSpot->max_displacement_class->value, EngineDisplacementClass::values());
         $this->assertSame(48, Prefecture::query()->count());
@@ -92,6 +96,17 @@ class DatabaseSeederTest extends TestCase
             1,
             $parkingSpotCountsByPrefecture->max() - $parkingSpotCountsByPrefecture->min(),
         );
+    }
+
+    public function test_it_skips_optional_parking_spot_samples_when_the_coordinate_csv_is_missing(): void
+    {
+        config()->set('parking_spot.sample_data.postalcode_csv_path', '/tmp/missing-parking-spot-samples.csv');
+
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertSame(48, Prefecture::query()->count());
+        $this->assertSame(100, User::query()->count());
+        $this->assertDatabaseCount('parking_spots', 0);
     }
 
     private function createNationwidePostalcodeCsv(): string
