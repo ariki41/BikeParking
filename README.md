@@ -30,6 +30,8 @@
 
 検索・詳細・登録確認画面のLeaflet地図は `x-leaflet-map` コンポーネントを使用します。中心座標、ズーム、固定・動的マーカー、Livewireへの表示範囲通知を画面ごとに設定でき、初期化できない場合は地図領域にエラーメッセージを表示します。
 
+ローカル開発用のDocker Composeは、Laravelアプリケーションを実行する `laravel.test` とMySQL 8.0の `mysql` で構成します。セッション、キャッシュ、キューはデータベースドライバ、メールはログドライバを使用するため、Redis、Meilisearch、Mailpit、Seleniumは起動しません。
+
 ## 必要な環境
 
 - Docker Desktop または Docker Engine
