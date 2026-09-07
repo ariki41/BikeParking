@@ -24,7 +24,7 @@
 | --- | --- |
 | Backend | PHP 8.3 / Laravel 13 |
 | Frontend | Blade / Livewire 3 / Tailwind CSS / Alpine.js |
-| Database | MySQL 8.0（SQLiteも利用可能） |
+| Database | MySQL 8.0 |
 | Development environment | Laravel Sail / Docker Compose |
 | Asset build | Vite |
 
@@ -152,7 +152,7 @@ Laravel Sailのショートカットを利用できる環境では、上記の `
 
 郵便番号同期は、日本郵便が公開する1レコード1行のUTF-8版ZIPをダウンロードし、内容を検証してから都道府県・市区町村・郵便番号をトランザクション内で更新します。`storage/app/private/x-ken-all.csv` の手動配置は不要です。廃止された郵便番号は、既存の駐輪場との関連を保つため削除せず無効化します。同期コマンドは毎月2日3時にも自動実行されます。ダウンロード元を変更する場合だけ `JAPAN_POST_POSTAL_CODE_URL` を設定してください。
 
-`DatabaseSeeder` は `storage/app/private/postalcode.csv` の郵便番号・住所・緯度経度データから、全都道府県へ均等に割り当てた10,000件の駐輪場サンプルを生成します。このCSVは開発用データとして別途配置してください。パスを変更する場合は `PARKING_SPOT_SAMPLE_POSTALCODE_CSV` を設定します。SeederはCSVをストリーム処理するため、全国データをメモリへ全件読み込みません。
+`DatabaseSeeder` は都道府県と100件のサンプルユーザーを常に生成します。`storage/app/private/postalcode.csv` が読み込める場合は、その郵便番号・住所・緯度経度データから全都道府県へ均等に割り当てた10,000件の駐輪場サンプルも生成します。CSVがない環境では駐輪場サンプルだけをスキップするため、`php artisan migrate:fresh --seed` は外部データなしでも完了します。パスを変更する場合は `PARKING_SPOT_SAMPLE_POSTALCODE_CSV` を設定します。SeederはCSVをストリーム処理するため、全国データをメモリへ全件読み込みません。
 
 料金表示・入力・保存に関する変更では、まず次のfocused testを実行してください。
 

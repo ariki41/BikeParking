@@ -28,11 +28,11 @@ class ParkingSpotRateSeeder extends Seeder
                 ['day_type' => '夜間', 'start_time' => '19:00:00', 'end_time' => '07:00:00', 'unit_minutes' => 60, 'rate' => 200, 'free_minutes' => 0, 'max_rate' => 500],
             ],
             [
-                ['day_type' => '平日', 'start_time' => '09:00:00', 'end_time' => '18:00:00', 'unit_minutes' => 30, 'rate' => 100, 'free_minutes' => 30, 'max_rate' => 0],
+                ['day_type' => '平日', 'start_time' => '09:00:00', 'end_time' => '18:00:00', 'unit_minutes' => 30, 'rate' => 100, 'free_minutes' => 30, 'max_rate' => null],
                 ['day_type' => '土日祝', 'start_time' => '09:00:00', 'end_time' => '18:00:00', 'unit_minutes' => 30, 'rate' => 100, 'free_minutes' => 0, 'max_rate' => 600],
             ],
             [
-                ['day_type' => '全日', 'start_time' => '06:00:00', 'end_time' => '22:00:00', 'unit_minutes' => 15, 'rate' => 50, 'free_minutes' => 0, 'max_rate' => 0],
+                ['day_type' => '全日', 'start_time' => '06:00:00', 'end_time' => '22:00:00', 'unit_minutes' => 15, 'rate' => 50, 'free_minutes' => 0, 'max_rate' => null],
                 ['day_type' => '夜間', 'start_time' => '22:00:00', 'end_time' => '06:00:00', 'unit_minutes' => 60, 'rate' => 100, 'free_minutes' => 0, 'max_rate' => 700],
             ],
         ];

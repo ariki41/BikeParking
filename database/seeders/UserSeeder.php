@@ -2,9 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\Prefecture;
+use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use LogicException;
 
 class UserSeeder extends Seeder
 {
@@ -13,9 +14,14 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        // 外部キー制約を無効化してデータを削除、その後制約を有効化
-        Schema::disableForeignKeyConstraints();
-        DB::table('users')->truncate();
-        Schema::enableForeignKeyConstraints();
+        $prefectureIds = Prefecture::query()->pluck('id');
+
+        if ($prefectureIds->isEmpty()) {
+            throw new LogicException('UserSeeder requires at least one prefecture.');
+        }
+
+        User::factory(100)->create([
+            'prefecture_id' => fn () => $prefectureIds->random(),
+        ]);
     }
 }

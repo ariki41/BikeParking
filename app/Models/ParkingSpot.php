@@ -97,6 +97,11 @@ class ParkingSpot extends Model
         return $this->hasMany(ParkingSpotRates::class);
     }
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function postalcode(): BelongsTo
     {
         return $this->belongsTo(Postalcode::class);
