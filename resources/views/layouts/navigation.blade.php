@@ -20,7 +20,7 @@
                         ホーム
                     </x-nav-link>
                     <x-nav-link :href="route('parking_spot.create')" :active="request()->routeIs('parking_spot.create')">
-                        駐輪場追加
+                        バイク駐輪場を追加
                     </x-nav-link>
                     @auth
                         <x-nav-link :href="route('favorites.index')" :active="request()->routeIs('favorites.*')">
@@ -85,7 +85,7 @@
                 ホーム
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('parking_spot.create')" :active="request()->routeIs('parking_spot.create')">
-                駐輪場追加
+                バイク駐輪場を追加
             </x-responsive-nav-link>
             @auth
                 <x-responsive-nav-link :href="route('favorites.index')" :active="request()->routeIs('favorites.*')">

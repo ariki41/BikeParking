@@ -1,7 +1,7 @@
 <div class="flex min-h-0 flex-1 flex-col">
     <form class="shrink-0" method="GET" action="{{ route('search') }}">
         <div class="space-y-4">
-            <h1 class="text-2xl font-bold text-slate-900">駐輪場を探す</h1>
+            <h1 class="text-2xl font-bold text-slate-900">バイク駐輪場を探す</h1>
             <div class="flex items-center gap-2">
                 <x-text-input class="w-full" id="keyword" name="keyword" type="text" placeholder="駅名・地名を入力"
                     :value="$keyword" />

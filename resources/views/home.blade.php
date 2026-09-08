@@ -15,9 +15,9 @@
         <section class="mb-8 rounded-lg border border-emerald-100 bg-white p-5 shadow-sm shadow-slate-200/70 sm:p-8">
             <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center">
                 <div>
-                    <h1 class="text-3xl font-bold text-slate-900 sm:text-4xl">近くの駐輪場をすばやく探す</h1>
+                    <h1 class="text-3xl font-bold text-slate-900 sm:text-4xl">近くのバイク駐輪場をすばやく探す</h1>
                     <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-                        駅名や地名から、料金・営業時間・場所を確認できる駐輪場検索サービスです。
+                        駅名や地名から、料金・営業時間・場所を確認できるバイク駐輪場検索サービスです。
                     </p>
                 </div>
                 <form class="rounded-lg border border-slate-200 bg-slate-50 p-4" method="GET" action="{{ route('search') }}">
@@ -33,8 +33,8 @@
         <section>
             <div class="mb-5 flex items-end justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-900">新着の駐輪場</h2>
-                    <p class="bp-muted mt-1">最近登録された駐輪場を確認できます。</p>
+                    <h2 class="text-2xl font-bold text-slate-900">新着のバイク駐輪場</h2>
+                    <p class="bp-muted mt-1">最近登録されたバイク駐輪場を確認できます。</p>
                 </div>
             </div>
             <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
