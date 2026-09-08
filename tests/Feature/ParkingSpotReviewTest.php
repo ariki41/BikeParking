@@ -123,6 +123,24 @@ class ParkingSpotReviewTest extends TestCase
             ->assertDontSee('レビューコメント-01');
     }
 
+    public function test_detail_visually_distinguishes_a_review_from_a_retired_user(): void
+    {
+        [$parkingSpot] = $this->createParkingSpot();
+
+        Review::forceCreate([
+            'user_id' => null,
+            'parking_spot_id' => $parkingSpot->id,
+            'rating' => 4,
+            'comment' => '匿名化されたレビューです。',
+        ]);
+
+        $this->get(route('parking_spot.show', $parkingSpot))
+            ->assertOk()
+            ->assertSee('匿名化されたレビューです。')
+            ->assertSee('退会済みユーザー')
+            ->assertSee('text-slate-400', false);
+    }
+
     public function test_all_reviews_link_is_hidden_when_there_are_ten_reviews(): void
     {
         [$parkingSpot] = $this->createParkingSpot();
