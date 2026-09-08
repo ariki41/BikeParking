@@ -34,7 +34,7 @@
         $imagePaths = [old('image_path')];
     }
 
-    $pageTitle = $isEdit ? '駐輪場の編集' : '駐輪場の新規登録';
+    $pageTitle = $isEdit ? 'バイク駐輪場の編集' : 'バイク駐輪場の新規登録';
     $pageDescription = $isEdit
         ? '登録済みの内容を更新して、確認画面で差分を確認します。'
         : '住所・営業時間・料金帯を入力して、登録内容を確認します。';

@@ -83,7 +83,7 @@ class ParkingSpotRateSearchTest extends TestCase
 
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee('新着の駐輪場')
+            ->assertSee('新着のバイク駐輪場')
             ->assertSee('代表料金')
             ->assertSee('料金未登録');
     }
@@ -147,6 +147,7 @@ class ParkingSpotRateSearchTest extends TestCase
                 'west' => 139.0,
                 'east' => 140.0,
             ])
+            ->assertSee('バイク駐輪場を探す')
             ->assertSee('代表料金')
             ->assertSee('30分 100円 / 最大料金なし')
             ->assertSee('ほか1件の料金帯')
