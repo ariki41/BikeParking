@@ -67,11 +67,38 @@ class YolpApiClient
                     ...$query,
                 ])
                 ->throw();
-        } catch (ConnectionException|RequestException $exception) {
-            throw new YolpApiException('YOLP API request failed.', previous: $exception);
+        } catch (ConnectionException $exception) {
+            throw new YolpApiException($this->connectionFailureCategory($exception), $exception);
+        } catch (RequestException $exception) {
+            throw new YolpApiException(YolpApiException::CATEGORY_RESPONSE, $exception);
         }
 
-        return $this->normalizeFeature($response->json('Feature.0'));
+        $payload = $response->json();
+
+        if (! is_array($payload) || ! array_key_exists('Feature', $payload) || ! is_array($payload['Feature'])) {
+            throw new YolpApiException(YolpApiException::CATEGORY_RESPONSE);
+        }
+
+        if ($payload['Feature'] === []) {
+            return null;
+        }
+
+        $location = $this->normalizeFeature($payload['Feature'][0] ?? null);
+
+        if ($location === null) {
+            throw new YolpApiException(YolpApiException::CATEGORY_RESPONSE);
+        }
+
+        return $location;
+    }
+
+    private function connectionFailureCategory(ConnectionException $exception): string
+    {
+        $message = strtolower($exception->getMessage());
+
+        return str_contains($message, 'timed out') || str_contains($message, 'curl error 28')
+            ? YolpApiException::CATEGORY_TIMEOUT
+            : YolpApiException::CATEGORY_CONNECTION;
     }
 
     /**

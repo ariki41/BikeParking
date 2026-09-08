@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\ParkingSpots\EngineDisplacementClass;
+use App\Exceptions\YolpApiException;
 use App\Http\Requests\ParkingSpotRequest;
 use App\Models\ParkingSpot;
 use App\Services\ParkingSpotConfirmationService;
@@ -11,6 +12,7 @@ use App\Services\ParkingSpotImageService;
 use App\Services\ParkingSpotPersistenceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class ParkingSpotController extends Controller
@@ -118,7 +120,18 @@ class ParkingSpotController extends Controller
         $validatedData['address'] = mb_convert_kana($validatedData['address1'].$validatedData['address2'], 'rn');
         $validatedData['postalcode'] = mb_convert_kana(str_replace('-', '', $validatedData['postalcode']), 'rn');
 
-        $yolpLocation = $this->geocoding->geocode($validatedData['address']);
+        try {
+            $yolpLocation = $this->geocoding->geocode($validatedData['address']);
+        } catch (YolpApiException $exception) {
+            Log::warning('YOLP API is unavailable while geocoding a parking spot.', [
+                'category' => $exception->category(),
+                'previous_exception' => $exception->getPrevious() ? $exception->getPrevious()::class : null,
+            ]);
+
+            return $this->redirectToTrustedForm($request)
+                ->withErrors(['address2' => $exception->userMessage()])
+                ->withInput($validatedData);
+        }
 
         if (is_null($yolpLocation)) {
             return $this->redirectToTrustedForm($request)
