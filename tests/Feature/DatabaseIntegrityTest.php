@@ -33,7 +33,7 @@ class DatabaseIntegrityTest extends TestCase
         $this->assertContains($parkingSpot->max_displacement_class, EngineDisplacementClass::cases());
     }
 
-    public function test_deleting_a_parking_spot_owner_cascades_all_owned_data(): void
+    public function test_deleting_a_parking_spot_owner_preserves_anonymized_parking_spot_content(): void
     {
         $owner = User::factory()->create();
         $otherUser = User::factory()->create();
@@ -60,18 +60,24 @@ class DatabaseIntegrityTest extends TestCase
 
         $owner->delete();
 
-        $this->assertDatabaseMissing('parking_spots', ['id' => $parkingSpot->id]);
-        $this->assertDatabaseMissing('parking_spot_rates', ['parking_spot_id' => $parkingSpot->id]);
-        $this->assertDatabaseMissing('parking_spot_images', ['parking_spot_id' => $parkingSpot->id]);
-        $this->assertDatabaseMissing('parking_spot_update_histories', ['parking_spot_id' => $parkingSpot->id]);
-        $this->assertDatabaseMissing('favorites', ['parking_spot_id' => $parkingSpot->id]);
-        $this->assertDatabaseMissing('reviews', ['parking_spot_id' => $parkingSpot->id]);
-        $this->assertDatabaseMissing('parking_spot_tags', ['parking_spot_id' => $parkingSpot->id]);
+        $this->assertDatabaseHas('parking_spots', [
+            'id' => $parkingSpot->id,
+            'user_id' => null,
+        ]);
+        $this->assertDatabaseHas('parking_spot_rates', ['parking_spot_id' => $parkingSpot->id]);
+        $this->assertDatabaseHas('parking_spot_images', ['parking_spot_id' => $parkingSpot->id]);
+        $this->assertDatabaseHas('parking_spot_update_histories', [
+            'parking_spot_id' => $parkingSpot->id,
+            'user_id' => $otherUser->id,
+        ]);
+        $this->assertDatabaseHas('favorites', ['parking_spot_id' => $parkingSpot->id]);
+        $this->assertDatabaseHas('reviews', ['parking_spot_id' => $parkingSpot->id]);
+        $this->assertDatabaseHas('parking_spot_tags', ['parking_spot_id' => $parkingSpot->id]);
         $this->assertDatabaseHas('tags', ['id' => $tagId]);
         $this->assertDatabaseHas('users', ['id' => $otherUser->id]);
     }
 
-    public function test_deleting_a_user_removes_personal_relations_and_anonymizes_retained_rows(): void
+    public function test_deleting_a_user_removes_favorites_and_anonymizes_retained_rows(): void
     {
         $owner = User::factory()->create();
         $departingUser = User::factory()->create();
@@ -96,7 +102,10 @@ class DatabaseIntegrityTest extends TestCase
 
         $this->assertDatabaseHas('parking_spots', ['id' => $parkingSpot->id]);
         $this->assertDatabaseMissing('favorites', ['user_id' => $departingUser->id]);
-        $this->assertDatabaseMissing('reviews', ['user_id' => $departingUser->id]);
+        $this->assertDatabaseHas('reviews', [
+            'id' => $review->id,
+            'user_id' => null,
+        ]);
         $this->assertDatabaseHas('parking_spot_update_histories', [
             'id' => $history->id,
             'user_id' => null,

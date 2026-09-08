@@ -3,6 +3,9 @@
         <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
             アカウント削除
         </h2>
+        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            登録した駐輪場・料金・画像、投稿したレビュー、更新履歴は退会済みユーザーとして匿名化して残ります。あなたのお気に入りは削除されます。
+        </p>
     </header>
 
     <x-danger-button x-data=""
@@ -16,6 +19,10 @@
             <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                 本当にアカウントを削除しますか？
             </h2>
+
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                この操作は取り消せません。登録した駐輪場、投稿したレビュー、更新履歴は投稿者を特定できない状態で保持されます。あなたのお気に入りは削除され、同じユーザーIDでは再登録できません。
+            </p>
 
             <div class="mt-6">
                 <x-input-label class="sr-only" for="password" value="'パスワード'" />

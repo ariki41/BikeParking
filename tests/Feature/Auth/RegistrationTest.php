@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\Prefecture;
+use App\Models\RetiredUserId;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -35,5 +36,28 @@ class RegistrationTest extends TestCase
             'user_id' => 'test-user',
             'prefecture_id' => $prefecture->id,
         ]);
+    }
+
+    public function test_retired_user_id_cannot_be_registered_again(): void
+    {
+        $prefecture = Prefecture::factory()->create();
+        RetiredUserId::query()->create([
+            'user_id_hash' => RetiredUserId::hashFor('retired-user'),
+        ]);
+
+        $response = $this->from('/register')->post('/register', [
+            'name' => 'Test User',
+            'user_id' => 'retired-user',
+            'prefecture' => $prefecture->id,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $response
+            ->assertSessionHasErrors('user_id')
+            ->assertRedirect('/register');
+
+        $this->assertGuest();
+        $this->assertDatabaseMissing('users', ['user_id' => 'retired-user']);
     }
 }

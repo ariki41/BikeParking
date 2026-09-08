@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Prefecture;
+use App\Models\RetiredUserId;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -35,7 +36,20 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:16'],
-            'user_id' => ['required', 'string', 'lowercase', 'max:16', 'unique:'.User::class],
+            'user_id' => [
+                'required',
+                'string',
+                'lowercase',
+                'max:16',
+                'unique:'.User::class,
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (RetiredUserId::query()
+                        ->where('user_id_hash', RetiredUserId::hashFor((string) $value))
+                        ->exists()) {
+                        $fail('このユーザーIDは使用できません。');
+                    }
+                },
+            ],
             'prefecture' => ['required', 'integer', 'exists:'.Prefecture::class.',id'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
