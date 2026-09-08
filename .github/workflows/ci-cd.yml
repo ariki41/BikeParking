@@ -15,7 +15,7 @@ on:
 
 jobs:
   test:
-    name: Test and asset build
+    name: Quality checks, tests, and asset build
     runs-on: ubuntu-24.04
     services:
       mysql:
@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -46,7 +46,7 @@ jobs:
           coverage: none
 
       - name: Cache Composer dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/composer/files
           key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
@@ -57,7 +57,7 @@ jobs:
         run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -83,6 +83,9 @@ jobs:
 
       - name: Check code style
         run: vendor/bin/pint --test
+
+      - name: Run static analysis
+        run: composer analyse
 
       - name: Run test suite
         env:
@@ -113,7 +116,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -164,7 +167,7 @@ jobs:
 
     steps:
       - name: Check out deployment files
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v4

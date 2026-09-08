@@ -26,6 +26,9 @@ class Postalcode extends Model
         return $query->where('is_active', true);
     }
 
+    /**
+     * @return BelongsTo<City, $this>
+     */
     public function city(): BelongsTo
     {
         return $this->belongsTo(City::class);

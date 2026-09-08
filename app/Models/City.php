@@ -12,6 +12,9 @@ class City extends Model
 
     protected $fillable = ['prefecture_id', 'name', 'name_kana'];
 
+    /**
+     * @return BelongsTo<Prefecture, $this>
+     */
     public function prefecture(): BelongsTo
     {
         return $this->belongsTo(Prefecture::class);

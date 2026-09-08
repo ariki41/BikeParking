@@ -142,8 +142,17 @@ docker compose exec laravel.test php artisan migrate
 # コード整形
 docker compose exec laravel.test vendor/bin/pint
 
+# コード整形の確認（ファイルは変更しない）
+docker compose exec laravel.test vendor/bin/pint --test
+
+# 静的解析
+docker compose exec laravel.test composer analyse
+
 # テスト全体
 docker compose exec laravel.test php artisan test
+
+# 本番用フロントエンドアセットのビルド
+docker compose exec laravel.test npm run build
 
 # 24時間以上経過した確認画面用の一時画像を削除
 docker compose exec laravel.test php artisan parking-spots:prune-temporary-images --hours=24
@@ -154,6 +163,22 @@ docker compose exec laravel.test php artisan postal-codes:sync
 
 Laravel Sailのショートカットを利用できる環境では、上記の `docker compose exec laravel.test` を `./vendor/bin/sail` に置き換えられます。
 一時画像の削除コマンドはLaravelのスケジューラにも1時間ごとで登録されています。本番・開発サーバーではスケジューラプロセスを常時実行してください。
+
+### CIと同等の確認
+
+Pull Requestと`main`へのpushでは、GitHub Actionsの`CI/CD`ワークフローがPHP 8.3とNode.js 22を使用し、Pint、Larastan、Feature・Unitテスト、フロントエンドビルドを実行します。Composerとnpmのダウンロードキャッシュは、それぞれ`composer.lock`と`package-lock.json`に応じて更新されます。
+
+ローカルでは次のコマンドで同等の確認を実行できます。
+
+```bash
+./vendor/bin/sail pint --test
+./vendor/bin/sail composer analyse
+./vendor/bin/sail test
+./vendor/bin/sail npm ci
+./vendor/bin/sail npm run build
+```
+
+CIが失敗した場合は、GitHubの`Actions`から対象の`CI/CD`実行を開き、失敗したジョブとステップのログを確認してください。上記の対応するコマンドをローカルで再実行し、依存関係のインストールで失敗した場合は`composer.lock`または`package-lock.json`の差分と、その直前に表示されたエラーを確認します。
 
 郵便番号同期は、日本郵便が公開する1レコード1行のUTF-8版ZIPをダウンロードし、内容を検証してから都道府県・市区町村・郵便番号をトランザクション内で更新します。`storage/app/private/x-ken-all.csv` の手動配置は不要です。廃止された郵便番号は、既存の駐輪場との関連を保つため削除せず無効化します。同期コマンドは毎月2日3時にも自動実行されます。ダウンロード元を変更する場合だけ `JAPAN_POST_POSTAL_CODE_URL` を設定してください。
 
