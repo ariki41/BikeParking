@@ -17,7 +17,7 @@ class User extends Authenticatable
     /**
      * The attributes that are mass assignable.
      *
-     * @var array<int, string>
+     * @var list<string>
      */
     protected $fillable = [
         'user_id',
@@ -29,7 +29,7 @@ class User extends Authenticatable
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var array<int, string>
+     * @var list<string>
      */
     protected $hidden = [
         'password',
@@ -68,6 +68,9 @@ class User extends Authenticatable
         return $this->hasMany(Favorite::class);
     }
 
+    /**
+     * @return BelongsToMany<ParkingSpot, $this>
+     */
     public function favoriteParkingSpots(): BelongsToMany
     {
         return $this->belongsToMany(ParkingSpot::class, 'favorites')->withTimestamps();

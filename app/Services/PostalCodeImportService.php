@@ -118,7 +118,7 @@ class PostalCodeImportService
         $stat = $archive->statName($memberName);
         $maximumCsvBytes = (int) config('postal_codes.maximum_csv_bytes');
 
-        if (! is_array($stat) || ($stat['size'] ?? 0) < 1 || $stat['size'] > $maximumCsvBytes) {
+        if (! is_array($stat) || $stat['size'] < 1 || $stat['size'] > $maximumCsvBytes) {
             $archive->close();
 
             throw new RuntimeException('ZIP内の郵便番号CSVのサイズが正しくありません。');

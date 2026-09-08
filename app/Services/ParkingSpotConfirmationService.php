@@ -96,7 +96,7 @@ class ParkingSpotConfirmationService
         $state = $this->state($request);
         $state['input'] = $input;
         $state['temporary_image_paths'] = $this->temporaryImagePaths(
-            $input['image_paths'] ?? array_values(array_filter([$input['image_path'] ?? null])),
+            $input['image_paths'] ?? array_filter([$input['image_path'] ?? null]),
         );
 
         $request->session()->put(self::SESSION_KEY, $state);

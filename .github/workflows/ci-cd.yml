@@ -15,7 +15,7 @@ on:
 
 jobs:
   test:
-    name: Test and asset build
+    name: Quality checks, tests, and asset build
     runs-on: ubuntu-24.04
     services:
       mysql:
@@ -83,6 +83,9 @@ jobs:
 
       - name: Check code style
         run: vendor/bin/pint --test
+
+      - name: Run static analysis
+        run: composer analyse
 
       - name: Run test suite
         env:

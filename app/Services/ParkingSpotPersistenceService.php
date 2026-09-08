@@ -235,6 +235,6 @@ class ParkingSpotPersistenceService
             return $input['image_paths'];
         }
 
-        return array_values(array_filter([$input['image_path'] ?? null]));
+        return array_filter([$input['image_path'] ?? null]);
     }
 }

@@ -101,11 +101,11 @@ class ParkingSpotController extends Controller
         }
 
         $currentImagePaths = $validatedData['image_paths']
-            ?? array_values(array_filter([$validatedData['image_path'] ?? null]));
+            ?? array_filter([$validatedData['image_path'] ?? null]);
         $validatedData['image_paths'] = $this->images->prepareForConfirmation(
             $request,
             $currentImagePaths,
-            $parkingSpot?->image_paths ?? [],
+            $parkingSpot === null ? [] : $parkingSpot->image_paths,
             $this->confirmation->allowedTemporaryImagePaths($request, $mode, $validatedData['id']),
         );
         $validatedData['image_path'] = $validatedData['image_paths'][0] ?? null;

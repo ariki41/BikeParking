@@ -11,6 +11,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * @property-read EngineDisplacementClass|null $max_displacement_class
+ * @property-write EngineDisplacementClass|string|null $max_displacement_class
+ */
 class ParkingSpot extends Model
 {
     use HasFactory;
@@ -92,6 +96,9 @@ class ParkingSpot extends Model
         return Storage::disk('public')->url($path);
     }
 
+    /**
+     * @return HasMany<ParkingSpotRates, $this>
+     */
     public function rates(): HasMany
     {
         return $this->hasMany(ParkingSpotRates::class);
@@ -102,6 +109,9 @@ class ParkingSpot extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @return BelongsTo<Postalcode, $this>
+     */
     public function postalcode(): BelongsTo
     {
         return $this->belongsTo(Postalcode::class);
