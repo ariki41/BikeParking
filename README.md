@@ -80,7 +80,21 @@ npm run dev
 
 ## 環境変数
 
-基本設定は `.env.example` を使用します。住所検索・ジオコード機能を利用する場合は、利用するYOLP APIの情報を追加してください。
+基本設定は `.env.example` を使用します。ローカル開発ではDocker ComposeのMySQLと、ブラウザから画像を参照できる `public` ディスクを推奨設定としています。
+
+```dotenv
+DB_CONNECTION=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=bike_parking
+DB_USERNAME=sail
+DB_PASSWORD=password
+FILESYSTEM_DISK=public
+```
+
+`public` ディスクを利用するため、セットアップ手順どおり `php artisan storage:link` を実行してください。
+
+YOLP APIのURLは `.env.example` に設定済みです。住所検索・ジオコード機能を利用する場合は、取得したClient IDだけを `.env` の `YOLP_CLIENT_ID` に設定してください。
 
 ```dotenv
 YOLP_URL=https://map.yahooapis.jp/search/local/V1/localSearch
@@ -114,17 +128,6 @@ ADVERTISING_TEST_MODE=true
 この設定では「広告（開発用）」と `AD PREVIEW` を表示し、AdSense スクリプトや広告リクエストは出力しません。本番で実広告を配信する際は `ADVERTISING_TEST_MODE=false` にしてください。
 
 設定後は本番サイトの `/ads.txt` で AdSense 用のレコードが返ることも確認してください。広告を有効化する前に、`/privacy` の内容が実際の広告配信事業者と利用者の地域に必要な同意要件に合っていることを確認してください。
-
-データベース接続をMySQLにする場合は、`.env` の `DB_*` をDocker Composeの設定に合わせます。
-
-```dotenv
-DB_CONNECTION=mysql
-DB_HOST=mysql
-DB_PORT=3306
-DB_DATABASE=bike_parking
-DB_USERNAME=sail
-DB_PASSWORD=password
-```
 
 ## 開発コマンド
 
