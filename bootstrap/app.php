@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -15,8 +16,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // The application is only reachable through the Tailscale Funnel sidecar in deployment.
         $middleware->trustProxies(at: '*');
     })
-    ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->render(function (MethodNotAllowedHttpException $e) {
-            return redirect()->route('home');
+    ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (MethodNotAllowedHttpException $exception, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            return response()->json(
+                ['message' => 'Method Not Allowed'],
+                405,
+                $exception->getHeaders(),
+            );
         });
-    })->create();
+    })
+    ->create();
