@@ -18,7 +18,7 @@ class SearchService
         $keyword = $request->get('keyword');
         $location = null;
 
-        if (! is_null($keyword)) {
+        if (filled($keyword)) {
             $location = $this->client->search((string) $keyword);
         }
 
@@ -31,7 +31,11 @@ class SearchService
             ];
         }
 
-        session()->flash('error', '検索結果が見つかりませんでした。');
+        if (filled($keyword)) {
+            session()->flash('error', '検索結果が見つかりませんでした。');
+        } else {
+            session()->forget('error');
+        }
 
         return [
             'lon' => $request->input('lon') ?? 139.767052,

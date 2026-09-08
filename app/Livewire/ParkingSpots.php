@@ -69,6 +69,7 @@ class ParkingSpots extends Component
         $zoom = null,
     ): void {
         $this->keyword = $keyword;
+        $this->hasSearched = filled($keyword);
         $this->latitude = $latitude ?? $this->latitude;
         $this->longitude = $longitude ?? $this->longitude;
         $this->syncEngineDisplacements($engineDisplacement ?? $this->engineDisplacementQuery);
@@ -162,6 +163,7 @@ class ParkingSpots extends Component
 
         $this->syncQueryFromAppliedFilters();
         $this->syncDraftsFromFilters($this->filters);
+        $this->hasSearched = true;
         $this->refreshSpots();
     }
 
@@ -261,7 +263,6 @@ class ParkingSpots extends Component
         }
 
         $this->spots = $query->limit(50)->get();
-        $this->hasSearched = true;
     }
 
     private function syncDraftsFromFilters(array $filters): void
