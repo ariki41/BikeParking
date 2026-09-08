@@ -25,7 +25,7 @@ class ParkingSpotFactory extends Factory
 
         return [
             'user_id' => User::factory(),
-            'name' => fake()->numerify('#####駐車場'),
+            'name' => fake()->numerify('#####駐輪場'),
             'postalcode_id' => Postalcode::factory(),
             'address' => fake()->address(),
             'longitude' => fake()->randomFloat(6, 123, 146),
