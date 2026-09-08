@@ -59,4 +59,21 @@ class SearchServiceTest extends TestCase
         ], $location);
         $this->assertSame('検索結果が見つかりませんでした。', session('error'));
     }
+
+    public function test_initial_display_with_a_missing_or_empty_keyword_does_not_search_or_flash_an_error(): void
+    {
+        Http::fake();
+
+        foreach ([[], ['keyword' => '']] as $query) {
+            $location = app(SearchService::class)->getYolpLocation(HttpRequest::create('/search', 'GET', $query));
+
+            $this->assertSame([
+                'lon' => 139.767052,
+                'lat' => 35.681167,
+            ], $location);
+            $this->assertNull(session('error'));
+        }
+
+        Http::assertNothingSent();
+    }
 }

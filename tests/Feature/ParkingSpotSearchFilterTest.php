@@ -412,6 +412,22 @@ class ParkingSpotSearchFilterTest extends TestCase
         $this->assertMarkerNames($component, []);
     }
 
+    public function test_initial_map_bounds_do_not_show_the_empty_search_state(): void
+    {
+        Livewire::test(ParkingSpots::class)
+            ->call('updateBounds', $this->mapBounds())
+            ->assertSet('hasSearched', false)
+            ->assertDontSee('条件に一致する駐輪場がありません。条件または地図範囲を変更してください。');
+    }
+
+    public function test_keyword_search_with_no_spots_shows_the_empty_search_state(): void
+    {
+        Livewire::test(ParkingSpots::class, ['keyword' => '存在しない駅'])
+            ->call('updateBounds', $this->mapBounds())
+            ->assertSet('hasSearched', true)
+            ->assertSee('条件に一致する駐輪場がありません。条件または地図範囲を変更してください。');
+    }
+
     public function test_fifty_item_limit_is_applied_after_filtering(): void
     {
         foreach (range(1, 51) as $number) {
