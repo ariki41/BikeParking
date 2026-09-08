@@ -22,7 +22,7 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        $prefectures = Prefecture::pluck('name', 'id');
+        $prefectures = Prefecture::query()->orderBy('id')->pluck('name', 'id');
 
         return view('auth.register', compact('prefectures'));
     }
