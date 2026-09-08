@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Domain\ParkingSpots\EngineDisplacementClass;
+use App\Models\Favorite;
 use App\Models\ParkingSpot;
+use App\Models\Review;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -147,6 +149,57 @@ class DatabaseIntegrityTest extends TestCase
         $parkingSpot->rates()->create([
             ...$this->rateAttributes(),
             'rate' => 200,
+        ]);
+    }
+
+    public function test_duplicate_favorites_and_reviews_are_rejected(): void
+    {
+        $user = User::factory()->create();
+        $parkingSpot = ParkingSpot::factory()->create();
+
+        Favorite::forceCreate([
+            'user_id' => $user->id,
+            'parking_spot_id' => $parkingSpot->id,
+        ]);
+        Review::forceCreate([
+            'user_id' => $user->id,
+            'parking_spot_id' => $parkingSpot->id,
+            'rating' => 4,
+            'comment' => '最初のレビューです。',
+        ]);
+
+        try {
+            Favorite::forceCreate([
+                'user_id' => $user->id,
+                'parking_spot_id' => $parkingSpot->id,
+            ]);
+            $this->fail('Duplicate favorites must be rejected.');
+        } catch (QueryException) {
+            // Expected: the user and parking spot pair is unique.
+        }
+
+        $this->expectException(QueryException::class);
+
+        Review::forceCreate([
+            'user_id' => $user->id,
+            'parking_spot_id' => $parkingSpot->id,
+            'rating' => 5,
+            'comment' => '重複したレビューです。',
+        ]);
+    }
+
+    public function test_review_rating_outside_one_to_five_is_rejected_by_the_database(): void
+    {
+        $user = User::factory()->create();
+        $parkingSpot = ParkingSpot::factory()->create();
+
+        $this->expectException(QueryException::class);
+
+        Review::forceCreate([
+            'user_id' => $user->id,
+            'parking_spot_id' => $parkingSpot->id,
+            'rating' => 6,
+            'comment' => '範囲外の評価です。',
         ]);
     }
 
