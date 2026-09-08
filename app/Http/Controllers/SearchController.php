@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\YolpApiException;
 use App\Services\SearchService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class SearchController extends Controller
 {
@@ -15,7 +17,19 @@ class SearchController extends Controller
         $engineDisplacement = $request->query('engine_displacement');
         $zoom = $this->normalizeZoom($request->query('zoom'));
 
-        $yolpLocation = $this->service->getYolpLocation($request);
+        try {
+            $yolpLocation = $this->service->getYolpLocation($request);
+        } catch (YolpApiException $exception) {
+            Log::warning('YOLP API is unavailable while searching.', [
+                'category' => $exception->category(),
+                'previous_exception' => $exception->getPrevious() ? $exception->getPrevious()::class : null,
+            ]);
+            session()->flash('error', $exception->userMessage());
+            $yolpLocation = [
+                'lon' => $request->input('lon') ?? 139.767052,
+                'lat' => $request->input('lat') ?? 35.681167,
+            ];
+        }
 
         return view('search', compact('keyword', 'engineDisplacement', 'yolpLocation', 'zoom'));
     }

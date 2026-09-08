@@ -101,4 +101,28 @@ class YolpApiClientTest extends TestCase
 
         Http::assertSentCount(3);
     }
+
+    public function test_invalid_response_is_wrapped_as_a_response_failure(): void
+    {
+        Http::fake(['https://yolp.test/local-search*' => Http::response(['unexpected' => []])]);
+
+        try {
+            app(YolpApiClient::class)->search('東京駅');
+            $this->fail('YolpApiException was not thrown.');
+        } catch (YolpApiException $exception) {
+            $this->assertSame(YolpApiException::CATEGORY_RESPONSE, $exception->category());
+        }
+    }
+
+    public function test_timeout_is_classified_separately_from_other_connection_failures(): void
+    {
+        Http::fake(['https://yolp.test/local-search*' => Http::failedConnection('cURL error 28: Operation timed out')]);
+
+        try {
+            app(YolpApiClient::class)->search('東京駅');
+            $this->fail('YolpApiException was not thrown.');
+        } catch (YolpApiException $exception) {
+            $this->assertSame(YolpApiException::CATEGORY_TIMEOUT, $exception->category());
+        }
+    }
 }
