@@ -25,7 +25,7 @@ class ParkingSpotRatePersistenceTest extends TestCase
         $this->actingAs($user);
 
         app(ParkingSpotPersistenceService::class)->create([
-            'name' => '複数料金テスト駐車場',
+            'name' => '複数料金テスト駐輪場',
             'postalcode' => $postalcode->postalcode,
             'address' => '東京都千代田区千代田1-2',
             'longitude' => 139.753000,
@@ -77,7 +77,7 @@ class ParkingSpotRatePersistenceTest extends TestCase
         $tempImagePath = UploadedFile::fake()->image('confirmed.jpg')->store('temp/parking-spots', 'public');
 
         $input = [
-            'name' => '登録Featureテスト駐車場',
+            'name' => '登録Featureテスト駐輪場',
             'postalcode' => $postalcode->postalcode,
             'address' => '東京都千代田区千代田1-2',
             'longitude' => 139.753000,
@@ -104,13 +104,15 @@ class ParkingSpotRatePersistenceTest extends TestCase
             ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_CREATE, $input))
             ->post(route('parking_spot.store'));
 
-        $response->assertRedirect(route('home'));
+        $response
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('success', '駐輪場を登録しました。');
         $this->assertDatabaseHas('parking_spots', [
-            'name' => '登録Featureテスト駐車場',
+            'name' => '登録Featureテスト駐輪場',
             'user_id' => $user->id,
             'postalcode_id' => $postalcode->id,
         ]);
-        $parkingSpot = ParkingSpot::where('name', '登録Featureテスト駐車場')->firstOrFail();
+        $parkingSpot = ParkingSpot::where('name', '登録Featureテスト駐輪場')->firstOrFail();
         $this->assertNotNull($parkingSpot->image_path);
         $this->assertMatchesRegularExpression(
             '/^parking-spots\/'.$parkingSpot->id.'_\d{17}\.webp$/',
@@ -136,7 +138,7 @@ class ParkingSpotRatePersistenceTest extends TestCase
         $this->actingAs($user);
 
         app(ParkingSpotPersistenceService::class)->create([
-            'name' => '最大料金なしテスト駐車場',
+            'name' => '最大料金なしテスト駐輪場',
             'postalcode' => $postalcode->postalcode,
             'address' => '東京都千代田区千代田1-2',
             'longitude' => 139.753000,
@@ -253,7 +255,7 @@ class ParkingSpotRatePersistenceTest extends TestCase
 
         $input = [
             'id' => $parkingSpot->id,
-            'name' => '更新Featureテスト駐車場',
+            'name' => '更新Featureテスト駐輪場',
             'postalcode' => $postalcode->postalcode,
             'address' => '東京都千代田区千代田1-3',
             'longitude' => 139.754000,
@@ -280,7 +282,9 @@ class ParkingSpotRatePersistenceTest extends TestCase
             ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_EDIT, $input))
             ->put(route('parking_spot.update', $parkingSpot));
 
-        $response->assertRedirect(route('home'));
+        $response
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('success', '駐輪場情報を更新しました。');
         $parkingSpot->refresh();
         $this->assertNotSame('parking-spots/original.jpg', $parkingSpot->image_path);
         $this->assertMatchesRegularExpression(

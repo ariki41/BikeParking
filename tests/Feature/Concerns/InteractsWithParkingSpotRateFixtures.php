@@ -42,7 +42,7 @@ trait InteractsWithParkingSpotRateFixtures
 
         $parkingSpot = ParkingSpot::forceCreate([
             'user_id' => $user->id,
-            'name' => '料金表示テスト駐車場',
+            'name' => '料金表示テスト駐輪場',
             'postalcode_id' => $postalcode->id,
             'address' => '東京都千代田区千代田1-1',
             'longitude' => 139.753000,
@@ -59,7 +59,7 @@ trait InteractsWithParkingSpotRateFixtures
     private function validParkingSpotInput(Postalcode $postalcode, array $overrides = []): array
     {
         $input = [
-            'name' => '料金バリデーションテスト駐車場',
+            'name' => '料金バリデーションテスト駐輪場',
             'postalcode' => $postalcode->postalcode,
             'address1' => '東京都千代田区千代田',
             'address2' => '1-2',

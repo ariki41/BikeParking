@@ -175,7 +175,7 @@ class ParkingSpotController extends Controller
         $this->confirmation->forget($request);
         $request->session()->regenerateToken();
 
-        return redirect()->route('home')->with('success', '駐車場を登録しました。');
+        return redirect()->route('home')->with('success', '駐輪場を登録しました。');
     }
 
     public function edit(Request $request, ParkingSpot $parkingSpot)
@@ -243,7 +243,7 @@ class ParkingSpotController extends Controller
         $this->confirmation->forget($request);
         $request->session()->regenerateToken();
 
-        return redirect()->route('home')->with('success', '駐車場情報を更新しました。');
+        return redirect()->route('home')->with('success', '駐輪場情報を更新しました。');
     }
 
     private function redirectToTrustedForm(Request $request)

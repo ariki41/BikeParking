@@ -23,7 +23,7 @@ class ParkingSpotRateSearchTest extends TestCase
 
         ParkingSpot::forceCreate([
             'user_id' => $user->id,
-            'name' => '画像なし駐車場',
+            'name' => '画像なし駐輪場',
             'postalcode_id' => $parkingSpot->postalcode_id,
             'address' => '東京都千代田区千代田1-9',
             'longitude' => 139.759000,

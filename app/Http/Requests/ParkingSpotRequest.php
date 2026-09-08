@@ -113,9 +113,9 @@ class ParkingSpotRequest extends FormRequest
         return [
             'id.integer' => '編集対象の情報が正しくありません。',
             'id.exists' => '編集対象の駐輪場が見つかりません。',
-            'name.required' => '駐車場名は必須です。',
-            'name.string' => '駐車場名は文字列で入力してください。',
-            'name.max' => '駐車場名は255文字以内で入力してください。',
+            'name.required' => '駐輪場名は必須です。',
+            'name.string' => '駐輪場名は文字列で入力してください。',
+            'name.max' => '駐輪場名は255文字以内で入力してください。',
 
             'postalcode.required' => '郵便番号は必須です。',
             'postalcode.regex' => '郵便番号の形式が正しくありません。例: 123-4567 または 1234567',
@@ -128,9 +128,9 @@ class ParkingSpotRequest extends FormRequest
             'address2.string' => '続きの住所は文字列で入力してください。',
             'address2.max' => '続きの住所は255文字以内で入力してください。',
 
-            'capacity.required' => '駐車場台数は必須です。',
-            'capacity.integer' => '駐車場台数は整数で入力してください。',
-            'capacity.min' => '駐車場台数を設定してください。',
+            'capacity.required' => '駐輪場台数は必須です。',
+            'capacity.integer' => '駐輪場台数は整数で入力してください。',
+            'capacity.min' => '駐輪場台数を設定してください。',
 
             'max_displacement_class.required' => '駐車可能な排気量区分は必須です。',
             'max_displacement_class.enum' => '駐車可能な排気量区分を選択してください。',

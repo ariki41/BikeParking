@@ -34,7 +34,7 @@
         $imagePaths = [old('image_path')];
     }
 
-    $pageTitle = $isEdit ? '駐車場の編集' : '駐車場の新規登録';
+    $pageTitle = $isEdit ? '駐輪場の編集' : '駐輪場の新規登録';
     $pageDescription = $isEdit
         ? '登録済みの内容を更新して、確認画面で差分を確認します。'
         : '住所・営業時間・料金帯を入力して、登録内容を確認します。';
@@ -74,7 +74,7 @@
 
                     <div class="grid gap-4 md:grid-cols-2">
                         <div class="md:col-span-2">
-                            <x-input-label for="name">駐車場名</x-input-label>
+                            <x-input-label for="name">駐輪場名</x-input-label>
                             <input class="bp-input" id="name" name="name" type="text" value="{{ $values['name'] }}"
                                 required aria-invalid="{{ $errors->has('name') ? 'true' : 'false' }}"
                                 @if ($errors->has('name')) aria-describedby="name-error" @endif>
@@ -95,11 +95,11 @@
                         </div>
 
                         <div>
-                            <x-input-label for="capacity">駐車場台数</x-input-label>
+                            <x-input-label for="capacity">駐輪場台数</x-input-label>
                             <select class="bp-select" id="capacity" name="capacity" required
                                 aria-invalid="{{ $errors->has('capacity') ? 'true' : 'false' }}"
                                 @if ($errors->has('capacity')) aria-describedby="capacity-error" @endif>
-                                <option value="" disabled @selected($values['capacity'] === '' || $values['capacity'] === null)>駐車場台数を選択</option>
+                                <option value="" disabled @selected($values['capacity'] === '' || $values['capacity'] === null)>駐輪場台数を選択</option>
                                 @foreach ($capacity as $key => $label)
                                     <option value="{{ $key }}" @selected((string) $values['capacity'] === (string) $key)>{{ $label }}</option>
                                 @endforeach

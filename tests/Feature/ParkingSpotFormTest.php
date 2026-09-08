@@ -24,7 +24,7 @@ class ParkingSpotFormTest extends TestCase
         $this->actingAs($user)
             ->get(route('parking_spot.create'))
             ->assertOk()
-            ->assertSee('駐車場の新規登録')
+            ->assertSee('駐輪場の新規登録')
             ->assertSee('action="'.route('parking_spot.confirm').'"', false)
             ->assertSee('id="parking-spot-basic-heading"', false)
             ->assertSee('id="parking-spot-hours-heading"', false)
@@ -66,7 +66,7 @@ class ParkingSpotFormTest extends TestCase
 
         $this->get($createUrl)
             ->assertOk()
-            ->assertSee('駐車場名は必須です。')
+            ->assertSee('駐輪場名は必須です。')
             ->assertSee('aria-describedby="name-error"', false)
             ->assertSee('value="9-8-7 セッション入力"', false)
             ->assertSee('<option value="2" selected>', false)
@@ -91,9 +91,9 @@ class ParkingSpotFormTest extends TestCase
         $this->actingAs($user)
             ->get($editUrl)
             ->assertOk()
-            ->assertSee('駐車場の編集')
+            ->assertSee('駐輪場の編集')
             ->assertSee('name="id" type="hidden" value="'.$parkingSpot->id.'"', false)
-            ->assertSee('value="既存の駐車場"', false)
+            ->assertSee('value="既存の駐輪場"', false)
             ->assertSee('value="1000001"', false)
             ->assertSee('value="東京都千代田区千代田"', false)
             ->assertSee('value="1-1"', false)
@@ -106,7 +106,7 @@ class ParkingSpotFormTest extends TestCase
         $this->from($editUrl)
             ->post(route('parking_spot.confirm'), $this->formInput($postalcode, [
                 'id' => $parkingSpot->id,
-                'name' => 'セッションから復元した駐車場',
+                'name' => 'セッションから復元した駐輪場',
                 'address2' => '2-3-4',
                 'capacity' => 3,
                 'max_displacement_class' => EngineDisplacementClass::Over400cc->value,
@@ -120,8 +120,8 @@ class ParkingSpotFormTest extends TestCase
 
         $this->get($editUrl)
             ->assertOk()
-            ->assertSee('セッションから復元した駐車場')
-            ->assertDontSee('value="既存の駐車場"', false)
+            ->assertSee('セッションから復元した駐輪場')
+            ->assertDontSee('value="既存の駐輪場"', false)
             ->assertSee('value="2-3-4"', false)
             ->assertSee('<option value="3" selected>', false)
             ->assertSee('value="06:30"', false)
@@ -157,7 +157,7 @@ class ParkingSpotFormTest extends TestCase
         ]);
         $parkingSpot = ParkingSpot::forceCreate([
             'user_id' => $user->id,
-            'name' => '既存の駐車場',
+            'name' => '既存の駐輪場',
             'postalcode_id' => $postalcode->id,
             'address' => '東京都千代田区千代田1-1',
             'longitude' => 139.753000,
@@ -174,7 +174,7 @@ class ParkingSpotFormTest extends TestCase
     private function formInput(Postalcode $postalcode, array $overrides = []): array
     {
         return array_replace([
-            'name' => 'フォームテスト駐車場',
+            'name' => 'フォームテスト駐輪場',
             'postalcode' => $postalcode->postalcode,
             'address1' => '東京都千代田区千代田',
             'address2' => '1-2',
