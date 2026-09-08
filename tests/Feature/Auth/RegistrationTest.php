@@ -18,6 +18,18 @@ class RegistrationTest extends TestCase
         $response->assertStatus(200);
     }
 
+    public function test_registration_screen_displays_prefectures_in_id_order(): void
+    {
+        collect(['沖縄県', '東京都', '海外', '北海道'])
+            ->each(fn (string $name) => Prefecture::factory()->create(['name' => $name]));
+
+        $response = $this->get('/register');
+
+        $response
+            ->assertOk()
+            ->assertSeeInOrder(['沖縄県', '東京都', '海外', '北海道']);
+    }
+
     public function test_new_users_can_register(): void
     {
         $prefecture = Prefecture::factory()->create();
