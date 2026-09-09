@@ -29,6 +29,7 @@ class ImportPrefCityPostalcode extends Command
             return self::INVALID;
         }
 
+        // 同期では既存データを一度無効化するため、並行実行で有効状態を競合させない。
         $lock = Cache::lock('postal-codes:sync', (int) config('postal_codes.lock_seconds'));
 
         if (! $lock->get()) {

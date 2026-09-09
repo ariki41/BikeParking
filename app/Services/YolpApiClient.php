@@ -116,6 +116,7 @@ class YolpApiClient
             return null;
         }
 
+        // YOLPの座標文字列は、地図UIで混同しやすい「経度,緯度」の順で返される。
         [$longitude, $latitude] = array_map('trim', explode(',', $coordinates, 2));
 
         if ($longitude === '' || $latitude === '') {

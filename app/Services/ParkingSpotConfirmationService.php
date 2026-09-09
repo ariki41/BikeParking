@@ -198,6 +198,7 @@ class ParkingSpotConfirmationService
     private function temporaryImagePaths(array $imagePaths): array
     {
         return collect($imagePaths)
+            // セッション値が改ざんされても、確認フローが作成した一時ファイル以外は削除対象にしない。
             ->filter(fn ($path) => is_string($path) && str_starts_with($path, 'temp/parking-spots/'))
             ->unique()
             ->values()

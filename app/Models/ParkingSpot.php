@@ -67,6 +67,7 @@ class ParkingSpot extends Model
 
     public function getImagePathsAttribute(): array
     {
+        // 暗黙のリレーション取得によるN+1を避け、未ロード時は従来から保持する代表画像を使う。
         $paths = $this->relationLoaded('images')
             ? $this->images->pluck('path')->filter()->values()->all()
             : [];

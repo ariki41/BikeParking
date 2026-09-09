@@ -42,6 +42,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/parking-spot/{parkingSpot}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
     Route::get('/parking-spots/create', [ParkingSpotController::class, 'create'])->name('parking_spot.create');
     Route::post('/parking-spots/confirm', [ParkingSpotController::class, 'confirm'])->name('parking_spot.confirm');
+    // 確認画面からの同時送信で、同一セッションの登録・更新が重複しないように直列化する。
     Route::post('/parking-spots', [ParkingSpotController::class, 'store'])->block()->name('parking_spot.store');
     Route::get('/parking-spots/{parkingSpot}/edit', [ParkingSpotController::class, 'edit'])->name('parking_spot.edit');
     Route::match(['put', 'patch'], '/parking-spots/{parkingSpot}', [ParkingSpotController::class, 'update'])->block()->name('parking_spot.update');
