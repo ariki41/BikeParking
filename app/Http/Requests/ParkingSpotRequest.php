@@ -27,6 +27,7 @@ class ParkingSpotRequest extends FormRequest
         $rates = collect($this->input('rates', []))
             ->map(function ($rate) {
                 if (($rate['no_free_minutes'] ?? false)) {
+                    // 入力欄の値よりも「無料時間なし」の明示的な選択を優先して保存する。
                     $rate['free_minutes'] = 0;
                 }
 

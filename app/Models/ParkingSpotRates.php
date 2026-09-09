@@ -66,6 +66,7 @@ class ParkingSpotRates extends Model
 
     public static function formatTimeRange(?string $startTime, ?string $endTime): string
     {
+        // 料金設定では00:00から00:00を同時刻ではなく終日料金として扱う。
         if (self::isFullDayRange($startTime, $endTime)) {
             return '00:00 ～ 24:00';
         }

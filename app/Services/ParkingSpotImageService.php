@@ -213,6 +213,7 @@ class ParkingSpotImageService
                 return $binary;
             }
 
+            // 先に画質を調整し、画質だけでは上限に収まらない場合に限って寸法を縮小する。
             if ($quality > 55) {
                 $quality -= 10;
 

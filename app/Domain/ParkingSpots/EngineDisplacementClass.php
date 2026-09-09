@@ -44,6 +44,7 @@ enum EngineDisplacementClass: string
      */
     public function supportedByValues(): array
     {
+        // 大きい区分まで受け入れ可能な駐輪場は、小さい排気量の車両も受け入れられるものとして検索する。
         return array_values(array_map(
             static fn (self $class): string => $class->value,
             array_filter(

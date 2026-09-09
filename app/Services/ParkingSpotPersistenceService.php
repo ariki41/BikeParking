@@ -45,12 +45,14 @@ class ParkingSpotPersistenceService
             });
         } catch (\Throwable $exception) {
             if ($persistedImages instanceof PersistedParkingSpotImages) {
+                // ファイルストレージはDBトランザクションに含まれないため、ロールバック時は新規作成分を補償削除する。
                 $this->images->deleteImagePaths($persistedImages->createdPaths);
             }
 
             throw $exception;
         }
 
+        // DBコミット成功後にだけ一時画像を消し、失敗時には確認画面から再試行できるようにする。
         $this->images->deleteImagePaths($persistedImages->temporaryPaths);
 
         return $parkingSpot;
@@ -68,6 +70,7 @@ class ParkingSpotPersistenceService
         try {
             $parkingSpot = DB::transaction(function () use ($input, $postalcode, $updatedBy, &$persistedImages, &$removedImagePaths): ParkingSpot {
                 $parkingSpot = ParkingSpot::query()
+                    // 画像・料金・更新履歴を一体で更新するため、同時編集で変更差分を取り違えないようにする。
                     ->lockForUpdate()
                     ->findOrFail($input['id']);
                 $parkingSpot->load(['images', 'rates']);
@@ -82,6 +85,7 @@ class ParkingSpotPersistenceService
                 $parkingSpot->image_path = $persistedImages->paths[0] ?? null;
 
                 $changes = collect($parkingSpot->getDirty())
+                    // 先頭画像はimagesの変更としてまとめ、代表画像のミラー値を重複して履歴化しない。
                     ->except(['image_path', 'updated_at'])
                     ->mapWithKeys(fn ($after, string $field) => [
                         $field => [
@@ -124,12 +128,14 @@ class ParkingSpotPersistenceService
             });
         } catch (\Throwable $exception) {
             if ($persistedImages instanceof PersistedParkingSpotImages) {
+                // ファイルストレージはDBトランザクションに含まれないため、ロールバック時は新規作成分を補償削除する。
                 $this->images->deleteImagePaths($persistedImages->createdPaths);
             }
 
             throw $exception;
         }
 
+        // DBコミット成功後にだけ一時画像と旧画像を消し、失敗時の表示と再試行用データを残す。
         $this->images->deleteImagePaths([
             ...$persistedImages->temporaryPaths,
             ...$removedImagePaths,

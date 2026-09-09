@@ -286,6 +286,7 @@ class ParkingSpots extends Component
 
         $this->filters = $this->normalizeFilters($rawFilters);
         $this->syncDraftsFromFilters($rawFilters);
+        // 無効なURL値を消すと修正すべき入力が見えなくなるため、エラー表示中はクエリに残す。
         $this->syncQueryFromAppliedFilters(preserveInvalidMaxRate: true);
         $this->resetValidation();
 

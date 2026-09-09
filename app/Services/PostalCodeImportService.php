@@ -238,6 +238,7 @@ class PostalCodeImportService
             }
 
             $now = now();
+            // 公式データから消えた郵便番号も既存住所の参照を保てるよう、削除せず無効化する。
             Postalcode::query()
                 ->where('is_active', true)
                 ->update(['is_active' => false, 'updated_at' => $now]);

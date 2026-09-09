@@ -28,6 +28,7 @@ enum RateDayType: string
      */
     private function dayScopes(): array
     {
+        // 「昼間」「夜間」は時間帯の区分であり、曜日の適用範囲は全日と同じにする。
         return match ($this) {
             self::Weekdays => ['weekday'],
             self::Holidays => ['holiday'],
