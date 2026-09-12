@@ -24,6 +24,8 @@ class ProfileTest extends TestCase
 
         $response
             ->assertOk()
+            ->assertSee('アカウント設定')
+            ->assertSee(route('profile.reviews'), false)
             ->assertSee('登録した駐輪場・料金・画像、投稿したレビュー、更新履歴は退会済みユーザーとして匿名化して残ります。')
             ->assertSee('あなたのお気に入りは削除されます。')
             ->assertSee('同じユーザーIDでは再登録できません。');
@@ -59,7 +61,7 @@ class ProfileTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get(route('profile.edit'))
+            ->get(route('profile.reviews'))
             ->assertOk()
             ->assertSee('投稿したレビュー')
             ->assertSee('全2件')
@@ -87,15 +89,15 @@ class ProfileTest extends TestCase
         }
 
         $this->actingAs($user)
-            ->get(route('profile.edit'))
+            ->get(route('profile.reviews'))
             ->assertOk()
             ->assertSee('全12件')
-            ->assertSee(route('profile.edit', ['page' => 2]), false)
+            ->assertSee(route('profile.reviews', ['page' => 2]), false)
             ->assertSee('ページネーションレビュー-12')
             ->assertDontSee('ページネーションレビュー-02');
 
         $this->actingAs($user)
-            ->get(route('profile.edit', ['page' => 2]))
+            ->get(route('profile.reviews', ['page' => 2]))
             ->assertOk()
             ->assertSeeInOrder(['ページネーションレビュー-02', 'ページネーションレビュー-01'])
             ->assertDontSee('ページネーションレビュー-03');
@@ -106,7 +108,7 @@ class ProfileTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->get(route('profile.edit'))
+            ->get(route('profile.reviews'))
             ->assertOk()
             ->assertSee('投稿したレビューはまだありません。')
             ->assertSee('駐輪場の詳細ページから評価・レビューを投稿できます。');

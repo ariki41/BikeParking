@@ -18,6 +18,16 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        return view('profile.edit', [
+            'user' => $request->user(),
+        ]);
+    }
+
+    /**
+     * Display the reviews posted by the authenticated user.
+     */
+    public function reviews(Request $request): View
+    {
         $reviews = $request->user()
             ->reviews()
             ->with('parkingSpot')
@@ -25,8 +35,7 @@ class ProfileController extends Controller
             ->latest('id')
             ->paginate(10);
 
-        return view('profile.edit', [
-            'user' => $request->user(),
+        return view('profile.reviews', [
             'reviews' => $reviews,
         ]);
     }
