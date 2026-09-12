@@ -24,6 +24,23 @@ class ProfileController extends Controller
     }
 
     /**
+     * Display the reviews posted by the authenticated user.
+     */
+    public function reviews(Request $request): View
+    {
+        $reviews = $request->user()
+            ->reviews()
+            ->with('parkingSpot')
+            ->latest('updated_at')
+            ->latest('id')
+            ->paginate(10);
+
+        return view('profile.reviews', [
+            'reviews' => $reviews,
+        ]);
+    }
+
+    /**
      * Update the user's profile information.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse

@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\ParkingSpot;
 use App\Models\RetiredUserId;
+use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -22,9 +24,94 @@ class ProfileTest extends TestCase
 
         $response
             ->assertOk()
+            ->assertSee('アカウント設定')
+            ->assertSee(route('profile.reviews'), false)
             ->assertSee('登録した駐輪場・料金・画像、投稿したレビュー、更新履歴は退会済みユーザーとして匿名化して残ります。')
             ->assertSee('あなたのお気に入りは削除されます。')
             ->assertSee('同じユーザーIDでは再登録できません。');
+    }
+
+    public function test_profile_displays_only_the_authenticated_users_reviews_in_updated_order(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $olderParkingSpot = ParkingSpot::factory()->create(['name' => '古いレビューの駐輪場']);
+        $newerParkingSpot = ParkingSpot::factory()->create(['name' => '新しいレビューの駐輪場']);
+        $otherParkingSpot = ParkingSpot::factory()->create(['name' => '他ユーザーの駐輪場']);
+
+        Review::forceCreate([
+            'user_id' => $user->id,
+            'parking_spot_id' => $olderParkingSpot->id,
+            'rating' => 3,
+            'comment' => '古いレビューコメント',
+            'updated_at' => Carbon::parse('2026-09-01 10:00:00'),
+        ]);
+        Review::forceCreate([
+            'user_id' => $user->id,
+            'parking_spot_id' => $newerParkingSpot->id,
+            'rating' => 5,
+            'comment' => '新しいレビューコメント',
+            'updated_at' => Carbon::parse('2026-09-02 10:00:00'),
+        ]);
+        Review::forceCreate([
+            'user_id' => $otherUser->id,
+            'parking_spot_id' => $otherParkingSpot->id,
+            'rating' => 1,
+            'comment' => '他ユーザーのレビューコメント',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('profile.reviews'))
+            ->assertOk()
+            ->assertSee('投稿したレビュー')
+            ->assertSee('全2件')
+            ->assertSeeInOrder(['新しいレビューの駐輪場', '新しいレビューコメント', '古いレビューの駐輪場', '古いレビューコメント'])
+            ->assertSee(route('parking_spot.show', $newerParkingSpot).'#reviews', false)
+            ->assertDontSee('他ユーザーの駐輪場')
+            ->assertDontSee('他ユーザーのレビューコメント');
+    }
+
+    public function test_profile_paginates_reviews(): void
+    {
+        $user = User::factory()->create();
+        $baseTime = Carbon::parse('2026-09-01 10:00:00');
+
+        foreach (range(1, 12) as $position) {
+            $parkingSpot = ParkingSpot::factory()->create(['name' => sprintf('ページネーション駐輪場-%02d', $position)]);
+
+            Review::forceCreate([
+                'user_id' => $user->id,
+                'parking_spot_id' => $parkingSpot->id,
+                'rating' => 4,
+                'comment' => sprintf('ページネーションレビュー-%02d', $position),
+                'updated_at' => $baseTime->copy()->addMinutes($position),
+            ]);
+        }
+
+        $this->actingAs($user)
+            ->get(route('profile.reviews'))
+            ->assertOk()
+            ->assertSee('全12件')
+            ->assertSee(route('profile.reviews', ['page' => 2]), false)
+            ->assertSee('ページネーションレビュー-12')
+            ->assertDontSee('ページネーションレビュー-02');
+
+        $this->actingAs($user)
+            ->get(route('profile.reviews', ['page' => 2]))
+            ->assertOk()
+            ->assertSeeInOrder(['ページネーションレビュー-02', 'ページネーションレビュー-01'])
+            ->assertDontSee('ページネーションレビュー-03');
+    }
+
+    public function test_profile_displays_an_empty_state_when_the_user_has_not_posted_reviews(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('profile.reviews'))
+            ->assertOk()
+            ->assertSee('投稿したレビューはまだありません。')
+            ->assertSee('駐輪場の詳細ページから評価・レビューを投稿できます。');
     }
 
     public function test_profile_information_can_be_updated(): void
