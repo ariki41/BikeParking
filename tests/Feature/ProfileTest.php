@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\ParkingSpot;
+use App\Models\ParkingSpotImage;
 use App\Models\RetiredUserId;
 use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -26,6 +28,7 @@ class ProfileTest extends TestCase
             ->assertOk()
             ->assertSee('アカウント設定')
             ->assertSee(route('profile.reviews'), false)
+            ->assertSee(route('profile.images'), false)
             ->assertSee('登録した駐輪場・料金・画像、投稿したレビュー、更新履歴は退会済みユーザーとして匿名化して残ります。')
             ->assertSee('あなたのお気に入りは削除されます。')
             ->assertSee('同じユーザーIDでは再登録できません。');
@@ -114,6 +117,69 @@ class ProfileTest extends TestCase
             ->assertSee('駐輪場の詳細ページから評価・レビューを投稿できます。');
     }
 
+    public function test_profile_displays_only_images_added_by_the_authenticated_user_without_n_plus_one_queries(): void
+    {
+        $user = User::factory()->create();
+        $collaborator = User::factory()->create();
+        $olderParkingSpot = ParkingSpot::factory()->create(['name' => '古い画像の駐輪場']);
+        $newerParkingSpot = ParkingSpot::factory()->create(['name' => '新しい画像の駐輪場']);
+        $otherParkingSpot = ParkingSpot::factory()->create(['name' => '他ユーザーの画像の駐輪場']);
+
+        ParkingSpotImage::forceCreate([
+            'user_id' => $user->id,
+            'parking_spot_id' => $olderParkingSpot->id,
+            'path' => 'parking-spots/older.webp',
+            'position' => 0,
+            'created_at' => Carbon::parse('2026-09-01 10:00:00'),
+        ]);
+        ParkingSpotImage::forceCreate([
+            'user_id' => $user->id,
+            'parking_spot_id' => $newerParkingSpot->id,
+            'path' => 'parking-spots/newer.webp',
+            'position' => 0,
+            'created_at' => Carbon::parse('2026-09-02 10:00:00'),
+        ]);
+        ParkingSpotImage::forceCreate([
+            'user_id' => $collaborator->id,
+            'parking_spot_id' => $otherParkingSpot->id,
+            'path' => 'parking-spots/other.webp',
+            'position' => 0,
+        ]);
+        ParkingSpotImage::forceCreate([
+            'parking_spot_id' => $newerParkingSpot->id,
+            'path' => 'parking-spots/legacy.webp',
+            'position' => 1,
+        ]);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $this->actingAs($user)
+            ->get(route('profile.images'))
+            ->assertOk()
+            ->assertSee('投稿した画像')
+            ->assertSee('全2件')
+            ->assertSeeInOrder(['新しい画像の駐輪場', '古い画像の駐輪場'])
+            ->assertSee(route('parking_spot.show', $newerParkingSpot), false)
+            ->assertDontSee('他ユーザーの画像の駐輪場')
+            ->assertDontSee('/storage/parking-spots/legacy.webp');
+
+        $parkingSpotQueries = collect(DB::getQueryLog())
+            ->filter(fn (array $query): bool => str_contains($query['query'], 'from `parking_spots`'));
+        $this->assertCount(1, $parkingSpotQueries);
+    }
+
+    public function test_profile_displays_an_empty_state_when_the_user_has_not_added_images(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('profile.images'))
+            ->assertOk()
+            ->assertSee('投稿した画像はまだありません。')
+            ->assertSee('駐輪場の登録・編集画面から画像を追加できます。');
+    }
+
     public function test_profile_information_can_be_updated(): void
     {
         $user = User::factory()->create();
@@ -168,6 +234,7 @@ class ProfileTest extends TestCase
             'max_rate' => null,
         ]);
         $image = $ownedParkingSpot->images()->create([
+            'user_id' => $departingUser->id,
             'path' => 'parking-spots/test.webp',
             'position' => 0,
         ]);
@@ -207,7 +274,7 @@ class ProfileTest extends TestCase
             'user_id' => null,
         ]);
         $this->assertDatabaseHas('parking_spot_rates', ['id' => $rate->id]);
-        $this->assertDatabaseHas('parking_spot_images', ['id' => $image->id]);
+        $this->assertDatabaseHas('parking_spot_images', ['id' => $image->id, 'user_id' => null]);
         $this->assertDatabaseHas('favorites', ['id' => $otherFavorite->id]);
         $this->assertDatabaseHas('reviews', ['id' => $otherReview->id]);
         $this->assertDatabaseMissing('favorites', ['user_id' => $departingUser->id]);

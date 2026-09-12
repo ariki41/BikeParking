@@ -41,6 +41,23 @@ class ProfileController extends Controller
     }
 
     /**
+     * Display the images added by the authenticated user.
+     */
+    public function images(Request $request): View
+    {
+        $images = $request->user()
+            ->parkingSpotImages()
+            ->with('parkingSpot')
+            ->latest('created_at')
+            ->latest('id')
+            ->paginate(10);
+
+        return view('profile.images', [
+            'images' => $images,
+        ]);
+    }
+
+    /**
      * Update the user's profile information.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse

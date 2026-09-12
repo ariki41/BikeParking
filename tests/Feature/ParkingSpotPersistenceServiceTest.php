@@ -31,7 +31,7 @@ class ParkingSpotPersistenceServiceTest extends TestCase
             ->andReturn($persistedImages);
         $images->shouldReceive('replaceParkingSpotImages')
             ->once()
-            ->with(Mockery::type(ParkingSpot::class), []);
+            ->with(Mockery::type(ParkingSpot::class), [], $user);
         $images->shouldReceive('deleteImagePaths')
             ->once()
             ->with([]);
