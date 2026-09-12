@@ -30,6 +30,7 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'password' => static::$password ??= Hash::make('password'),
             'prefecture_id' => Prefecture::factory(),
+            'is_admin' => false,
             'remember_token' => Str::random(10),
         ];
     }
