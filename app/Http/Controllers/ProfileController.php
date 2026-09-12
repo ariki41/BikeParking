@@ -18,8 +18,16 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $reviews = $request->user()
+            ->reviews()
+            ->with('parkingSpot')
+            ->latest('updated_at')
+            ->latest('id')
+            ->paginate(10);
+
         return view('profile.edit', [
             'user' => $request->user(),
+            'reviews' => $reviews,
         ]);
     }
 
