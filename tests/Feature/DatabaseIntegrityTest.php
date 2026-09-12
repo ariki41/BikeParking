@@ -42,7 +42,11 @@ class DatabaseIntegrityTest extends TestCase
         $parkingSpot = ParkingSpot::factory()->for($owner)->create();
 
         $parkingSpot->rates()->create($this->rateAttributes());
-        $parkingSpot->images()->create(['path' => 'parking-spots/test.webp', 'position' => 0]);
+        $image = $parkingSpot->images()->create([
+            'user_id' => $owner->id,
+            'path' => 'parking-spots/test.webp',
+            'position' => 0,
+        ]);
         $parkingSpot->updateHistories()->create(['user_id' => $otherUser->id, 'changes' => []]);
         $otherUser->favorites()->create(['parking_spot_id' => $parkingSpot->id]);
         $review = $otherUser->reviews()->make(['rating' => 5, 'comment' => '使いやすいです。']);
@@ -67,7 +71,11 @@ class DatabaseIntegrityTest extends TestCase
             'user_id' => null,
         ]);
         $this->assertDatabaseHas('parking_spot_rates', ['parking_spot_id' => $parkingSpot->id]);
-        $this->assertDatabaseHas('parking_spot_images', ['parking_spot_id' => $parkingSpot->id]);
+        $this->assertDatabaseHas('parking_spot_images', [
+            'id' => $image->id,
+            'parking_spot_id' => $parkingSpot->id,
+            'user_id' => null,
+        ]);
         $this->assertDatabaseHas('parking_spot_update_histories', [
             'parking_spot_id' => $parkingSpot->id,
             'user_id' => $otherUser->id,

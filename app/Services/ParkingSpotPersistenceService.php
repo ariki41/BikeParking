@@ -38,7 +38,7 @@ class ParkingSpotPersistenceService
                 );
                 $parkingSpot->image_path = $persistedImages->paths[0] ?? null;
                 $parkingSpot->save();
-                $this->images->replaceParkingSpotImages($parkingSpot, $persistedImages->paths);
+                $this->images->replaceParkingSpotImages($parkingSpot, $persistedImages->paths, $createdBy);
                 $this->saveParkingSpotRates($parkingSpot, $input['rates']);
 
                 return $parkingSpot;
@@ -96,7 +96,7 @@ class ParkingSpotPersistenceService
                     ->all();
 
                 $parkingSpot->save();
-                $this->images->replaceParkingSpotImages($parkingSpot, $persistedImages->paths);
+                $this->images->replaceParkingSpotImages($parkingSpot, $persistedImages->paths, $updatedBy);
 
                 if ($originalImagePaths !== $persistedImages->paths) {
                     $changes['images'] = [

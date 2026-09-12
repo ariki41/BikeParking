@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\ParkingSpot;
+use App\Models\ParkingSpotImage;
+use App\Models\User;
 use App\ValueObjects\PersistedParkingSpotImages;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -141,13 +143,24 @@ class ParkingSpotImageService
     /**
      * @param  list<string>  $imagePaths
      */
-    public function replaceParkingSpotImages(ParkingSpot $parkingSpot, array $imagePaths): void
+    public function replaceParkingSpotImages(ParkingSpot $parkingSpot, array $imagePaths, User $addedBy): void
     {
+        // 保持された画像は共同編集者を含む元の投稿者に帰属させ、新規追加分だけ今回の編集者へ帰属させる。
+        $existingUserIds = $parkingSpot->images
+            ->mapWithKeys(fn (ParkingSpotImage $image): array => [$image->path => $image->user_id])
+            ->all();
+
         $parkingSpot->images()->delete();
 
         $parkingSpot->images()->createMany(
             collect($imagePaths)
-                ->map(fn (string $path, int $position) => compact('path', 'position'))
+                ->map(fn (string $path, int $position): array => [
+                    'path' => $path,
+                    'position' => $position,
+                    'user_id' => array_key_exists($path, $existingUserIds)
+                        ? $existingUserIds[$path]
+                        : $addedBy->id,
+                ])
                 ->all(),
         );
 

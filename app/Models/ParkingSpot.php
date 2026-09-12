@@ -118,6 +118,9 @@ class ParkingSpot extends Model
         return $this->belongsTo(Postalcode::class);
     }
 
+    /**
+     * @return HasMany<ParkingSpotImage, $this>
+     */
     public function images(): HasMany
     {
         return $this->hasMany(ParkingSpotImage::class)->orderBy('position');

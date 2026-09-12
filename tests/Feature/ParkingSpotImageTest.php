@@ -132,6 +132,7 @@ class ParkingSpotImageTest extends TestCase
         $this->assertCount(4, $parkingSpot->images);
         $this->assertSame([0, 1, 2, 3], $parkingSpot->images->pluck('position')->all());
         $this->assertSame($parkingSpot->images[0]->path, $parkingSpot->image_path);
+        $this->assertSame([$user->id, $user->id, $user->id, $user->id], $parkingSpot->images->pluck('user_id')->all());
 
         foreach ($parkingSpot->images as $position => $image) {
             $suffix = $position === 0 ? '' : '_'.($position + 1);
@@ -198,6 +199,63 @@ class ParkingSpotImageTest extends TestCase
         $history = ParkingSpotUpdateHistory::sole();
         $this->assertSame($originalPaths, $history->changes['images']['before']);
         $this->assertSame($updatedPaths, $history->changes['images']['after']);
+    }
+
+    public function test_edit_preserves_existing_image_contributor_and_assigns_new_images_to_collaborator(): void
+    {
+        [$parkingSpot, $owner, $postalcode] = $this->createParkingSpot();
+        $collaborator = User::factory()->create(['prefecture_id' => $owner->prefecture_id]);
+        Storage::fake('public');
+        $originalPath = 'parking-spots/original.webp';
+        Storage::disk('public')->put($originalPath, 'original');
+        $parkingSpot->images()->create([
+            'user_id' => $owner->id,
+            'path' => $originalPath,
+            'position' => 0,
+        ]);
+        $parkingSpot->forceFill(['image_path' => $originalPath])->save();
+        $temporaryPath = 'temp/parking-spots/collaborator.webp';
+        Storage::disk('public')->put($temporaryPath, 'new');
+
+        $input = $this->confirmedInput($postalcode, [
+            'id' => $parkingSpot->id,
+            'image_paths' => [$originalPath, $temporaryPath],
+            'image_path' => $originalPath,
+        ]);
+
+        $this->actingAs($collaborator)
+            ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_EDIT, $input))
+            ->put(route('parking_spot.update', $parkingSpot))
+            ->assertRedirect(route('home'));
+
+        $parkingSpot->refresh()->load('images');
+        $this->assertSame([$owner->id, $collaborator->id], $parkingSpot->images->pluck('user_id')->all());
+    }
+
+    public function test_edit_keeps_legacy_images_without_a_contributor_unassigned(): void
+    {
+        [$parkingSpot, $owner, $postalcode] = $this->createParkingSpot();
+        Storage::fake('public');
+        $originalPath = 'parking-spots/legacy.webp';
+        Storage::disk('public')->put($originalPath, 'original');
+        $parkingSpot->images()->create([
+            'path' => $originalPath,
+            'position' => 0,
+        ]);
+        $parkingSpot->forceFill(['image_path' => $originalPath])->save();
+
+        $input = $this->confirmedInput($postalcode, [
+            'id' => $parkingSpot->id,
+            'image_paths' => [$originalPath],
+            'image_path' => $originalPath,
+        ]);
+
+        $this->actingAs($owner)
+            ->withSession($this->confirmationState(ParkingSpotConfirmationService::MODE_EDIT, $input))
+            ->put(route('parking_spot.update', $parkingSpot))
+            ->assertRedirect(route('home'));
+
+        $this->assertNull($parkingSpot->refresh()->images()->sole()->user_id);
     }
 
     public function test_edit_deletes_only_selected_image_and_appends_new_images_in_the_same_update(): void

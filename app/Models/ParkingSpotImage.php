@@ -10,10 +10,16 @@ class ParkingSpotImage extends Model
     protected $fillable = [
         'path',
         'position',
+        'user_id',
     ];
 
     public function parkingSpot(): BelongsTo
     {
         return $this->belongsTo(ParkingSpot::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }
