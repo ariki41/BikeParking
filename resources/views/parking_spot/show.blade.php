@@ -24,9 +24,11 @@
             @auth
                 <div class="flex shrink-0 flex-nowrap items-center gap-2">
                     <x-favorite-button :parking-spot="$parkingSpot" :favorited="$parkingSpot->is_favorited" />
-                    <a href="{{ route('parking_spot.edit', $parkingSpot) }}">
-                        <x-primary-button tag="a">編集</x-primary-button>
-                    </a>
+                    @if ($parkingSpot->is_published)
+                        <a href="{{ route('parking_spot.edit', $parkingSpot) }}">
+                            <x-primary-button tag="a">編集</x-primary-button>
+                        </a>
+                    @endif
                     <a class="whitespace-nowrap px-1 text-xs font-semibold text-slate-500 underline decoration-slate-300 underline-offset-4 transition hover:text-red-700" href="{{ route('parking_spot.reports.create', $parkingSpot) }}">
                         通報
                     </a>
@@ -108,6 +110,7 @@
                         @endif
 
                         @auth
+                            @if ($parkingSpot->is_published)
                             <h3 class="text-base font-semibold text-slate-900">
                                 {{ $userReview ? 'あなたの評価を更新' : 'この駐輪場を評価' }}
                             </h3>
@@ -135,6 +138,9 @@
 
                                 <x-primary-button>{{ $userReview ? '評価を更新' : '評価を投稿' }}</x-primary-button>
                             </form>
+                            @else
+                                <p class="text-sm text-slate-600">閉鎖済みの駐輪場には評価を投稿できません。</p>
+                            @endif
                         @else
                             <p class="text-sm text-slate-600">
                                 評価を投稿するには

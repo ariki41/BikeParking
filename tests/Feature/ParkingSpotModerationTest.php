@@ -75,7 +75,14 @@ class ParkingSpotModerationTest extends TestCase
 
         $this->assertDatabaseHas('parking_spots', ['id' => $spot->id, 'is_published' => false]);
         $this->assertDatabaseHas('parking_spot_moderation_actions', ['parking_spot_id' => $spot->id, 'user_id' => $admin->id, 'action' => 'hidden', 'details->reason' => '閉鎖を確認しました。']);
-        $this->get(route('parking_spot.show', $spot))->assertOk()->assertSee('この駐輪場は閉鎖済みです。');
+        $this->get(route('parking_spot.show', $spot))
+            ->assertOk()
+            ->assertSee('この駐輪場は閉鎖済みです。')
+            ->assertDontSee('>編集<', false)
+            ->assertDontSee(route('reviews.store', $spot), false)
+            ->assertSee('閉鎖済みの駐輪場には評価を投稿できません。');
+        $this->actingAs($admin)->get(route('parking_spot.edit', $spot))->assertForbidden();
+        $this->actingAs($admin)->post(route('reviews.store', $spot), ['rating' => 5, 'comment' => '投稿できないはずです。'])->assertForbidden();
         $this->get(route('reviews.index', $spot))->assertOk();
         $this->get(route('home'))->assertDontSee($spot->name);
         Livewire::test(ParkingSpots::class)

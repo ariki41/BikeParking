@@ -12,6 +12,6 @@ class ParkingSpotPolicy
      */
     public function update(User $user, ParkingSpot $parkingSpot): bool
     {
-        return $user->exists;
+        return $user->exists && $parkingSpot->is_published;
     }
 }
