@@ -449,7 +449,7 @@ class ParkingSpotSearchFilterTest extends TestCase
             ->assertSee('条件に一致する駐輪場がありません。条件または地図範囲を変更してください。');
     }
 
-    public function test_fifty_item_limit_is_applied_after_filtering(): void
+    public function test_results_over_fifty_are_paginated_and_the_current_page_markers_match_the_list(): void
     {
         foreach (range(1, 51) as $number) {
             $this->createParkingSpot("対象{$number}", ['capacity' => 1]);
@@ -464,11 +464,43 @@ class ParkingSpotSearchFilterTest extends TestCase
             ->call('applyFilters')
             ->call('updateBounds', $this->mapBounds());
 
-        $this->assertCount(50, $component->get('spots'));
+        $component
+            ->assertSet('totalSpots', 51)
+            ->assertSet('lastPage', 2)
+            ->assertSee('この範囲には 51件の駐輪場があります。')
+            ->assertSee('地図と一覧には一度に50件ずつ表示しています。ページを切り替えると残りの結果を確認できます。')
+            ->assertSee('1〜50件目 / 51件')
+            ->assertSee('1 / 2ページ')
+            ->call('goToPage', 2)
+            ->assertSet('page', 2)
+            ->assertSee('51〜51件目 / 51件')
+            ->assertSee('2 / 2ページ')
+            ->assertSee('対象51');
+
+        $this->assertCount(1, $component->get('spots'));
         $this->assertSame(
             [],
             collect($component->get('spots'))->where('capacity', 2)->values()->all(),
         );
+        $this->assertMarkerNames($component, ['対象51']);
+    }
+
+    public function test_changing_filters_or_map_bounds_returns_to_the_first_result_page(): void
+    {
+        foreach (range(1, 51) as $number) {
+            $this->createParkingSpot("対象{$number}", ['capacity' => 1]);
+        }
+
+        $component = Livewire::test(ParkingSpots::class)
+            ->call('updateBounds', $this->mapBounds())
+            ->call('goToPage', 2)
+            ->assertSet('page', 2)
+            ->set('capacityDraft', ['1'])
+            ->call('applyFilters')
+            ->assertSet('page', 1)
+            ->call('goToPage', 2)
+            ->call('updateBounds', $this->mapBounds())
+            ->assertSet('page', 1);
     }
 
     private function createParkingSpot(string $name, array $overrides = []): ParkingSpot
