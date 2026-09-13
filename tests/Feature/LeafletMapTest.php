@@ -40,6 +40,7 @@ class LeafletMapTest extends TestCase
         $this->assertStringContainsString('zoom: instance.map.getZoom()', $mapScript);
         $this->assertStringContainsString('latitude: center.lat', $mapScript);
         $this->assertStringContainsString('longitude: center.lng', $mapScript);
+        $this->assertStringContainsString("new window.L.Icon.Default({ className: 'leaflet-marker-closed' })", $mapScript);
     }
 
     public function test_search_falls_back_to_the_default_zoom_for_invalid_values(): void

@@ -42,6 +42,16 @@ const popupFor = (marker, urlTemplate) => {
     return link;
 };
 
+const markerOptionsFor = (marker) => {
+    if (marker.is_published !== false) {
+        return {};
+    }
+
+    return {
+        icon: new window.L.Icon.Default({ className: 'leaflet-marker-closed' }),
+    };
+};
+
 const replaceMarkers = (instance, markers) => {
     instance.markers.forEach((marker) => marker.remove());
     instance.markers = [];
@@ -57,7 +67,7 @@ const replaceMarkers = (instance, markers) => {
             return;
         }
 
-        const marker = window.L.marker(coordinates).addTo(instance.map);
+        const marker = window.L.marker(coordinates, markerOptionsFor(markerData)).addTo(instance.map);
         const popup = popupFor(markerData, instance.configuration.markerUrlTemplate);
 
         if (popup) {
