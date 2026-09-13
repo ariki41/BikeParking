@@ -11,7 +11,16 @@ use Livewire\Component;
 
 class ParkingSpots extends Component
 {
+    private const RESULTS_PER_PAGE = 50;
+
     public $spots = [];
+
+    public int $totalSpots = 0;
+
+    public int $lastPage = 1;
+
+    #[Url(as: 'page', history: true, except: 1)]
+    public int $page = 1;
 
     public ?string $keyword = null;
 
@@ -112,6 +121,7 @@ class ParkingSpots extends Component
             ->mapWithKeys(fn (string $key): array => [$key => (float) $bounds[$key]])
             ->all();
 
+        $this->resetSearchPage();
         $this->refreshSpots();
     }
 
@@ -170,6 +180,7 @@ class ParkingSpots extends Component
         $this->syncQueryFromAppliedFilters();
         $this->syncDraftsFromFilters($this->filters);
         $this->hasSearched = true;
+        $this->resetSearchPage();
         $this->refreshSpots();
     }
 
@@ -192,37 +203,50 @@ class ParkingSpots extends Component
         $this->filterFormVersion++;
         $this->resetValidation();
 
+        $this->resetSearchPage();
+        $this->refreshSpots();
+    }
+
+    public function goToPage(int $page): void
+    {
+        $this->page = max(1, min($page, $this->lastPage));
         $this->refreshSpots();
     }
 
     public function updatedEngineDisplacementQuery(): void
     {
         $this->syncEngineDisplacements($this->engineDisplacementQuery);
+        $this->resetSearchPage();
         $this->refreshSpots();
     }
 
     public function updatedCapacityQuery(): void
     {
+        $this->resetSearchPage();
         $this->syncAppliedFiltersFromQuery();
     }
 
     public function updatedOpen24HoursQuery(): void
     {
+        $this->resetSearchPage();
         $this->syncAppliedFiltersFromQuery();
     }
 
     public function updatedHasFreeTimeQuery(): void
     {
+        $this->resetSearchPage();
         $this->syncAppliedFiltersFromQuery();
     }
 
     public function updatedMaxRateQuery(): void
     {
+        $this->resetSearchPage();
         $this->syncAppliedFiltersFromQuery();
     }
 
     public function updatedExcludeClosedQuery(): void
     {
+        $this->resetSearchPage();
         $this->syncAppliedFiltersFromQuery();
     }
 
@@ -277,7 +301,19 @@ class ParkingSpots extends Component
             ]);
         }
 
-        $this->spots = $query->limit(50)->get();
+        $this->totalSpots = (clone $query)->count();
+        $this->lastPage = max(1, (int) ceil($this->totalSpots / self::RESULTS_PER_PAGE));
+        $this->page = max(1, min($this->page, $this->lastPage));
+        $this->spots = $query
+            ->orderBy('id')
+            ->forPage($this->page, self::RESULTS_PER_PAGE)
+            ->get()
+            ->all();
+    }
+
+    private function resetSearchPage(): void
+    {
+        $this->page = 1;
     }
 
     private function syncDraftsFromFilters(array $filters): void

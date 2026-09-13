@@ -142,6 +142,13 @@
 
     <div class="mt-4 h-[calc(100vh-17rem)] overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 lg:h-auto lg:min-h-0 lg:flex-1"
         id="parking-spots">
+        @if ($totalSpots > 50)
+            <div class="m-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900" role="status">
+                <p class="font-semibold">この範囲には {{ number_format($totalSpots) }}件の駐輪場があります。</p>
+                <p class="mt-1">地図と一覧には一度に50件ずつ表示しています。ページを切り替えると残りの結果を確認できます。</p>
+            </div>
+        @endif
+
         @if ($hasSearched && count($spots) === 0)
             <div class="flex min-h-40 items-center justify-center p-6 text-center">
                 <p class="text-sm leading-6 text-slate-600">条件に一致する駐輪場がありません。条件または地図範囲を変更してください。</p>
@@ -181,6 +188,25 @@
                     </article>
                 @endforeach
             </div>
+
+            @if ($lastPage > 1)
+                <nav class="flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-3 py-3" aria-label="検索結果のページ送り">
+                    <p class="text-sm text-slate-600">
+                        {{ number_format((($page - 1) * 50) + 1) }}〜{{ number_format(min($page * 50, $totalSpots)) }}件目 / {{ number_format($totalSpots) }}件
+                    </p>
+                    <div class="flex items-center gap-2">
+                        <button class="min-h-10 rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            type="button" wire:click="goToPage({{ $page - 1 }})" @disabled($page === 1)>
+                            前へ
+                        </button>
+                        <span class="text-sm font-semibold text-slate-700" aria-current="page">{{ $page }} / {{ $lastPage }}ページ</span>
+                        <button class="min-h-10 rounded-md border border-slate-300 px-3 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            type="button" wire:click="goToPage({{ $page + 1 }})" @disabled($page === $lastPage)>
+                            次へ
+                        </button>
+                    </div>
+                </nav>
+            @endif
         @endif
     </div>
 </div>
