@@ -8,6 +8,9 @@
         @if (session('report_success'))
             <p class="mb-5 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{{ session('report_success') }}</p>
         @endif
+        @if (! $parkingSpot->is_published)
+            <p class="mb-5 rounded-md border border-slate-300 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700">この駐輪場は閉鎖済みです。</p>
+        @endif
 
         <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>

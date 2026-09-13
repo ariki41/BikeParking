@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ParkingSpotReportController as AdminParkingSpotRe
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ParkingSpotController;
+use App\Http\Controllers\ParkingSpotLifecycleController;
 use App\Http\Controllers\ParkingSpotReportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
@@ -52,6 +53,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/parking-spots', [ParkingSpotController::class, 'store'])->block()->name('parking_spot.store');
     Route::get('/parking-spots/{parkingSpot}/edit', [ParkingSpotController::class, 'edit'])->name('parking_spot.edit');
     Route::match(['put', 'patch'], '/parking-spots/{parkingSpot}', [ParkingSpotController::class, 'update'])->block()->name('parking_spot.update');
+    Route::post('/parking-spots/{parkingSpot}/close', [ParkingSpotLifecycleController::class, 'close'])->name('parking_spot.close');
+    Route::post('/parking-spots/{parkingSpot}/deletion-requests', [ParkingSpotLifecycleController::class, 'requestDeletion'])->name('parking_spot.deletion_requests.store');
 });
 
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
@@ -60,6 +63,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('/parking-spots/{parkingSpot}/publish', [AdminParkingSpotReportController::class, 'publish'])->name('parking_spots.publish');
     Route::post('/parking-spots/{parkingSpot}/histories/{history}/restore', [AdminParkingSpotReportController::class, 'restore'])->name('parking_spots.histories.restore');
     Route::post('/parking-spot-reports/{report}/resolve', [AdminParkingSpotReportController::class, 'resolve'])->name('parking_spot_reports.resolve');
+    Route::post('/parking-spot-deletion-requests/{deletionRequest}/delete', [AdminParkingSpotReportController::class, 'delete'])->name('parking_spot_deletion_requests.delete');
 });
 
 Route::get('/parking-spots/{parkingSpot}/reviews', [ReviewController::class, 'index'])->name('reviews.index');

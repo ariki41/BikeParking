@@ -146,7 +146,7 @@ class ParkingSpot extends Model
 
     public function resolveRouteBinding($value, $field = null): ?Model
     {
-        return $this->published()->where($field ?? $this->getRouteKeyName(), $value)->first();
+        return $this->where($field ?? $this->getRouteKeyName(), $value)->first();
     }
 
     public function updateHistories(): HasMany
@@ -169,5 +169,10 @@ class ParkingSpot extends Model
     public function reports(): HasMany
     {
         return $this->hasMany(ParkingSpotReport::class);
+    }
+
+    public function deletionRequests(): HasMany
+    {
+        return $this->hasMany(ParkingSpotDeletionRequest::class);
     }
 }

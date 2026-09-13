@@ -93,6 +93,27 @@ class ParkingSpotSearchFilterTest extends TestCase
             ->assertDontSee('終了だけ深夜');
     }
 
+    public function test_closed_spots_are_shown_with_a_status_and_can_be_excluded(): void
+    {
+        $this->createParkingSpot('営業中の駐輪場');
+        $this->createParkingSpot('閉鎖済みの駐輪場', ['is_published' => false]);
+
+        $component = Livewire::test(ParkingSpots::class)
+            ->call('updateBounds', $this->mapBounds())
+            ->assertSee('営業中の駐輪場')
+            ->assertSee('閉鎖済みの駐輪場')
+            ->assertSee('閉鎖済み')
+            ->set('excludeClosedDraft', true)
+            ->call('applyFilters')
+            ->assertSee('営業中の駐輪場')
+            ->assertDontSee('閉鎖済みの駐輪場')
+            ->assertSee('閉鎖済みを除外');
+
+        $this->assertSame(true, $component->get('filters')['exclude_closed']);
+        $this->assertSame('1', $component->get('excludeClosedQuery'));
+        $this->assertMarkerNames($component, ['営業中の駐輪場']);
+    }
+
     public function test_free_time_and_max_rate_boundaries_are_filtered_as_specified(): void
     {
         $freeBoundary = $this->createParkingSpot('無料0分');

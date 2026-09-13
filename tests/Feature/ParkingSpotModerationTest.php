@@ -4,14 +4,19 @@ namespace Tests\Feature;
 
 use App\Livewire\ParkingSpots;
 use App\Models\City;
+use App\Models\Favorite;
 use App\Models\ParkingSpot;
+use App\Models\ParkingSpotDeletionRequest;
+use App\Models\ParkingSpotImage;
 use App\Models\ParkingSpotRates;
 use App\Models\ParkingSpotReport;
 use App\Models\ParkingSpotUpdateHistory;
 use App\Models\Postalcode;
 use App\Models\Prefecture;
+use App\Models\Review;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -55,26 +60,30 @@ class ParkingSpotModerationTest extends TestCase
         $user = User::factory()->create(['prefecture_id' => $prefecture->id]);
 
         $this->actingAs($user)->get(route('admin.parking_spot_reports.index'))->assertForbidden();
-        $this->actingAs($user)->post(route('admin.parking_spots.hide', $spot))->assertForbidden();
-        $this->actingAs($user)->post(route('admin.parking_spots.histories.restore', [$spot, $history]))->assertForbidden();
+        $this->actingAs($user)->post(route('admin.parking_spots.hide', $spot), ['moderation_reason' => '確認済みです。'])->assertForbidden();
+        $this->actingAs($user)->post(route('admin.parking_spots.histories.restore', [$spot, $history]), ['moderation_reason' => '確認済みです。'])->assertForbidden();
     }
 
-    public function test_admin_hiding_spot_audits_actor_and_excludes_public_routes(): void
+    public function test_admin_hiding_spot_audits_actor_and_marks_it_closed_in_search(): void
     {
         [$spot, $prefecture] = $this->parkingSpot();
         $admin = User::factory()->create(['prefecture_id' => $prefecture->id, 'is_admin' => true]);
         $history = ParkingSpotUpdateHistory::create(['parking_spot_id' => $spot->id, 'user_id' => $admin->id, 'changes' => []]);
         ParkingSpotReport::create(['parking_spot_id' => $spot->id, 'parking_spot_update_history_id' => $history->id, 'user_id' => $admin->id, 'reason' => '確認が必要です。']);
 
-        $this->actingAs($admin)->post(route('admin.parking_spots.hide', $spot))->assertRedirect();
+        $this->actingAs($admin)->post(route('admin.parking_spots.hide', $spot), ['moderation_reason' => '閉鎖を確認しました。'])->assertRedirect();
 
         $this->assertDatabaseHas('parking_spots', ['id' => $spot->id, 'is_published' => false]);
-        $this->assertDatabaseHas('parking_spot_moderation_actions', ['parking_spot_id' => $spot->id, 'user_id' => $admin->id, 'action' => 'hidden']);
-        $this->get(route('parking_spot.show', $spot))->assertNotFound();
-        $this->get(route('reviews.index', $spot))->assertNotFound();
+        $this->assertDatabaseHas('parking_spot_moderation_actions', ['parking_spot_id' => $spot->id, 'user_id' => $admin->id, 'action' => 'hidden', 'details->reason' => '閉鎖を確認しました。']);
+        $this->get(route('parking_spot.show', $spot))->assertOk()->assertSee('この駐輪場は閉鎖済みです。');
+        $this->get(route('reviews.index', $spot))->assertOk();
         $this->get(route('home'))->assertDontSee($spot->name);
         Livewire::test(ParkingSpots::class)
             ->call('updateBounds', ['south' => 35.0, 'north' => 36.0, 'west' => 139.0, 'east' => 140.0])
+            ->assertSee($spot->name)
+            ->assertSee('閉鎖済み')
+            ->set('excludeClosedDraft', true)
+            ->call('applyFilters')
             ->assertDontSee($spot->name);
         $this->actingAs($admin)->get(route('admin.parking_spot_reports.index'))
             ->assertOk()
@@ -89,13 +98,14 @@ class ParkingSpotModerationTest extends TestCase
         $spot->save();
         $admin = User::factory()->create(['prefecture_id' => $prefecture->id, 'is_admin' => true]);
 
-        $this->actingAs($admin)->post(route('admin.parking_spots.publish', $spot))->assertRedirect();
+        $this->actingAs($admin)->post(route('admin.parking_spots.publish', $spot), ['moderation_reason' => '営業再開を確認しました。'])->assertRedirect();
 
         $this->assertDatabaseHas('parking_spots', ['id' => $spot->id, 'is_published' => true]);
         $this->assertDatabaseHas('parking_spot_moderation_actions', [
             'parking_spot_id' => $spot->id,
             'user_id' => $admin->id,
             'action' => 'published',
+            'details->reason' => '営業再開を確認しました。',
         ]);
         $this->get(route('parking_spot.show', $spot))->assertOk();
     }
@@ -109,14 +119,86 @@ class ParkingSpotModerationTest extends TestCase
         $later = ParkingSpotUpdateHistory::create(['parking_spot_id' => $spot->id, 'user_id' => $spot->user_id, 'changes' => ['name' => ['before' => '中間の名称', 'after' => '最新の名称'], 'capacity' => ['before' => 2, 'after' => 9], 'rates' => ['before' => [['day_type' => '全日', 'start_time' => '00:00', 'end_time' => '00:00', 'unit_minutes' => 30, 'rate' => 200, 'free_minutes' => 0, 'max_rate' => 1200]], 'after' => []], 'images' => ['before' => ['old.jpg'], 'after' => ['parking-spots/current.jpg']]]]);
         $admin = User::factory()->create(['prefecture_id' => $prefecture->id, 'is_admin' => true]);
 
-        $this->actingAs($admin)->post(route('admin.parking_spots.histories.restore', [$spot, $target]))->assertRedirect();
+        $this->actingAs($admin)->post(route('admin.parking_spots.histories.restore', [$spot, $target]), ['moderation_reason' => '誤登録を修正します。'])->assertRedirect();
 
         $spot->refresh();
         $this->assertSame('中間の名称', $spot->name);
         $this->assertSame(2, $spot->capacity);
         $this->assertSame('parking-spots/current.jpg', $spot->image_path);
         $this->assertDatabaseHas('parking_spot_rates', ['parking_spot_id' => $spot->id, 'rate' => 200, 'max_rate' => 1200]);
-        $this->assertDatabaseHas('parking_spot_moderation_actions', ['parking_spot_id' => $spot->id, 'parking_spot_update_history_id' => $target->id, 'user_id' => $admin->id, 'action' => 'restored']);
+        $this->assertDatabaseHas('parking_spot_moderation_actions', ['parking_spot_id' => $spot->id, 'parking_spot_update_history_id' => $target->id, 'user_id' => $admin->id, 'action' => 'restored', 'details->reason' => '誤登録を修正します。']);
+    }
+
+    public function test_editor_can_mark_a_closed_spot_as_unpublished(): void
+    {
+        [$spot, $prefecture] = $this->parkingSpot();
+        $editor = User::factory()->create(['prefecture_id' => $prefecture->id]);
+
+        $this->actingAs($editor)->get(route('parking_spot.edit', $spot))
+            ->assertOk()
+            ->assertSee('閉鎖済み')
+            ->assertSee('誤登録')
+            ->assertSee('x-data=""', false)
+            ->assertSee('閉鎖済みとして掲載停止しますか？')
+            ->assertSee('誤登録として削除を申請しますか？');
+        $this->actingAs($editor)->post(route('parking_spot.close', $spot))->assertRedirect(route('home'));
+
+        $this->assertDatabaseHas('parking_spots', ['id' => $spot->id, 'is_published' => false]);
+        $this->assertDatabaseHas('parking_spot_moderation_actions', [
+            'parking_spot_id' => $spot->id,
+            'user_id' => $editor->id,
+            'action' => 'hidden',
+            'details->reason' => '編集画面から閉鎖済みとして掲載停止',
+        ]);
+    }
+
+    public function test_incorrect_registration_requires_admin_confirmation_before_physical_deletion(): void
+    {
+        [$spot, $prefecture] = $this->parkingSpot();
+        $requester = User::factory()->create(['prefecture_id' => $prefecture->id]);
+        $admin = User::factory()->create(['prefecture_id' => $prefecture->id, 'is_admin' => true]);
+        Storage::fake('public');
+        Storage::disk('public')->put('parking-spots/deleted.webp', 'image');
+        $spot->forceFill(['image_path' => 'parking-spots/deleted.webp'])->save();
+        ParkingSpotImage::forceCreate(['parking_spot_id' => $spot->id, 'user_id' => $requester->id, 'path' => 'parking-spots/deleted.webp', 'position' => 0]);
+        ParkingSpotRates::create(['parking_spot_id' => $spot->id, 'day_type' => '全日', 'start_time' => '00:00', 'end_time' => '00:00', 'unit_minutes' => 60, 'rate' => 100, 'free_minutes' => 0, 'max_rate' => 1000]);
+        Favorite::forceCreate(['parking_spot_id' => $spot->id, 'user_id' => $requester->id]);
+        Review::forceCreate(['parking_spot_id' => $spot->id, 'user_id' => $requester->id, 'rating' => 5, 'comment' => '削除対象です。']);
+        ParkingSpotUpdateHistory::create(['parking_spot_id' => $spot->id, 'user_id' => $requester->id, 'changes' => []]);
+        ParkingSpotReport::create(['parking_spot_id' => $spot->id, 'user_id' => $requester->id, 'reason' => '関連通報です。']);
+
+        $this->actingAs($requester)->post(route('parking_spot.deletion_requests.store', $spot), ['reason' => '存在しない施設です。'])
+            ->assertRedirect(route('parking_spot.edit', $spot));
+        $deletionRequest = ParkingSpotDeletionRequest::sole();
+        $this->assertDatabaseHas('parking_spots', ['id' => $spot->id]);
+
+        $this->actingAs($admin)->post(route('admin.parking_spot_deletion_requests.delete', $deletionRequest), ['moderation_reason' => '現地確認で誤登録と判断しました。'])
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('parking_spots', ['id' => $spot->id]);
+        $this->assertDatabaseMissing('parking_spot_rates', ['parking_spot_id' => $spot->id]);
+        $this->assertDatabaseMissing('parking_spot_images', ['parking_spot_id' => $spot->id]);
+        $this->assertDatabaseMissing('favorites', ['parking_spot_id' => $spot->id]);
+        $this->assertDatabaseMissing('reviews', ['parking_spot_id' => $spot->id]);
+        $this->assertDatabaseMissing('parking_spot_update_histories', ['parking_spot_id' => $spot->id]);
+        $this->assertDatabaseMissing('parking_spot_reports', ['parking_spot_id' => $spot->id]);
+        $this->assertDatabaseHas('parking_spot_deletion_requests', [
+            'id' => $deletionRequest->id,
+            'parking_spot_id' => null,
+            'status' => 'deleted',
+            'reviewed_by' => $admin->id,
+            'resolution_reason' => '現地確認で誤登録と判断しました。',
+        ]);
+        Storage::disk('public')->assertMissing('parking-spots/deleted.webp');
+    }
+
+    public function test_admin_moderation_requires_a_reason(): void
+    {
+        [$spot, $prefecture] = $this->parkingSpot();
+        $admin = User::factory()->create(['prefecture_id' => $prefecture->id, 'is_admin' => true]);
+
+        $this->actingAs($admin)->post(route('admin.parking_spots.hide', $spot))
+            ->assertSessionHasErrors('moderation_reason');
     }
 
     private function parkingSpot(?Prefecture $prefecture = null): array
