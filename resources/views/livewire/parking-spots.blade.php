@@ -22,6 +22,9 @@
             @if ($maxRateQuery !== '')
                 <input name="max_rate" type="hidden" value="{{ $maxRateQuery }}">
             @endif
+            @if ($excludeClosedQuery !== '')
+                <input name="exclude_closed" type="hidden" value="1">
+            @endif
 
             <input name="lat" type="hidden" value="{{ $latitude }}">
             <input name="lon" type="hidden" value="{{ $longitude }}">
@@ -99,6 +102,11 @@
                             wire:model="hasFreeTimeDraft">
                         <span>無料時間あり</span>
                     </label>
+                    <label class="flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
+                        <input class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" type="checkbox"
+                            wire:model="excludeClosedDraft">
+                        <span>閉鎖済みを除外</span>
+                    </label>
                 </div>
             </fieldset>
 
@@ -153,15 +161,20 @@
                                     data-longitude="{{ $spot->longitude }}" data-latitude="{{ $spot->latitude }}">
                                     {{ $spot->name }}
                                 </a>
+                                @if (! $spot->is_published)
+                                    <span class="mt-1 inline-flex rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700">閉鎖済み</span>
+                                @endif
                                 <p class="mt-1 text-sm leading-5 text-slate-600">{{ $spot->address }}</p>
                                 <x-rating-summary class="mt-2" :parking-spot="$spot" />
 
                                 <x-rate-summary class="mt-3" :parking-spot="$spot" />
 
                                 @auth
+                                    @if ($spot->is_published)
                                     <div class="mt-3">
                                         <x-favorite-button :parking-spot="$spot" :favorited="$spot->is_favorited" compact />
                                     </div>
+                                    @endif
                                 @endauth
                             </div>
                         </div>

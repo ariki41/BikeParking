@@ -41,6 +41,9 @@ class ParkingSpots extends Component
     #[Url(as: 'max_rate', history: true, except: '')]
     public $maxRateQuery = '';
 
+    #[Url(as: 'exclude_closed', history: true, except: '')]
+    public $excludeClosedQuery = '';
+
     public array $filters = [];
 
     public array $capacityDraft = [];
@@ -50,6 +53,8 @@ class ParkingSpots extends Component
     public bool $hasFreeTimeDraft = false;
 
     public $maxRateDraft = null;
+
+    public bool $excludeClosedDraft = false;
 
     public array $engineDisplacementDraft = [];
 
@@ -158,6 +163,7 @@ class ParkingSpots extends Component
             'open_24_hours' => $this->open24HoursDraft,
             'has_free_time' => $this->hasFreeTimeDraft,
             'max_rate' => $this->maxRateDraft,
+            'exclude_closed' => $this->excludeClosedDraft,
         ]);
         $this->syncEngineDisplacements($this->engineDisplacementDraft);
 
@@ -174,6 +180,7 @@ class ParkingSpots extends Component
         $this->open24HoursDraft = false;
         $this->hasFreeTimeDraft = false;
         $this->maxRateDraft = null;
+        $this->excludeClosedDraft = false;
         $this->engineDisplacements = [];
         $this->engineDisplacementQuery = '';
         $this->engineDisplacementDraft = [];
@@ -181,6 +188,7 @@ class ParkingSpots extends Component
         $this->open24HoursQuery = '';
         $this->hasFreeTimeQuery = '';
         $this->maxRateQuery = '';
+        $this->excludeClosedQuery = '';
         $this->filterFormVersion++;
         $this->resetValidation();
 
@@ -213,6 +221,11 @@ class ParkingSpots extends Component
         $this->syncAppliedFiltersFromQuery();
     }
 
+    public function updatedExcludeClosedQuery(): void
+    {
+        $this->syncAppliedFiltersFromQuery();
+    }
+
     private function syncEngineDisplacements(mixed $engineDisplacements): void
     {
         $this->engineDisplacements = $this->normalizedEngineDisplacements($engineDisplacements);
@@ -230,9 +243,9 @@ class ParkingSpots extends Component
         $open24Hours = $this->filters['open_24_hours'] ?? false;
         $hasFreeTime = $this->filters['has_free_time'] ?? false;
         $maxRate = $this->filters['max_rate'] ?? null;
+        $excludeClosed = $this->filters['exclude_closed'] ?? false;
 
         $query = ParkingSpot::query()
-            ->published()
             ->withRateSummary()
             ->withCount(['favorites', 'reviews'])
             ->withAvg('reviews', 'rating')
@@ -240,6 +253,7 @@ class ParkingSpots extends Component
             ->whereBetween('longitude', [$this->bounds['west'], $this->bounds['east']])
             ->supportsEngineDisplacements($this->engineDisplacements)
             ->when($capacityFilters !== [], fn (Builder $query) => $query->whereIn('capacity', $capacityFilters))
+            ->when($excludeClosed, fn (Builder $query) => $query->published())
             ->when($open24Hours, fn (Builder $query) => $query
                 ->where('opening_time', '00:00:00')
                 ->where('closing_time', '00:00:00'))
@@ -271,6 +285,7 @@ class ParkingSpots extends Component
         $this->capacityDraft = $this->normalizedCapacities($filters['capacity'] ?? []);
         $this->open24HoursDraft = $this->filterIsEnabled($filters['open_24_hours'] ?? false);
         $this->hasFreeTimeDraft = $this->filterIsEnabled($filters['has_free_time'] ?? false);
+        $this->excludeClosedDraft = $this->filterIsEnabled($filters['exclude_closed'] ?? false);
 
         $maxRate = $filters['max_rate'] ?? null;
         $this->maxRateDraft = is_scalar($maxRate) ? $maxRate : null;
@@ -283,6 +298,7 @@ class ParkingSpots extends Component
             'open_24_hours' => $this->open24HoursQuery,
             'has_free_time' => $this->hasFreeTimeQuery,
             'max_rate' => $this->maxRateQuery,
+            'exclude_closed' => $this->excludeClosedQuery,
         ];
 
         $this->filters = $this->normalizeFilters($rawFilters);
@@ -303,6 +319,7 @@ class ParkingSpots extends Component
         $this->capacityQuery = implode(',', $this->filters['capacity'] ?? []);
         $this->open24HoursQuery = ($this->filters['open_24_hours'] ?? false) ? '1' : '';
         $this->hasFreeTimeQuery = ($this->filters['has_free_time'] ?? false) ? '1' : '';
+        $this->excludeClosedQuery = ($this->filters['exclude_closed'] ?? false) ? '1' : '';
 
         if (! $preserveInvalidMaxRate || $this->maxRateIsValid($this->maxRateQuery)) {
             $this->maxRateQuery = isset($this->filters['max_rate'])
@@ -326,6 +343,10 @@ class ParkingSpots extends Component
 
         if ($this->filterIsEnabled($filters['has_free_time'] ?? false)) {
             $normalized['has_free_time'] = true;
+        }
+
+        if ($this->filterIsEnabled($filters['exclude_closed'] ?? false)) {
+            $normalized['exclude_closed'] = true;
         }
 
         $maxRate = $filters['max_rate'] ?? null;
@@ -401,6 +422,10 @@ class ParkingSpots extends Component
 
         if ($this->filters['has_free_time'] ?? false) {
             $labels[] = '無料時間あり';
+        }
+
+        if ($this->filters['exclude_closed'] ?? false) {
+            $labels[] = '閉鎖済みを除外';
         }
 
         if (isset($this->filters['max_rate'])) {

@@ -19,7 +19,12 @@ class ParkingSpotReportController extends Controller
 
     public function store(ParkingSpotReportRequest $request, ParkingSpot $parkingSpot): RedirectResponse
     {
-        ParkingSpotReport::create(['parking_spot_id' => $parkingSpot->id, 'parking_spot_update_history_id' => $request->validated('parking_spot_update_history_id'), 'user_id' => $request->user()->id, 'reason' => $request->validated('reason')]);
+        ParkingSpotReport::create([
+            'parking_spot_id' => $parkingSpot->id,
+            'parking_spot_update_history_id' => $request->validated('parking_spot_update_history_id'),
+            'user_id' => $request->user()->id,
+            'reason' => $request->validated('reason'),
+        ]);
 
         return redirect()->route('parking_spot.show', $parkingSpot)
             ->with('report_success', '通報を受け付けました。');

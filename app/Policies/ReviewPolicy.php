@@ -11,11 +11,13 @@ class ReviewPolicy
     public function create(User $user, ParkingSpot $parkingSpot): bool
     {
         return $user->exists
+            && $parkingSpot->is_published
             && ! $parkingSpot->reviews()->where('user_id', $user->id)->exists();
     }
 
     public function update(User $user, Review $review): bool
     {
-        return $review->user_id === $user->id;
+        return $review->user_id === $user->id
+            && ParkingSpot::query()->whereKey($review->parking_spot_id)->published()->exists();
     }
 }
