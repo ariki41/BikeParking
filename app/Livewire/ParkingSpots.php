@@ -232,6 +232,7 @@ class ParkingSpots extends Component
         $maxRate = $this->filters['max_rate'] ?? null;
 
         $query = ParkingSpot::query()
+            ->published()
             ->withRateSummary()
             ->withCount(['favorites', 'reviews'])
             ->withAvg('reviews', 'rating')

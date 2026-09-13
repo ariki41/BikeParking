@@ -28,6 +28,7 @@ class ParkingSpot extends Model
             'longitude' => 'float',
             'latitude' => 'float',
             'max_displacement_class' => EngineDisplacementClass::class,
+            'is_published' => 'boolean',
         ];
     }
 
@@ -138,6 +139,16 @@ class ParkingSpot extends Model
             ->withCount('rates');
     }
 
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query->where('is_published', true);
+    }
+
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        return $this->published()->where($field ?? $this->getRouteKeyName(), $value)->first();
+    }
+
     public function updateHistories(): HasMany
     {
         return $this->hasMany(ParkingSpotUpdateHistory::class)->latest();
@@ -153,5 +164,10 @@ class ParkingSpot extends Model
     public function favorites(): HasMany
     {
         return $this->hasMany(Favorite::class);
+    }
+
+    public function reports(): HasMany
+    {
+        return $this->hasMany(ParkingSpotReport::class);
     }
 }

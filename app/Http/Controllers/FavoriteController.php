@@ -13,6 +13,7 @@ class FavoriteController extends Controller
     {
         $parkingSpots = $request->user()
             ->favoriteParkingSpots()
+            ->published()
             ->withRateSummary()
             ->withCount(['favorites', 'reviews'])
             ->withAvg('reviews', 'rating')

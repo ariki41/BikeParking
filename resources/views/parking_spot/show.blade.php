@@ -5,6 +5,9 @@
                 {{ session('favorite_success') }}
             </p>
         @endif
+        @if (session('report_success'))
+            <p class="mb-5 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{{ session('report_success') }}</p>
+        @endif
 
         <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -16,10 +19,13 @@
                 <x-rating-summary class="mt-2" :parking-spot="$parkingSpot" />
             </div>
             @auth
-                <div class="flex flex-wrap items-center gap-3">
+                <div class="flex shrink-0 flex-nowrap items-center gap-2">
                     <x-favorite-button :parking-spot="$parkingSpot" :favorited="$parkingSpot->is_favorited" />
                     <a href="{{ route('parking_spot.edit', $parkingSpot) }}">
                         <x-primary-button tag="a">編集</x-primary-button>
+                    </a>
+                    <a class="whitespace-nowrap px-1 text-xs font-semibold text-slate-500 underline decoration-slate-300 underline-offset-4 transition hover:text-red-700" href="{{ route('parking_spot.reports.create', $parkingSpot) }}">
+                        通報
                     </a>
                 </div>
             @endauth

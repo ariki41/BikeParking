@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Models\ParkingSpot;
+use App\Models\ParkingSpotReport;
 use App\Models\Review;
 use App\Policies\ParkingSpotPolicy;
+use App\Policies\ParkingSpotReportPolicy;
 use App\Policies\ReviewPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -26,5 +28,6 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(ParkingSpot::class, ParkingSpotPolicy::class);
         Gate::policy(Review::class, ReviewPolicy::class);
+        Gate::policy(ParkingSpotReport::class, ParkingSpotReportPolicy::class);
     }
 }

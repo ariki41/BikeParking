@@ -45,6 +45,7 @@ class User extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
     }
 
@@ -71,6 +72,11 @@ class User extends Authenticatable
     public function favorites(): HasMany
     {
         return $this->hasMany(Favorite::class);
+    }
+
+    public function parkingSpotReports(): HasMany
+    {
+        return $this->hasMany(ParkingSpotReport::class);
     }
 
     /**

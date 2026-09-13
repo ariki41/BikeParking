@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Admin\ParkingSpotReportController as AdminParkingSpotReportController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ParkingSpotController;
+use App\Http\Controllers\ParkingSpotReportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SearchController;
@@ -42,12 +44,22 @@ Route::middleware('auth')->group(function () {
     Route::delete('/parking-spot/{parkingSpot}/favorite', [FavoriteController::class, 'destroy'])->name('favorites.destroy');
 
     Route::post('/parking-spot/{parkingSpot}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
+    Route::get('/parking-spots/{parkingSpot}/reports/create', [ParkingSpotReportController::class, 'create'])->name('parking_spot.reports.create');
+    Route::post('/parking-spots/{parkingSpot}/reports', [ParkingSpotReportController::class, 'store'])->name('parking_spot.reports.store');
     Route::get('/parking-spots/create', [ParkingSpotController::class, 'create'])->name('parking_spot.create');
     Route::post('/parking-spots/confirm', [ParkingSpotController::class, 'confirm'])->name('parking_spot.confirm');
     // 確認画面からの同時送信で、同一セッションの登録・更新が重複しないように直列化する。
     Route::post('/parking-spots', [ParkingSpotController::class, 'store'])->block()->name('parking_spot.store');
     Route::get('/parking-spots/{parkingSpot}/edit', [ParkingSpotController::class, 'edit'])->name('parking_spot.edit');
     Route::match(['put', 'patch'], '/parking-spots/{parkingSpot}', [ParkingSpotController::class, 'update'])->block()->name('parking_spot.update');
+});
+
+Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/parking-spot-reports', [AdminParkingSpotReportController::class, 'index'])->name('parking_spot_reports.index');
+    Route::post('/parking-spots/{parkingSpot}/hide', [AdminParkingSpotReportController::class, 'hide'])->name('parking_spots.hide');
+    Route::post('/parking-spots/{parkingSpot}/publish', [AdminParkingSpotReportController::class, 'publish'])->name('parking_spots.publish');
+    Route::post('/parking-spots/{parkingSpot}/histories/{history}/restore', [AdminParkingSpotReportController::class, 'restore'])->name('parking_spots.histories.restore');
+    Route::post('/parking-spot-reports/{report}/resolve', [AdminParkingSpotReportController::class, 'resolve'])->name('parking_spot_reports.resolve');
 });
 
 Route::get('/parking-spots/{parkingSpot}/reviews', [ReviewController::class, 'index'])->name('reviews.index');

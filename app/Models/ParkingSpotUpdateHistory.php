@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ParkingSpotUpdateHistory extends Model
 {
@@ -28,6 +29,11 @@ class ParkingSpotUpdateHistory extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function reports(): HasMany
+    {
+        return $this->hasMany(ParkingSpotReport::class);
     }
 
     public function getChangeSummaryAttribute(): string

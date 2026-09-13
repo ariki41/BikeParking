@@ -98,7 +98,7 @@ class ParkingSpotController extends Controller
         }
 
         if ($validatedData['id']) {
-            $parkingSpot = ParkingSpot::with('images')->findOrFail($validatedData['id']);
+            $parkingSpot = ParkingSpot::published()->with('images')->findOrFail($validatedData['id']);
             Gate::authorize('update', $parkingSpot);
         }
 

@@ -29,6 +29,11 @@
                         <x-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.*')">
                             マイページ
                         </x-nav-link>
+                        @if (Auth::user()->is_admin)
+                            <x-nav-link :href="route('admin.parking_spot_reports.index')" :active="request()->routeIs('admin.*')">
+                                通報管理
+                            </x-nav-link>
+                        @endif
                     @endauth
                 </div>
             </div>
@@ -94,6 +99,11 @@
                 <x-responsive-nav-link :href="route('profile.edit')" :active="request()->routeIs('profile.*')">
                     マイページ
                 </x-responsive-nav-link>
+                @if (Auth::user()->is_admin)
+                    <x-responsive-nav-link :href="route('admin.parking_spot_reports.index')" :active="request()->routeIs('admin.*')">
+                        通報管理
+                    </x-responsive-nav-link>
+                @endif
             @endauth
         </div>
 
