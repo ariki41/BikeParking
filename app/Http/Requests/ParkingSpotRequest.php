@@ -51,7 +51,7 @@ class ParkingSpotRequest extends FormRequest
             return $hour;
         })->all();
 
-        $representative = collect($businessHours)->first(fn ($hour) => ! ($hour['is_closed'] ?? false)) ?? $businessHours[0];
+        $representative = collect($businessHours)->first(fn (array $hour) => ! $hour['is_closed']) ?? $businessHours[0];
         $this->merge([
             'rates' => $rates,
             'business_hours' => $businessHours,
