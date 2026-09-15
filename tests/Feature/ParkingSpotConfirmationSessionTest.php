@@ -148,13 +148,17 @@ class ParkingSpotConfirmationSessionTest extends TestCase
             'name' => '位置補正を保存する駐輪場',
         ]))->assertOk()
             ->assertSee('マーカーをドラッグして', false)
+            ->assertSee('位置を反映', false)
             ->assertSee('parking-spot-confirm-latitude', false)
             ->assertSee('"draggableMarker":true', false);
 
-        $this->post(route('parking_spot.store'), [
+        $this->postJson(route('parking_spot.confirm.location'), [
             'latitude' => '35.690123',
             'longitude' => '139.760456',
-        ])->assertRedirect(route('home'));
+        ])->assertOk()
+            ->assertJsonPath('message', '位置を反映しました。');
+
+        $this->post(route('parking_spot.store'))->assertRedirect(route('home'));
 
         $this->assertDatabaseHas('parking_spots', [
             'name' => '位置補正を保存する駐輪場',
@@ -171,11 +175,11 @@ class ParkingSpotConfirmationSessionTest extends TestCase
         $this->actingAs($user)->get(route('parking_spot.create'))->assertOk();
         $this->post(route('parking_spot.confirm'), $this->validFormInput($postalcode))->assertOk();
 
-        $this->post(route('parking_spot.store'), [
+        $this->postJson(route('parking_spot.confirm.location'), [
             'latitude' => '91',
             'longitude' => '139.760456',
-        ])->assertRedirect()
-            ->assertSessionHasErrors(['latitude']);
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['latitude']);
 
         $this->assertDatabaseMissing('parking_spots', ['name' => '確認セッションフォーム駐輪場']);
     }
@@ -217,11 +221,13 @@ class ParkingSpotConfirmationSessionTest extends TestCase
         $this->actingAs($user)->get(route('parking_spot.edit', $parkingSpot))->assertOk();
         $this->post(route('parking_spot.confirm'), $input)->assertOk();
 
-        $this->put(route('parking_spot.update', $parkingSpot), [
-            'back' => 'back',
+        $this->postJson(route('parking_spot.confirm.location'), [
             'latitude' => '35.690123',
             'longitude' => '139.760456',
-        ])->assertRedirect(route('parking_spot.edit', $parkingSpot));
+        ])->assertOk();
+
+        $this->put(route('parking_spot.update', $parkingSpot), ['back' => 'back'])
+            ->assertRedirect(route('parking_spot.edit', $parkingSpot));
 
         $this->get(route('parking_spot.edit', $parkingSpot))
             ->assertOk()
@@ -250,11 +256,13 @@ class ParkingSpotConfirmationSessionTest extends TestCase
 
         $this->actingAs($user)->get(route('parking_spot.edit', $parkingSpot))->assertOk();
         $this->post(route('parking_spot.confirm'), $input)->assertOk();
-        $this->put(route('parking_spot.update', $parkingSpot), [
-            'back' => 'back',
+        $this->postJson(route('parking_spot.confirm.location'), [
             'latitude' => '35.690123',
             'longitude' => '139.760456',
-        ])->assertRedirect(route('parking_spot.edit', $parkingSpot));
+        ])->assertOk();
+
+        $this->put(route('parking_spot.update', $parkingSpot), ['back' => 'back'])
+            ->assertRedirect(route('parking_spot.edit', $parkingSpot));
 
         $this->post(route('parking_spot.confirm'), [
             ...$input,

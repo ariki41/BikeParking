@@ -151,6 +151,18 @@ class ParkingSpotConfirmationService
         return $input;
     }
 
+    public function confirmedMode(Request $request): ?string
+    {
+        $state = $this->state($request);
+        $mode = $state['mode'] ?? null;
+
+        if (! in_array($mode, [self::MODE_CREATE, self::MODE_EDIT], true)) {
+            return null;
+        }
+
+        return $this->confirmedInput($request, $mode) === null ? null : $mode;
+    }
+
     public function trustedParkingSpotId(Request $request): ?int
     {
         $state = $this->state($request);

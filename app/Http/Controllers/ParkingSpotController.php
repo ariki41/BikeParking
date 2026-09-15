@@ -177,8 +177,6 @@ class ParkingSpotController extends Controller
                 ->withErrors(['confirmation' => '確認情報の有効期限が切れました。入力内容を確認して、もう一度お試しください。']);
         }
 
-        $input = $this->applyLocationCorrection($request, ParkingSpotConfirmationService::MODE_CREATE, $input);
-
         if ($request->input('back') === 'back') {
             return redirect()->route('parking_spot.create')->withInput($input);
         }
@@ -245,8 +243,6 @@ class ParkingSpotController extends Controller
                 ->with('error', '確認情報の有効期限が切れました。編集画面からやり直してください。');
         }
 
-        $input = $this->applyLocationCorrection($request, ParkingSpotConfirmationService::MODE_EDIT, $input);
-
         Gate::authorize('update', $parkingSpot);
 
         if ($request->input('back') === 'back') {
@@ -304,10 +300,14 @@ class ParkingSpotController extends Controller
             && ($previousInput['address2'] ?? null) === $input['address2'];
     }
 
-    private function applyLocationCorrection(Request $request, string $mode, array $input): array
+    public function updateConfirmedLocation(Request $request)
     {
-        if (! $request->hasAny(['latitude', 'longitude'])) {
-            return $input;
+        $mode = $this->confirmation->confirmedMode($request);
+
+        if ($mode === null) {
+            return response()->json([
+                'message' => '確認情報の有効期限が切れました。入力画面からやり直してください。',
+            ], 422);
         }
 
         $coordinates = $request->validate([
@@ -315,9 +315,13 @@ class ParkingSpotController extends Controller
             'longitude' => ['required', 'numeric', 'between:-180,180'],
         ]);
 
-        return $this->confirmation->updateConfirmedCoordinates($request, $mode, [
+        $this->confirmation->updateConfirmedCoordinates($request, $mode, [
             'latitude' => (float) $coordinates['latitude'],
             'longitude' => (float) $coordinates['longitude'],
-        ]) ?? $input;
+        ]);
+
+        return response()->json([
+            'message' => '位置を反映しました。',
+        ]);
     }
 }

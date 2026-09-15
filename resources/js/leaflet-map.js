@@ -218,6 +218,54 @@ const initializeMaps = () => {
     document.querySelectorAll('[data-leaflet-map]').forEach(initializeMap);
 };
 
+const initializeLocationCorrections = () => {
+    document.querySelectorAll('[data-location-correction]').forEach((form) => {
+        if (form.dataset.locationCorrectionInitialized) {
+            return;
+        }
+
+        form.dataset.locationCorrectionInitialized = 'true';
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const button = form.querySelector('[type="submit"]');
+            const status = form.querySelector('[data-location-correction-status]');
+            const latitudeInput = document.getElementById(form.dataset.latitudeInputId);
+            const longitudeInput = document.getElementById(form.dataset.longitudeInputId);
+            const confirmedLatitudeInput = document.getElementById(form.dataset.confirmedLatitudeInputId);
+            const confirmedLongitudeInput = document.getElementById(form.dataset.confirmedLongitudeInputId);
+
+            if (!latitudeInput || !longitudeInput || !confirmedLatitudeInput || !confirmedLongitudeInput) {
+                return;
+            }
+
+            button.disabled = true;
+            status.textContent = '位置を反映しています…';
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: new FormData(form),
+                });
+                const payload = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(payload.message ?? '位置を反映できませんでした。');
+                }
+
+                confirmedLatitudeInput.value = latitudeInput.value;
+                confirmedLongitudeInput.value = longitudeInput.value;
+                status.textContent = payload.message;
+            } catch (error) {
+                status.textContent = error.message ?? '位置を反映できませんでした。';
+            } finally {
+                button.disabled = false;
+            }
+        });
+    });
+};
+
 document.addEventListener('livewire:initialized', () => {
     livewireInitialized = true;
 
@@ -236,6 +284,8 @@ if (document.readyState === 'loading') {
 } else {
     initializeMaps();
 }
+
+initializeLocationCorrections();
 
 window.LeafletMaps = Object.freeze({
     setMarkers(mapId, markers) {
