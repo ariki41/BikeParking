@@ -17,6 +17,8 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/search', [SearchController::class, 'index'])->name('search');
 
 Route::view('/privacy', 'privacy')->name('privacy');
+Route::view('/terms', 'terms')->name('terms');
+Route::view('/contact', 'contact')->name('contact');
 
 Route::get('/ads.txt', function () {
     $client = config('advertising.adsense.client');

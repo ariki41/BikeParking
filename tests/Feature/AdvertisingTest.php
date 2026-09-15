@@ -152,7 +152,7 @@ class AdvertisingTest extends TestCase
     {
         $this->get(route('privacy'))
             ->assertOk()
-            ->assertSee('広告とプライバシー')
+            ->assertSee('プライバシーポリシー')
             ->assertSee('Google AdSense');
     }
 }
