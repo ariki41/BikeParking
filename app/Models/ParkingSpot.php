@@ -106,6 +106,12 @@ class ParkingSpot extends Model
         return $this->hasMany(ParkingSpotRates::class);
     }
 
+    /** @return HasMany<ParkingSpotBusinessHour, $this> */
+    public function businessHours(): HasMany
+    {
+        return $this->hasMany(ParkingSpotBusinessHour::class)->orderBy('id');
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

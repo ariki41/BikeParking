@@ -2,7 +2,7 @@
     <x-parking-spot-form action="{{ route('parking_spot.confirm') }}" :capacity="$capacity"
         :displacement-classes="$displacementClasses" :form-values="$formValues" :image-paths="$imagePaths"
         mode="edit" :parking-spot-id="$parkingSpot->id"
-        :rate-day-types="$rateDayTypes" :rate-unit-minutes="$rateUnitMinutes" :rates-input="$ratesInput" />
+        :rate-day-types="$rateDayTypes" :rate-unit-minutes="$rateUnitMinutes" :rates-input="$ratesInput" :business-hour-day-types="$businessHourDayTypes" :business-hours-input="$businessHoursInput" />
 
     <section class="bp-shell mt-8 max-w-4xl">
         @if (session('status'))

@@ -8,6 +8,8 @@
     'rateDayTypes',
     'rateUnitMinutes',
     'ratesInput',
+    'businessHourDayTypes',
+    'businessHoursInput',
     'parkingSpotId' => null,
 ])
 
@@ -28,6 +30,16 @@
 
     if (session()->hasOldInput('rates') && is_array(old('rates'))) {
         $ratesInput = old('rates');
+    }
+    if (session()->hasOldInput('business_hours') && is_array(old('business_hours'))) {
+        $businessHoursInput = old('business_hours');
+    } elseif (session()->hasOldInput('opening_time') || session()->hasOldInput('closing_time')) {
+        $businessHoursInput = [[
+            'day_type' => '全日',
+            'is_closed' => false,
+            'opening_time' => old('opening_time', '00:00'),
+            'closing_time' => old('closing_time', '00:00'),
+        ]];
     }
 
     if (session()->hasOldInput('image_paths') && is_array(old('image_paths'))) {
@@ -140,27 +152,9 @@
                 <section aria-labelledby="parking-spot-hours-heading">
                     <div class="mb-4">
                         <h2 class="bp-section-title" id="parking-spot-hours-heading">営業時間</h2>
-                        <p class="bp-muted mt-1">24時間営業の場合は開始・終了ともに00:00を指定します。</p>
+                        <p class="bp-muted mt-1">曜日区分ごとに設定できます。24時間営業は開始・終了ともに00:00を指定します。</p>
                     </div>
-                    <div class="grid gap-4 md:grid-cols-2">
-                        <div>
-                            <x-input-label for="opening_time">開場時間</x-input-label>
-                            <input class="bp-input" id="opening_time" name="opening_time" type="time"
-                                value="{{ $values['opening_time'] }}" required
-                                aria-invalid="{{ $errors->has('opening_time') ? 'true' : 'false' }}"
-                                @if ($errors->has('opening_time')) aria-describedby="opening-time-error" @endif>
-                            <x-input-error class="mt-1" id="opening-time-error" :messages="$errors->get('opening_time')" />
-                        </div>
-
-                        <div>
-                            <x-input-label for="closing_time">閉場時間</x-input-label>
-                            <input class="bp-input" id="closing_time" name="closing_time" type="time"
-                                value="{{ $values['closing_time'] }}" required
-                                aria-invalid="{{ $errors->has('closing_time') ? 'true' : 'false' }}"
-                                @if ($errors->has('closing_time')) aria-describedby="closing-time-error" @endif>
-                            <x-input-error class="mt-1" id="closing-time-error" :messages="$errors->get('closing_time')" />
-                        </div>
-                    </div>
+                    @include('parking_spot.partials.business-hours-form')
                 </section>
 
                 @include('parking_spot.partials.rates-form')

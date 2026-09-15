@@ -231,7 +231,7 @@ class ParkingSpotAuthorizationHistoryTest extends TestCase
 
         $history = ParkingSpotUpdateHistory::sole();
 
-        $this->assertSame(['name'], array_keys($history->changes));
+        $this->assertSame(['name', 'business_hours'], array_keys($history->changes));
     }
 
     public function test_update_records_actual_coordinate_changes(): void

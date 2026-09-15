@@ -51,6 +51,7 @@ class ParkingSpotUpdateHistory extends Model
             'image_path' => '画像',
             'images' => '画像',
             'rates' => '料金',
+            'business_hours' => '営業時間',
         ];
 
         return collect(array_keys($this->getAttribute('changes') ?? []))
