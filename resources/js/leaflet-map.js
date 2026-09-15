@@ -43,6 +43,10 @@ const popupFor = (marker, urlTemplate) => {
 };
 
 const markerOptionsFor = (marker) => {
+    if (marker.draggable) {
+        return { draggable: true };
+    }
+
     if (marker.is_published !== false) {
         return {};
     }
@@ -67,7 +71,10 @@ const replaceMarkers = (instance, markers) => {
             return;
         }
 
-        const marker = window.L.marker(coordinates, markerOptionsFor(markerData)).addTo(instance.map);
+        const marker = window.L.marker(coordinates, {
+            ...markerOptionsFor(markerData),
+            draggable: instance.configuration.draggableMarker === true || markerData.draggable === true,
+        }).addTo(instance.map);
         const popup = popupFor(markerData, instance.configuration.markerUrlTemplate);
 
         if (popup) {
@@ -75,6 +82,22 @@ const replaceMarkers = (instance, markers) => {
         }
 
         instance.markers.push(marker);
+
+        if (marker.options.draggable) {
+            marker.on('dragend', () => {
+                const position = marker.getLatLng();
+                const latitudeInput = document.getElementById(instance.configuration.markerLatitudeInputId);
+                const longitudeInput = document.getElementById(instance.configuration.markerLongitudeInputId);
+
+                if (latitudeInput) {
+                    latitudeInput.value = position.lat.toFixed(6);
+                }
+
+                if (longitudeInput) {
+                    longitudeInput.value = position.lng.toFixed(6);
+                }
+            });
+        }
     });
 };
 
@@ -195,6 +218,54 @@ const initializeMaps = () => {
     document.querySelectorAll('[data-leaflet-map]').forEach(initializeMap);
 };
 
+const initializeLocationCorrections = () => {
+    document.querySelectorAll('[data-location-correction]').forEach((form) => {
+        if (form.dataset.locationCorrectionInitialized) {
+            return;
+        }
+
+        form.dataset.locationCorrectionInitialized = 'true';
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const button = form.querySelector('[type="submit"]');
+            const status = form.querySelector('[data-location-correction-status]');
+            const latitudeInput = document.getElementById(form.dataset.latitudeInputId);
+            const longitudeInput = document.getElementById(form.dataset.longitudeInputId);
+            const confirmedLatitudeInput = document.getElementById(form.dataset.confirmedLatitudeInputId);
+            const confirmedLongitudeInput = document.getElementById(form.dataset.confirmedLongitudeInputId);
+
+            if (!latitudeInput || !longitudeInput || !confirmedLatitudeInput || !confirmedLongitudeInput) {
+                return;
+            }
+
+            button.disabled = true;
+            status.textContent = '位置を反映しています…';
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: new FormData(form),
+                });
+                const payload = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(payload.message ?? '位置を反映できませんでした。');
+                }
+
+                confirmedLatitudeInput.value = latitudeInput.value;
+                confirmedLongitudeInput.value = longitudeInput.value;
+                status.textContent = payload.message;
+            } catch (error) {
+                status.textContent = error.message ?? '位置を反映できませんでした。';
+            } finally {
+                button.disabled = false;
+            }
+        });
+    });
+};
+
 document.addEventListener('livewire:initialized', () => {
     livewireInitialized = true;
 
@@ -213,6 +284,8 @@ if (document.readyState === 'loading') {
 } else {
     initializeMaps();
 }
+
+initializeLocationCorrections();
 
 window.LeafletMaps = Object.freeze({
     setMarkers(mapId, markers) {

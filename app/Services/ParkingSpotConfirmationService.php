@@ -128,6 +128,41 @@ class ParkingSpotConfirmationService
         return $input;
     }
 
+    /**
+     * Keep a marker adjustment in the trusted confirmation state so returning to
+     * the form and confirming again does not silently discard the correction.
+     *
+     * @param  array{latitude: float, longitude: float}  $coordinates
+     */
+    public function updateConfirmedCoordinates(Request $request, string $mode, array $coordinates): ?array
+    {
+        $input = $this->confirmedInput($request, $mode);
+
+        if ($input === null) {
+            return null;
+        }
+
+        $state = $this->state($request);
+        $input['latitude'] = $coordinates['latitude'];
+        $input['longitude'] = $coordinates['longitude'];
+        $state['input'] = $input;
+        $request->session()->put(self::SESSION_KEY, $state);
+
+        return $input;
+    }
+
+    public function confirmedMode(Request $request): ?string
+    {
+        $state = $this->state($request);
+        $mode = $state['mode'] ?? null;
+
+        if (! in_array($mode, [self::MODE_CREATE, self::MODE_EDIT], true)) {
+            return null;
+        }
+
+        return $this->confirmedInput($request, $mode) === null ? null : $mode;
+    }
+
     public function trustedParkingSpotId(Request $request): ?int
     {
         $state = $this->state($request);

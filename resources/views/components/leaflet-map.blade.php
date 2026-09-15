@@ -7,6 +7,9 @@
     'boundsEvent' => null,
     'markersEvent' => null,
     'markerUrlTemplate' => null,
+    'draggableMarker' => false,
+    'markerLatitudeInputId' => null,
+    'markerLongitudeInputId' => null,
     'errorMessage' => '地図を読み込めませんでした。時間をおいて再度お試しください。',
 ])
 
@@ -21,6 +24,9 @@
         'boundsEvent' => $boundsEvent,
         'markersEvent' => $markersEvent,
         'markerUrlTemplate' => $markerUrlTemplate,
+        'draggableMarker' => $draggableMarker,
+        'markerLatitudeInputId' => $markerLatitudeInputId,
+        'markerLongitudeInputId' => $markerLongitudeInputId,
     ];
 @endphp
 

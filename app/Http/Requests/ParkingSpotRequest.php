@@ -81,6 +81,8 @@ class ParkingSpotRequest extends FormRequest
                 },
             ],
             'address2' => 'required|string|max:255',
+            'latitude' => 'nullable|required_with:longitude|numeric|between:-90,90',
+            'longitude' => 'nullable|required_with:latitude|numeric|between:-180,180',
             'capacity' => 'required|integer|min:1',
             'max_displacement_class' => ['required', Rule::enum(EngineDisplacementClass::class)],
             'images' => 'nullable|array|max:4',
@@ -128,6 +130,13 @@ class ParkingSpotRequest extends FormRequest
             'address2.required' => '続きの住所は必須です。',
             'address2.string' => '続きの住所は文字列で入力してください。',
             'address2.max' => '続きの住所は255文字以内で入力してください。',
+
+            'latitude.required_with' => '緯度と経度はセットで指定してください。',
+            'latitude.numeric' => '緯度は数値で指定してください。',
+            'latitude.between' => '緯度は-90から90の範囲で指定してください。',
+            'longitude.required_with' => '緯度と経度はセットで指定してください。',
+            'longitude.numeric' => '経度は数値で指定してください。',
+            'longitude.between' => '経度は-180から180の範囲で指定してください。',
 
             'capacity.required' => '駐輪場台数は必須です。',
             'capacity.integer' => '駐輪場台数は整数で入力してください。',

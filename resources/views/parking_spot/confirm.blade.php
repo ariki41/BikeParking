@@ -103,6 +103,8 @@
                 <form class="border-t border-slate-100 p-5" id="parkingSpotConfirmForm" method="POST"
                     action="{{ $validatedData['id'] ? route('parking_spot.update', ['parkingSpot' => $validatedData['id']]) : route('parking_spot.store') }}">
                     @csrf
+                    <input id="parking-spot-confirm-latitude" name="latitude" type="hidden" value="{{ $validatedData['latitude'] }}">
+                    <input id="parking-spot-confirm-longitude" name="longitude" type="hidden" value="{{ $validatedData['longitude'] }}">
                     @if ($validatedData['id'])
                         @method('PUT')
                     @endif
@@ -119,11 +121,27 @@
             </div>
 
             <div class="bp-panel">
-                <x-leaflet-map class="h-[28rem] w-full bg-slate-100" :latitude="$validatedData['latitude']"
+                <div class="border-b border-slate-100 p-5">
+                    <h2 class="bp-section-title">駐輪場の位置</h2>
+                    <p class="bp-muted mt-1">マーカーをドラッグして、入口など実際の位置に合わせたら「位置を反映」を押してください。</p>
+                </div>
+                <x-leaflet-map id="parking-spot-confirm-map" class="h-[28rem] w-full bg-slate-100" :latitude="$validatedData['latitude']"
                     :longitude="$validatedData['longitude']" :zoom="18" :markers="[[
                         'latitude' => $validatedData['latitude'],
                         'longitude' => $validatedData['longitude'],
-                    ]]" />
+                    ]]" draggable-marker marker-latitude-input-id="parking-spot-marker-latitude"
+                    marker-longitude-input-id="parking-spot-marker-longitude" />
+                <form class="border-t border-slate-100 p-5" method="POST" action="{{ route('parking_spot.confirm.location') }}"
+                    data-location-correction data-latitude-input-id="parking-spot-marker-latitude"
+                    data-longitude-input-id="parking-spot-marker-longitude"
+                    data-confirmed-latitude-input-id="parking-spot-confirm-latitude"
+                    data-confirmed-longitude-input-id="parking-spot-confirm-longitude">
+                    @csrf
+                    <input id="parking-spot-marker-latitude" name="latitude" type="hidden" value="{{ $validatedData['latitude'] }}">
+                    <input id="parking-spot-marker-longitude" name="longitude" type="hidden" value="{{ $validatedData['longitude'] }}">
+                    <button class="inline-flex min-h-10 items-center justify-center rounded-md bg-sky-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60" type="submit">位置を反映</button>
+                    <p class="bp-muted mt-2 text-sm" data-location-correction-status aria-live="polite"></p>
+                </form>
             </div>
         </div>
     </div>

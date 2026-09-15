@@ -104,6 +104,8 @@ class ParkingSpotController extends Controller
             Gate::authorize('update', $parkingSpot);
         }
 
+        $previousInput = $this->confirmation->confirmedInput($request, $mode);
+
         $currentImagePaths = $validatedData['image_paths']
             ?? array_filter([$validatedData['image_path'] ?? null]);
         $validatedData['image_paths'] = $this->images->prepareForConfirmation(
@@ -122,28 +124,34 @@ class ParkingSpotController extends Controller
         $validatedData['address'] = mb_convert_kana($validatedData['address1'].$validatedData['address2'], 'rn');
         $validatedData['postalcode'] = mb_convert_kana(str_replace('-', '', $validatedData['postalcode']), 'rn');
 
-        try {
-            $yolpLocation = $this->geocoding->geocode($validatedData['address']);
-        } catch (YolpApiException $exception) {
-            Log::warning('YOLP API is unavailable while geocoding a parking spot.', [
-                'category' => $exception->category(),
-                'previous_exception' => $exception->getPrevious() ? $exception->getPrevious()::class : null,
-            ]);
+        if ($this->canReuseCorrectedCoordinates($previousInput, $validatedData)) {
+            $validatedData['longitude'] = (float) $validatedData['longitude'];
+            $validatedData['latitude'] = (float) $validatedData['latitude'];
+        } else {
+            try {
+                $yolpLocation = $this->geocoding->geocode($validatedData['address']);
+            } catch (YolpApiException $exception) {
+                Log::warning('YOLP API is unavailable while geocoding a parking spot.', [
+                    'category' => $exception->category(),
+                    'previous_exception' => $exception->getPrevious() ? $exception->getPrevious()::class : null,
+                ]);
 
-            return $this->redirectToTrustedForm($request)
-                ->withErrors(['address2' => $exception->userMessage()])
-                ->withInput($validatedData);
+                return $this->redirectToTrustedForm($request)
+                    ->withErrors(['address2' => $exception->userMessage()])
+                    ->withInput($validatedData);
+            }
+
+            if (is_null($yolpLocation)) {
+                return $this->redirectToTrustedForm($request)
+                    ->withErrors(['address2' => '住所が見つかりません。'])
+                    ->withInput($validatedData);
+            }
+
+            // A changed address always starts from its newly geocoded position.
+            $validatedData['longitude'] = $yolpLocation['lon'];
+            $validatedData['latitude'] = $yolpLocation['lat'];
+            $validatedData['address'] = $yolpLocation['address'];
         }
-
-        if (is_null($yolpLocation)) {
-            return $this->redirectToTrustedForm($request)
-                ->withErrors(['address2' => '住所が見つかりません。'])
-                ->withInput($validatedData);
-        }
-
-        $validatedData['longitude'] = $yolpLocation['lon'];
-        $validatedData['latitude'] = $yolpLocation['lat'];
-        $validatedData['address'] = $yolpLocation['address'];
 
         $capacity = config('categories.parking_spot_capacity');
         $displacementClass = EngineDisplacementClass::from($validatedData['max_displacement_class']);
@@ -277,5 +285,43 @@ class ParkingSpotController extends Controller
             'max_rate' => '',
             'no_max_rate' => '0',
         ];
+    }
+
+    private function canReuseCorrectedCoordinates(?array $previousInput, array $input): bool
+    {
+        if ($previousInput === null
+            || ! isset($input['latitude'], $input['longitude'])
+            || ! isset($previousInput['latitude'], $previousInput['longitude'])) {
+            return false;
+        }
+
+        return ($previousInput['postalcode'] ?? null) === $input['postalcode']
+            && ($previousInput['address1'] ?? null) === $input['address1']
+            && ($previousInput['address2'] ?? null) === $input['address2'];
+    }
+
+    public function updateConfirmedLocation(Request $request)
+    {
+        $mode = $this->confirmation->confirmedMode($request);
+
+        if ($mode === null) {
+            return response()->json([
+                'message' => '確認情報の有効期限が切れました。入力画面からやり直してください。',
+            ], 422);
+        }
+
+        $coordinates = $request->validate([
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+
+        $this->confirmation->updateConfirmedCoordinates($request, $mode, [
+            'latitude' => (float) $coordinates['latitude'],
+            'longitude' => (float) $coordinates['longitude'],
+        ]);
+
+        return response()->json([
+            'message' => '位置を反映しました。',
+        ]);
     }
 }
