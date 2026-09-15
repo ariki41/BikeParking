@@ -7,6 +7,7 @@ use App\Exceptions\YolpApiException;
 use App\Http\Requests\ParkingSpotRequest;
 use App\Models\ParkingSpot;
 use App\Services\ParkingSpotConfirmationService;
+use App\Services\ParkingSpotDuplicateCandidateService;
 use App\Services\ParkingSpotGeocodingService;
 use App\Services\ParkingSpotImageService;
 use App\Services\ParkingSpotPersistenceService;
@@ -22,6 +23,7 @@ class ParkingSpotController extends Controller
         private readonly ParkingSpotGeocodingService $geocoding,
         private readonly ParkingSpotImageService $images,
         private readonly ParkingSpotConfirmationService $confirmation,
+        private readonly ParkingSpotDuplicateCandidateService $duplicateCandidates,
     ) {}
 
     public function show(Request $request, ParkingSpot $parkingSpot)
@@ -148,7 +150,14 @@ class ParkingSpotController extends Controller
 
         $this->confirmation->confirm($request, $mode, $validatedData['id'], $validatedData);
 
-        return view('parking_spot.confirm', compact('validatedData', 'capacity', 'displacementClass'));
+        $duplicateCandidates = $mode === ParkingSpotConfirmationService::MODE_CREATE
+            ? $this->duplicateCandidates->find(
+                $validatedData['name'], $validatedData['address'],
+                (float) $validatedData['latitude'], (float) $validatedData['longitude'],
+            )
+            : collect();
+
+        return view('parking_spot.confirm', compact('validatedData', 'capacity', 'displacementClass', 'duplicateCandidates'));
     }
 
     public function store(Request $request)

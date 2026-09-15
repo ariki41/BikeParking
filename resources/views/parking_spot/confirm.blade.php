@@ -5,6 +5,21 @@
             <p class="bp-muted mt-2">内容に問題がなければ登録・更新します。</p>
         </div>
 
+        @if ($duplicateCandidates->isNotEmpty())
+            <section class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-5" aria-labelledby="duplicate-candidates-heading">
+                <h2 class="text-lg font-bold text-amber-950" id="duplicate-candidates-heading">重複している可能性がある駐輪場</h2>
+                <p class="mt-1 text-sm text-amber-900">同じ住所、または200m以内で名称が類似する施設が見つかりました。別施設であることを確認したうえで、登録を続けられます。</p>
+                <ul class="mt-3 space-y-2">
+                    @foreach ($duplicateCandidates as $candidate)
+                        <li>
+                            <a class="font-semibold text-sky-700 underline hover:text-sky-900" href="{{ route('parking_spot.show', $candidate) }}" target="_blank" rel="noopener noreferrer">{{ $candidate->name }}</a>
+                            <span class="text-sm text-amber-950">（{{ $candidate->address }}）</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
+
         <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
             <div class="bp-panel">
                 <div class="grid gap-1 overflow-hidden border-b border-slate-100 sm:grid-cols-2">

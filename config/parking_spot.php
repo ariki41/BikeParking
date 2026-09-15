@@ -4,6 +4,8 @@ return [
     'confirmation' => [
         'lifetime_hours' => 24,
     ],
+    // 表記ゆれを正規化した名称が類似する施設だけを、この距離内で重複候補として知らせる。
+    'duplicate_candidate_distance_meters' => 200,
     'search_map' => [
         'default_zoom' => 15,
         'min_zoom' => 0,
