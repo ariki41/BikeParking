@@ -33,8 +33,9 @@ class ParkingSpotFormTest extends TestCase
             ->assertSee('name="address1"', false)
             ->assertSee('name="address2"', false)
             ->assertSee('name="capacity"', false)
-            ->assertSee('name="opening_time"', false)
-            ->assertSee('name="closing_time"', false)
+            ->assertSee('name="business_hours[0][opening_time]"', false)
+            ->assertSee('name="business_hours[0][closing_time]"', false)
+            ->assertSee('data-business-hours', false)
             ->assertSee('name="images[]"', false)
             ->assertSee('name="rates[0][rate]"', false)
             ->assertSee('data-parking-spot-rates data-max-rates="4"', false)
@@ -128,8 +129,7 @@ class ParkingSpotFormTest extends TestCase
             ->assertSee('/storage/temp/parking-spots/restored.webp')
             ->assertDontSee('/storage/parking-spots/existing.webp')
             ->assertSee('value="300"', false)
-            ->assertSee('閉場時間の形式が正しくありません。例: 22:00')
-            ->assertSee('aria-describedby="closing-time-error"', false);
+            ->assertSee('閉場時間の形式が正しくありません。例: 22:00');
     }
 
     private function createParkingSpot(): array

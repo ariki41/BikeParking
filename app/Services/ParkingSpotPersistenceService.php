@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ParkingSpot;
+use App\Models\ParkingSpotBusinessHour;
 use App\Models\ParkingSpotRates;
 use App\Models\ParkingSpotUpdateHistory;
 use App\Models\Postalcode;
@@ -40,6 +41,7 @@ class ParkingSpotPersistenceService
                 $parkingSpot->save();
                 $this->images->replaceParkingSpotImages($parkingSpot, $persistedImages->paths, $createdBy);
                 $this->saveParkingSpotRates($parkingSpot, $input['rates']);
+                $this->saveBusinessHours($parkingSpot, $this->businessHoursInput($input));
 
                 return $parkingSpot;
             });
@@ -73,9 +75,10 @@ class ParkingSpotPersistenceService
                     // 画像・料金・更新履歴を一体で更新するため、同時編集で変更差分を取り違えないようにする。
                     ->lockForUpdate()
                     ->findOrFail($input['id']);
-                $parkingSpot->load(['images', 'rates']);
+                $parkingSpot->load(['images', 'rates', 'businessHours']);
                 $originalImagePaths = $parkingSpot->image_paths;
                 $originalRates = $this->normalizeStoredRates($parkingSpot);
+                $originalBusinessHours = $this->normalizeStoredBusinessHours($parkingSpot);
 
                 $this->fillParkingSpot($parkingSpot, $input, $postalcode);
                 $persistedImages = $this->images->persistConfirmedImages(
@@ -116,6 +119,14 @@ class ParkingSpotPersistenceService
                     ];
                 }
 
+                $parkingSpot->businessHours()->delete();
+                $businessHours = $this->businessHoursInput($input);
+                $this->saveBusinessHours($parkingSpot, $businessHours);
+                $updatedBusinessHours = $this->normalizeInputBusinessHours($businessHours);
+                if ($originalBusinessHours !== $updatedBusinessHours) {
+                    $changes['business_hours'] = ['before' => $originalBusinessHours, 'after' => $updatedBusinessHours];
+                }
+
                 ParkingSpotUpdateHistory::create([
                     'parking_spot_id' => $parkingSpot->id,
                     'user_id' => $updatedBy->id,
@@ -154,8 +165,9 @@ class ParkingSpotPersistenceService
         $parkingSpot->address = $input['address'];
         $parkingSpot->longitude = $input['longitude'];
         $parkingSpot->latitude = $input['latitude'];
-        $parkingSpot->opening_time = $this->normalizeDatabaseTime($input['opening_time']);
-        $parkingSpot->closing_time = $this->normalizeDatabaseTime($input['closing_time']);
+        $representative = $this->representativeBusinessHour($this->businessHoursInput($input));
+        $parkingSpot->opening_time = $this->normalizeDatabaseTime($representative['opening_time']);
+        $parkingSpot->closing_time = $this->normalizeDatabaseTime($representative['closing_time']);
         $parkingSpot->capacity = $input['capacity'];
         $parkingSpot->max_displacement_class = $input['max_displacement_class'];
     }
@@ -210,6 +222,26 @@ class ParkingSpotPersistenceService
             ->all();
     }
 
+    private function normalizeStoredBusinessHours(ParkingSpot $parkingSpot): array
+    {
+        return $parkingSpot->businessHours->map(fn (ParkingSpotBusinessHour $hour) => [
+            'day_type' => $hour->day_type,
+            'is_closed' => $hour->is_closed,
+            'opening_time' => substr((string) $hour->opening_time, 0, 5),
+            'closing_time' => substr((string) $hour->closing_time, 0, 5),
+        ])->values()->all();
+    }
+
+    private function normalizeInputBusinessHours(array $businessHours): array
+    {
+        return collect($businessHours)->map(fn (array $hour) => [
+            'day_type' => $hour['day_type'],
+            'is_closed' => (bool) ($hour['is_closed'] ?? false),
+            'opening_time' => substr($hour['opening_time'], 0, 5),
+            'closing_time' => substr($hour['closing_time'], 0, 5),
+        ])->values()->all();
+    }
+
     private function normalizeDatabaseTime(string $time): string
     {
         return strlen($time) === 5 ? $time.':00' : $time;
@@ -229,6 +261,34 @@ class ParkingSpotPersistenceService
                 'max_rate' => ($rate['no_max_rate'] ?? false) ? null : ($rate['max_rate'] ?? null),
             ]);
         }
+    }
+
+    private function saveBusinessHours(ParkingSpot $parkingSpot, array $businessHours): void
+    {
+        foreach ($this->normalizeInputBusinessHours($businessHours) as $hour) {
+            $parkingSpot->businessHours()->create([
+                ...$hour,
+                'opening_time' => $this->normalizeDatabaseTime($hour['opening_time']),
+                'closing_time' => $this->normalizeDatabaseTime($hour['closing_time']),
+            ]);
+        }
+    }
+
+    private function businessHoursInput(array $input): array
+    {
+        return isset($input['business_hours']) && is_array($input['business_hours']) && $input['business_hours'] !== []
+            ? $input['business_hours']
+            : [['day_type' => '全日', 'is_closed' => false, 'opening_time' => $input['opening_time'], 'closing_time' => $input['closing_time']]];
+    }
+
+    private function representativeBusinessHour(array $businessHours): array
+    {
+        $openHours = collect($businessHours)->filter(fn (array $hour) => ! ($hour['is_closed'] ?? false));
+        $hour = $openHours->first(fn (array $hour) => ($hour['day_type'] ?? null) === '全日')
+            ?? $openHours->first()
+            ?? ['opening_time' => '00:00', 'closing_time' => '00:00'];
+
+        return ['opening_time' => $hour['opening_time'] ?? '00:00', 'closing_time' => $hour['closing_time'] ?? '00:00'];
     }
 
     /**

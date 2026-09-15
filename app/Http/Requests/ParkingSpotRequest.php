@@ -35,7 +35,29 @@ class ParkingSpotRequest extends FormRequest
             })
             ->all();
 
-        $this->merge(['rates' => $rates]);
+        $businessHours = $this->input('business_hours');
+        if (! is_array($businessHours) || $businessHours === []) {
+            // 旧フォーム・確認セッションからの入力も全日営業時間として受け入れる。
+            $businessHours = [[
+                'day_type' => '全日', 'is_closed' => false,
+                'opening_time' => $this->input('opening_time', '00:00'),
+                'closing_time' => $this->input('closing_time', '00:00'),
+            ]];
+        }
+
+        $businessHours = collect($businessHours)->values()->map(function (array $hour): array {
+            $hour['is_closed'] = filter_var($hour['is_closed'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+            return $hour;
+        })->all();
+
+        $representative = collect($businessHours)->first(fn ($hour) => ! ($hour['is_closed'] ?? false)) ?? $businessHours[0];
+        $this->merge([
+            'rates' => $rates,
+            'business_hours' => $businessHours,
+            'opening_time' => $this->input('opening_time', $representative['opening_time'] ?? '00:00'),
+            'closing_time' => $this->input('closing_time', $representative['closing_time'] ?? '00:00'),
+        ]);
     }
 
     public function withValidator(Validator $validator): void
@@ -53,6 +75,7 @@ class ParkingSpotRequest extends FormRequest
             }
 
             $this->validateRateTimeConflicts($validator);
+            $this->validateBusinessHourConflicts($validator);
         });
     }
 
@@ -93,6 +116,11 @@ class ParkingSpotRequest extends FormRequest
             'image_path' => 'nullable|string|max:255',
             'opening_time' => 'required|date_format:H:i',
             'closing_time' => 'required|date_format:H:i',
+            'business_hours' => 'required|array|min:1|max:8',
+            'business_hours.*.day_type' => ['required', 'string', Rule::in(array_keys(config('categories.parking_spot_business_hour_day_types')))],
+            'business_hours.*.is_closed' => 'nullable|boolean',
+            'business_hours.*.opening_time' => 'required|date_format:H:i',
+            'business_hours.*.closing_time' => 'required|date_format:H:i',
             'rates' => 'required|array|min:1|max:4',
             'rates.*.day_type' => ['required', 'string', Rule::in(RateDayType::values())],
             'rates.*.start_time' => 'required|date_format:H:i',
@@ -166,6 +194,17 @@ class ParkingSpotRequest extends FormRequest
             'closing_time.required' => '閉場時間は必須です。',
             'closing_time.date_format' => '閉場時間の形式が正しくありません。例: 22:00',
 
+            'business_hours.required' => '営業時間は1件以上入力してください。',
+            'business_hours.array' => '営業時間の形式が正しくありません。',
+            'business_hours.min' => '営業時間は1件以上入力してください。',
+            'business_hours.max' => '営業時間は8件まで入力できます。',
+            'business_hours.*.day_type.required' => '曜日区分を選択してください。',
+            'business_hours.*.day_type.in' => '曜日区分を選択してください。',
+            'business_hours.*.opening_time.required' => '開始時間を入力してください。',
+            'business_hours.*.opening_time.date_format' => '開場時間の形式が正しくありません。例: 10:00',
+            'business_hours.*.closing_time.required' => '終了時間を入力してください。',
+            'business_hours.*.closing_time.date_format' => '閉場時間の形式が正しくありません。例: 22:00',
+
             'rates.required' => '料金は必須です。',
             'rates.array' => '料金の形式が正しくありません。',
             'rates.min' => '料金は1件以上入力してください。',
@@ -230,6 +269,41 @@ class ParkingSpotRequest extends FormRequest
 
             $validator->errors()->add("rates.{$leftIndex}.time_conflict", $message);
             $validator->errors()->add("rates.{$rightIndex}.time_conflict", $message);
+        }
+    }
+
+    private function validateBusinessHourConflicts(Validator $validator): void
+    {
+        $hours = $this->input('business_hours');
+        if (! is_array($hours) || $validator->errors()->has('business_hours')) {
+            return;
+        }
+
+        $scopes = [
+            '全日' => ['月曜', '火曜', '水曜', '木曜', '金曜', '土曜', '日曜', '祝日'],
+            '平日' => ['月曜', '火曜', '水曜', '木曜', '金曜'],
+            '土日祝' => ['土曜', '日曜', '祝日'],
+            '月曜' => ['月曜'], '火曜' => ['火曜'], '水曜' => ['水曜'], '木曜' => ['木曜'],
+            '金曜' => ['金曜'], '土曜' => ['土曜'], '日曜' => ['日曜'],
+        ];
+        foreach ($hours as $index => $hour) {
+            $dayType = $hour['day_type'] ?? null;
+            if (! isset($scopes[$dayType])) {
+                continue;
+            }
+            foreach (array_slice($hours, 0, $index) as $other) {
+                $otherDayType = $other['day_type'] ?? null;
+                if (($hour['is_closed'] ?? false) === ($other['is_closed'] ?? false)
+                    && isset($scopes[$otherDayType]) && array_intersect($scopes[$dayType], $scopes[$otherDayType]) !== []) {
+                    $validator->errors()->add("business_hours.{$index}.day_type", '曜日区分が他の営業時間と重複しています。');
+                    break;
+                }
+            }
+        }
+
+        $covered = collect($hours)->flatMap(fn (array $hour) => $scopes[$hour['day_type'] ?? ''] ?? [])->unique();
+        if ($covered->count() !== 8) {
+            $validator->errors()->add('business_hours', 'すべての曜日と祝日の営業時間を設定してください。');
         }
     }
 

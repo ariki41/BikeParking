@@ -30,7 +30,7 @@ class ParkingSpotController extends Controller
     {
         $user = $request->user();
         $parkingSpot
-            ->load(['postalcode.city.prefecture', 'images', 'rates', 'updateHistories.user'])
+            ->load(['postalcode.city.prefecture', 'images', 'rates', 'businessHours', 'updateHistories.user'])
             ->loadCount(['favorites', 'reviews'])
             ->loadAvg('reviews', 'rating');
 
@@ -64,6 +64,7 @@ class ParkingSpotController extends Controller
         $displacementClasses = EngineDisplacementClass::cases();
         $rateDayTypes = config('categories.parking_spot_rate_day_types');
         $rateUnitMinutes = config('categories.parking_spot_rate_unit_minutes');
+        $businessHourDayTypes = config('categories.parking_spot_business_hour_day_types');
         $formValues = [
             'name' => '',
             'postalcode' => '',
@@ -75,9 +76,10 @@ class ParkingSpotController extends Controller
             'closing_time' => '00:00',
         ];
         $ratesInput = [$this->defaultRateInput()];
+        $businessHoursInput = [$this->defaultBusinessHourInput()];
         $imagePaths = [];
 
-        return view('parking_spot.create', compact('capacity', 'displacementClasses', 'rateDayTypes', 'rateUnitMinutes', 'formValues', 'ratesInput', 'imagePaths'));
+        return view('parking_spot.create', compact('capacity', 'displacementClasses', 'rateDayTypes', 'rateUnitMinutes', 'businessHourDayTypes', 'formValues', 'ratesInput', 'businessHoursInput', 'imagePaths'));
     }
 
     public function confirm(ParkingSpotRequest $request)
@@ -197,7 +199,7 @@ class ParkingSpotController extends Controller
 
     public function edit(Request $request, ParkingSpot $parkingSpot)
     {
-        $parkingSpot->load(['postalcode.city.prefecture', 'images', 'rates']);
+        $parkingSpot->load(['postalcode.city.prefecture', 'images', 'rates', 'businessHours']);
         Gate::authorize('update', $parkingSpot);
         $this->confirmation->beginEdit($request, $parkingSpot->id);
 
@@ -205,6 +207,7 @@ class ParkingSpotController extends Controller
         $displacementClasses = EngineDisplacementClass::cases();
         $rateDayTypes = config('categories.parking_spot_rate_day_types');
         $rateUnitMinutes = config('categories.parking_spot_rate_unit_minutes');
+        $businessHourDayTypes = config('categories.parking_spot_business_hour_day_types');
 
         $address1 = $parkingSpot->postalcode->fullAddress();
         $formValues = [
@@ -230,8 +233,17 @@ class ParkingSpotController extends Controller
             'no_max_rate' => $rate->max_rate === null ? '1' : '0',
         ])->values()->all() ?: [$this->defaultRateInput()];
         $imagePaths = $parkingSpot->image_paths;
+        $businessHoursInput = $parkingSpot->businessHours->map(fn ($hour) => [
+            'day_type' => $hour->day_type,
+            'is_closed' => $hour->is_closed,
+            'opening_time' => $hour->opening_time === null ? '00:00' : substr($hour->opening_time, 0, 5),
+            'closing_time' => $hour->closing_time === null ? '00:00' : substr($hour->closing_time, 0, 5),
+        ])->values()->all() ?: [[
+            'day_type' => '全日', 'is_closed' => false,
+            'opening_time' => $formValues['opening_time'], 'closing_time' => $formValues['closing_time'],
+        ]];
 
-        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'displacementClasses', 'rateDayTypes', 'rateUnitMinutes', 'formValues', 'ratesInput', 'imagePaths'));
+        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'displacementClasses', 'rateDayTypes', 'rateUnitMinutes', 'businessHourDayTypes', 'formValues', 'ratesInput', 'businessHoursInput', 'imagePaths'));
     }
 
     public function update(Request $request, ParkingSpot $parkingSpot)
@@ -285,6 +297,11 @@ class ParkingSpotController extends Controller
             'max_rate' => '',
             'no_max_rate' => '0',
         ];
+    }
+
+    private function defaultBusinessHourInput(): array
+    {
+        return ['day_type' => '全日', 'is_closed' => false, 'opening_time' => '00:00', 'closing_time' => '00:00'];
     }
 
     private function canReuseCorrectedCoordinates(?array $previousInput, array $input): bool

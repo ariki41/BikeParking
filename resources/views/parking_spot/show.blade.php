@@ -221,7 +221,13 @@
                         </div>
                         <div class="grid grid-cols-[140px_minmax(0,1fr)] gap-3 pb-2 pt-3">
                             <dt class="whitespace-nowrap font-semibold text-slate-500">営業時間</dt>
-                            <dd class="text-slate-900">{{ $parkingSpot->opening_time }} ～ {{ $parkingSpot->closing_time }}</dd>
+                            <dd class="space-y-1 text-slate-900">
+                                @forelse ($parkingSpot->businessHours as $hour)
+                                    <div>{{ $hour->day_type }}: {{ $hour->formattedHours() }}</div>
+                                @empty
+                                    <div>{{ $parkingSpot->opening_time }} ～ {{ $parkingSpot->closing_time }}</div>
+                                @endforelse
+                            </dd>
                         </div>
                     </dl>
                     <div class="px-5 pb-3 pt-1 text-[11px] text-slate-400">

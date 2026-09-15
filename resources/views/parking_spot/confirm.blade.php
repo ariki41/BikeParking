@@ -61,10 +61,7 @@
                     </div>
                     <div class="grid gap-1 py-3 sm:grid-cols-[140px_1fr] sm:gap-4">
                         <dt class="font-semibold text-slate-500">営業時間</dt>
-                        <dd class="text-slate-900">
-                            {{ $validatedData['opening_time'] ?? '' }} ～
-                            {{ $validatedData['closing_time'] === '00:00' ? '24:00' : $validatedData['closing_time'] ?? '' }}
-                        </dd>
+                        <dd class="space-y-1 text-slate-900">@foreach ($validatedData['business_hours'] as $hour)<div>{{ $hour['day_type'] }}: @if ($hour['is_closed'] ?? false) {{ $hour['opening_time'] === '00:00' && $hour['closing_time'] === '00:00' ? '終日休業' : $hour['opening_time'].' ～ '.($hour['closing_time'] === '00:00' ? '翌0:00' : $hour['closing_time']).' 休業' }} @else {{ $hour['opening_time'] === '00:00' && $hour['closing_time'] === '00:00' ? '24時間営業' : $hour['opening_time'].' ～ '.($hour['closing_time'] === '00:00' ? '翌0:00' : $hour['closing_time']) }} @endif</div>@endforeach</dd>
                     </div>
                     <div class="grid gap-3 py-3 sm:grid-cols-[140px_1fr] sm:gap-4 sm:last:pb-0">
                         <dt class="font-semibold text-slate-500">料金</dt>

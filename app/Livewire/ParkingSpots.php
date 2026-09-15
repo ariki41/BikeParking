@@ -278,9 +278,20 @@ class ParkingSpots extends Component
             ->supportsEngineDisplacements($this->engineDisplacements)
             ->when($capacityFilters !== [], fn (Builder $query) => $query->whereIn('capacity', $capacityFilters))
             ->when($excludeClosed, fn (Builder $query) => $query->published())
-            ->when($open24Hours, fn (Builder $query) => $query
-                ->where('opening_time', '00:00:00')
-                ->where('closing_time', '00:00:00'))
+            ->when($open24Hours, fn (Builder $query) => $query->where(function (Builder $hoursQuery): void {
+                // 移行済みは曜日別レコードを正とし、レコード未作成の旧データだけ従来列へフォールバックする。
+                $hoursQuery->where(function (Builder $legacyQuery): void {
+                    $legacyQuery->doesntHave('businessHours')
+                        ->where('opening_time', '00:00:00')
+                        ->where('closing_time', '00:00:00');
+                })->orWhere(function (Builder $businessHoursQuery): void {
+                    $businessHoursQuery->whereHas('businessHours')
+                        ->whereDoesntHave('businessHours', fn (Builder $hours) => $hours
+                            ->where('is_closed', true)
+                            ->orWhere('opening_time', '!=', '00:00:00')
+                            ->orWhere('closing_time', '!=', '00:00:00'));
+                });
+            }))
             ->when($hasFreeTime || $maxRate !== null, function (Builder $query) use ($hasFreeTime, $maxRate): void {
                 $query->whereHas('rates', function (Builder $rateQuery) use ($hasFreeTime, $maxRate): void {
                     if ($hasFreeTime) {
