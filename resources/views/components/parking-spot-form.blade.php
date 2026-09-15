@@ -22,6 +22,8 @@
         'max_displacement_class' => old('max_displacement_class', $formValues['max_displacement_class'] ?? ''),
         'opening_time' => old('opening_time', $formValues['opening_time'] ?? '00:00'),
         'closing_time' => old('closing_time', $formValues['closing_time'] ?? '00:00'),
+        'latitude' => old('latitude'),
+        'longitude' => old('longitude'),
     ];
 
     if (session()->hasOldInput('rates') && is_array(old('rates'))) {
@@ -62,6 +64,12 @@
 
         @if ($isEdit)
             <input name="id" type="hidden" value="{{ $parkingSpotId }}">
+        @endif
+
+        @if ($values['latitude'] !== null && $values['longitude'] !== null)
+            <input name="latitude" type="hidden" value="{{ $values['latitude'] }}">
+            <input name="longitude" type="hidden" value="{{ $values['longitude'] }}">
+            <p class="mx-5 mt-5 rounded-md border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 sm:mx-6">住所を変更して確認すると、地図上で補正した位置は新しい住所の検索結果に戻ります。</p>
         @endif
 
         <div class="grid gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">

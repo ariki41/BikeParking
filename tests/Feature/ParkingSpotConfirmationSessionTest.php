@@ -138,6 +138,48 @@ class ParkingSpotConfirmationSessionTest extends TestCase
         $this->assertSame(1, ParkingSpot::where('name', '戻る操作テスト駐輪場')->count());
     }
 
+    public function test_create_saves_marker_correction_from_confirmation(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+        $this->fakeGeocode();
+
+        $this->actingAs($user)->get(route('parking_spot.create'))->assertOk();
+        $this->post(route('parking_spot.confirm'), $this->validFormInput($postalcode, [
+            'name' => '位置補正を保存する駐輪場',
+        ]))->assertOk()
+            ->assertSee('マーカーをドラッグして', false)
+            ->assertSee('parking-spot-confirm-latitude', false)
+            ->assertSee('"draggableMarker":true', false);
+
+        $this->post(route('parking_spot.store'), [
+            'latitude' => '35.690123',
+            'longitude' => '139.760456',
+        ])->assertRedirect(route('home'));
+
+        $this->assertDatabaseHas('parking_spots', [
+            'name' => '位置補正を保存する駐輪場',
+            'latitude' => 35.690123,
+            'longitude' => 139.760456,
+        ]);
+    }
+
+    public function test_marker_correction_is_server_validated(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+        $this->fakeGeocode();
+
+        $this->actingAs($user)->get(route('parking_spot.create'))->assertOk();
+        $this->post(route('parking_spot.confirm'), $this->validFormInput($postalcode))->assertOk();
+
+        $this->post(route('parking_spot.store'), [
+            'latitude' => '91',
+            'longitude' => '139.760456',
+        ])->assertRedirect()
+            ->assertSessionHasErrors(['latitude']);
+
+        $this->assertDatabaseMissing('parking_spots', ['name' => '確認セッションフォーム駐輪場']);
+    }
+
     public function test_edit_back_navigation_keeps_the_trusted_target_for_retry(): void
     {
         [$parkingSpot, $user, $postalcode] = $this->createParkingSpot();
@@ -164,6 +206,64 @@ class ParkingSpotConfirmationSessionTest extends TestCase
             ->assertSessionMissing(ParkingSpotConfirmationService::SESSION_KEY);
 
         $this->assertSame('戻って再試行した駐輪場', $parkingSpot->fresh()->name);
+    }
+
+    public function test_edit_back_navigation_keeps_marker_correction_when_address_is_unchanged(): void
+    {
+        [$parkingSpot, $user, $postalcode] = $this->createParkingSpot();
+        $input = $this->validFormInput($postalcode, ['id' => $parkingSpot->id]);
+        $this->fakeGeocode();
+
+        $this->actingAs($user)->get(route('parking_spot.edit', $parkingSpot))->assertOk();
+        $this->post(route('parking_spot.confirm'), $input)->assertOk();
+
+        $this->put(route('parking_spot.update', $parkingSpot), [
+            'back' => 'back',
+            'latitude' => '35.690123',
+            'longitude' => '139.760456',
+        ])->assertRedirect(route('parking_spot.edit', $parkingSpot));
+
+        $this->get(route('parking_spot.edit', $parkingSpot))
+            ->assertOk()
+            ->assertSee('name="latitude" type="hidden" value="35.690123"', false)
+            ->assertSee('name="longitude" type="hidden" value="139.760456"', false);
+
+        $this->post(route('parking_spot.confirm'), [
+            ...$input,
+            'latitude' => '35.690123',
+            'longitude' => '139.760456',
+        ])->assertOk();
+        $this->put(route('parking_spot.update', $parkingSpot))->assertRedirect(route('home'));
+
+        $this->assertDatabaseHas('parking_spots', [
+            'id' => $parkingSpot->id,
+            'latitude' => 35.690123,
+            'longitude' => 139.760456,
+        ]);
+    }
+
+    public function test_changed_address_replaces_a_previous_marker_correction_with_geocoded_coordinates(): void
+    {
+        [$parkingSpot, $user, $postalcode] = $this->createParkingSpot();
+        $input = $this->validFormInput($postalcode, ['id' => $parkingSpot->id]);
+        $this->fakeGeocode();
+
+        $this->actingAs($user)->get(route('parking_spot.edit', $parkingSpot))->assertOk();
+        $this->post(route('parking_spot.confirm'), $input)->assertOk();
+        $this->put(route('parking_spot.update', $parkingSpot), [
+            'back' => 'back',
+            'latitude' => '35.690123',
+            'longitude' => '139.760456',
+        ])->assertRedirect(route('parking_spot.edit', $parkingSpot));
+
+        $this->post(route('parking_spot.confirm'), [
+            ...$input,
+            'address2' => '9-9',
+            'latitude' => '35.690123',
+            'longitude' => '139.760456',
+        ])->assertOk()
+            ->assertSee('"latitude":35.685', false)
+            ->assertSee('"longitude":139.753', false);
     }
 
     public function test_validation_failure_keeps_confirmed_input_for_retry(): void

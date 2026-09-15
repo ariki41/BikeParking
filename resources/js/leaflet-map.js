@@ -43,6 +43,10 @@ const popupFor = (marker, urlTemplate) => {
 };
 
 const markerOptionsFor = (marker) => {
+    if (marker.draggable) {
+        return { draggable: true };
+    }
+
     if (marker.is_published !== false) {
         return {};
     }
@@ -67,7 +71,10 @@ const replaceMarkers = (instance, markers) => {
             return;
         }
 
-        const marker = window.L.marker(coordinates, markerOptionsFor(markerData)).addTo(instance.map);
+        const marker = window.L.marker(coordinates, {
+            ...markerOptionsFor(markerData),
+            draggable: instance.configuration.draggableMarker === true || markerData.draggable === true,
+        }).addTo(instance.map);
         const popup = popupFor(markerData, instance.configuration.markerUrlTemplate);
 
         if (popup) {
@@ -75,6 +82,22 @@ const replaceMarkers = (instance, markers) => {
         }
 
         instance.markers.push(marker);
+
+        if (marker.options.draggable) {
+            marker.on('dragend', () => {
+                const position = marker.getLatLng();
+                const latitudeInput = document.getElementById(instance.configuration.markerLatitudeInputId);
+                const longitudeInput = document.getElementById(instance.configuration.markerLongitudeInputId);
+
+                if (latitudeInput) {
+                    latitudeInput.value = position.lat.toFixed(6);
+                }
+
+                if (longitudeInput) {
+                    longitudeInput.value = position.lng.toFixed(6);
+                }
+            });
+        }
     });
 };
 
