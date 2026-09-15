@@ -53,9 +53,13 @@
         </main>
 
         <footer class="shrink-0 border-t border-slate-200 bg-white">
-            <div class="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+            <div class="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
                 <span>サービス維持のため、ページ内の一部に広告を掲載することがあります。</span>
-                <a class="font-semibold text-slate-600 hover:text-emerald-700" href="{{ route('privacy') }}">広告とプライバシー</a>
+                <nav class="flex flex-wrap gap-x-4 gap-y-2 font-semibold" aria-label="フッターナビゲーション">
+                    <a class="text-slate-600 hover:text-emerald-700" href="{{ route('terms') }}">利用規約</a>
+                    <a class="text-slate-600 hover:text-emerald-700" href="{{ route('privacy') }}">プライバシーポリシー</a>
+                    <a class="text-slate-600 hover:text-emerald-700" href="{{ route('contact') }}">お問い合わせ</a>
+                </nav>
             </div>
         </footer>
     </div>

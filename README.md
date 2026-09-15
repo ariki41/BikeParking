@@ -129,6 +129,14 @@ ADVERTISING_TEST_MODE=true
 
 この設定では「広告（開発用）」と `AD PREVIEW` を表示し、AdSense スクリプトや広告リクエストは出力しません。本番で実広告を配信する際は `ADVERTISING_TEST_MODE=false` にしてください。
 
+### お問い合わせフォーム
+
+フッターの「お問い合わせ」ページには、Googleフォームへのリンクと送信先を表示します。送信先メールアドレスは、環境変数で変更できます。
+
+```dotenv
+CONTACT_EMAIL=bikeparking819.app@gmail.com
+```
+
 設定後は本番サイトの `/ads.txt` で AdSense 用のレコードが返ることも確認してください。広告を有効化する前に、`/privacy` の内容が実際の広告配信事業者と利用者の地域に必要な同意要件に合っていることを確認してください。
 
 ## 開発コマンド
