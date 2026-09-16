@@ -1,6 +1,6 @@
 # Bike Parking agent guidance
 
-This is a Laravel 13 application using PHP 8.3, Blade, Livewire 3, MySQL 8, and Laravel Sail.
+This is a Laravel 13 application using PHP 8.5, Blade, Livewire 3, MySQL 8, and Laravel Sail.
 
 ## Delegation
 
