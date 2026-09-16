@@ -3,9 +3,8 @@
 namespace App\Livewire;
 
 use App\Domain\ParkingSpots\EngineDisplacementClass;
-use App\Models\ParkingSpot;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Arr;
+use App\Domain\ParkingSpots\ParkingSpotSearchFilters;
+use App\Domain\ParkingSpots\ParkingSpotSearchQuery;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -103,13 +102,15 @@ class ParkingSpots extends Component
         ]);
     }
 
-    public function updateBounds($bounds, $zoom = null, $center = null): void
+    public function updateBounds($bounds, $zoom = null, $center = null, bool $isInitial = false): void
     {
         if ($zoom !== null) {
             $this->zoom = $this->normalizeZoom($zoom);
         }
 
-        $this->syncCenter($center);
+        if (! $isInitial) {
+            $this->syncCenter($center);
+        }
 
         if (! is_array($bounds) || collect(['south', 'north', 'west', 'east'])->contains(
             fn (string $key): bool => ! isset($bounds[$key]) || ! is_numeric($bounds[$key]),
@@ -121,7 +122,9 @@ class ParkingSpots extends Component
             ->mapWithKeys(fn (string $key): array => [$key => (float) $bounds[$key]])
             ->all();
 
-        $this->resetSearchPage();
+        if (! $isInitial) {
+            $this->resetSearchPage();
+        }
         $this->refreshSpots();
     }
 
@@ -168,13 +171,13 @@ class ParkingSpots extends Component
             ],
         );
 
-        $this->filters = $this->normalizeFilters([
+        $this->filters = ParkingSpotSearchFilters::from([
             'capacity' => $this->capacityDraft,
             'open_24_hours' => $this->open24HoursDraft,
             'has_free_time' => $this->hasFreeTimeDraft,
             'max_rate' => $this->maxRateDraft,
             'exclude_closed' => $this->excludeClosedDraft,
-        ]);
+        ])->applied();
         $this->syncEngineDisplacements($this->engineDisplacementDraft);
 
         $this->syncQueryFromAppliedFilters();
@@ -252,7 +255,7 @@ class ParkingSpots extends Component
 
     private function syncEngineDisplacements(mixed $engineDisplacements): void
     {
-        $this->engineDisplacements = $this->normalizedEngineDisplacements($engineDisplacements);
+        $this->engineDisplacements = ParkingSpotSearchFilters::from([], $engineDisplacements)->engineDisplacements;
         $this->engineDisplacementQuery = implode(',', $this->engineDisplacements);
         $this->engineDisplacementDraft = $this->engineDisplacements;
     }
@@ -263,63 +266,18 @@ class ParkingSpots extends Component
             return;
         }
 
-        $capacityFilters = $this->filters['capacity'] ?? [];
-        $open24Hours = $this->filters['open_24_hours'] ?? false;
-        $hasFreeTime = $this->filters['has_free_time'] ?? false;
-        $maxRate = $this->filters['max_rate'] ?? null;
-        $excludeClosed = $this->filters['exclude_closed'] ?? false;
+        $results = app(ParkingSpotSearchQuery::class)->paginate(
+            $this->bounds,
+            ParkingSpotSearchFilters::from($this->filters, $this->engineDisplacements),
+            auth()->user(),
+            $this->page,
+            self::RESULTS_PER_PAGE,
+        );
 
-        $query = ParkingSpot::query()
-            ->withRateSummary()
-            ->withCount(['favorites', 'reviews'])
-            ->withAvg('reviews', 'rating')
-            ->whereBetween('latitude', [$this->bounds['south'], $this->bounds['north']])
-            ->whereBetween('longitude', [$this->bounds['west'], $this->bounds['east']])
-            ->supportsEngineDisplacements($this->engineDisplacements)
-            ->when($capacityFilters !== [], fn (Builder $query) => $query->whereIn('capacity', $capacityFilters))
-            ->when($excludeClosed, fn (Builder $query) => $query->published())
-            ->when($open24Hours, fn (Builder $query) => $query->where(function (Builder $hoursQuery): void {
-                // 移行済みは曜日別レコードを正とし、レコード未作成の旧データだけ従来列へフォールバックする。
-                $hoursQuery->where(function (Builder $legacyQuery): void {
-                    $legacyQuery->doesntHave('businessHours')
-                        ->where('opening_time', '00:00:00')
-                        ->where('closing_time', '00:00:00');
-                })->orWhere(function (Builder $businessHoursQuery): void {
-                    $businessHoursQuery->whereHas('businessHours')
-                        ->whereDoesntHave('businessHours', fn (Builder $hours) => $hours
-                            ->where('is_closed', true)
-                            ->orWhere('opening_time', '!=', '00:00:00')
-                            ->orWhere('closing_time', '!=', '00:00:00'));
-                });
-            }))
-            ->when($hasFreeTime || $maxRate !== null, function (Builder $query) use ($hasFreeTime, $maxRate): void {
-                $query->whereHas('rates', function (Builder $rateQuery) use ($hasFreeTime, $maxRate): void {
-                    if ($hasFreeTime) {
-                        $rateQuery->where('free_minutes', '>', 0);
-                    }
-
-                    if ($maxRate !== null) {
-                        $rateQuery
-                            ->whereNotNull('max_rate')
-                            ->where('max_rate', '<=', $maxRate);
-                    }
-                });
-            });
-
-        if ($user = auth()->user()) {
-            $query->withExists([
-                'favorites as is_favorited' => fn ($favoriteQuery) => $favoriteQuery->where('user_id', $user->id),
-            ]);
-        }
-
-        $this->totalSpots = (clone $query)->count();
-        $this->lastPage = max(1, (int) ceil($this->totalSpots / self::RESULTS_PER_PAGE));
+        $this->totalSpots = $results['total'];
+        $this->lastPage = $results['lastPage'];
         $this->page = max(1, min($this->page, $this->lastPage));
-        $this->spots = $query
-            ->orderBy('id')
-            ->forPage($this->page, self::RESULTS_PER_PAGE)
-            ->get()
-            ->all();
+        $this->spots = $results['spots']->all();
     }
 
     private function resetSearchPage(): void
@@ -329,10 +287,11 @@ class ParkingSpots extends Component
 
     private function syncDraftsFromFilters(array $filters): void
     {
-        $this->capacityDraft = $this->normalizedCapacities($filters['capacity'] ?? []);
-        $this->open24HoursDraft = $this->filterIsEnabled($filters['open_24_hours'] ?? false);
-        $this->hasFreeTimeDraft = $this->filterIsEnabled($filters['has_free_time'] ?? false);
-        $this->excludeClosedDraft = $this->filterIsEnabled($filters['exclude_closed'] ?? false);
+        $normalized = ParkingSpotSearchFilters::from($filters);
+        $this->capacityDraft = $normalized->capacities;
+        $this->open24HoursDraft = $normalized->open24Hours;
+        $this->hasFreeTimeDraft = $normalized->hasFreeTime;
+        $this->excludeClosedDraft = $normalized->excludeClosed;
 
         $maxRate = $filters['max_rate'] ?? null;
         $this->maxRateDraft = is_scalar($maxRate) ? $maxRate : null;
@@ -348,13 +307,13 @@ class ParkingSpots extends Component
             'exclude_closed' => $this->excludeClosedQuery,
         ];
 
-        $this->filters = $this->normalizeFilters($rawFilters);
+        $this->filters = ParkingSpotSearchFilters::from($rawFilters)->applied();
         $this->syncDraftsFromFilters($rawFilters);
         // 無効なURL値を消すと修正すべき入力が見えなくなるため、エラー表示中はクエリに残す。
         $this->syncQueryFromAppliedFilters(preserveInvalidMaxRate: true);
         $this->resetValidation();
 
-        if (! $this->maxRateIsValid($this->maxRateDraft)) {
+        if (! ParkingSpotSearchFilters::maxRateIsValid($this->maxRateDraft)) {
             $this->addError('maxRateDraft', '最大料金上限は1円以上の整数で入力してください。');
         }
 
@@ -363,122 +322,19 @@ class ParkingSpots extends Component
 
     private function syncQueryFromAppliedFilters(bool $preserveInvalidMaxRate = false): void
     {
-        $this->capacityQuery = implode(',', $this->filters['capacity'] ?? []);
-        $this->open24HoursQuery = ($this->filters['open_24_hours'] ?? false) ? '1' : '';
-        $this->hasFreeTimeQuery = ($this->filters['has_free_time'] ?? false) ? '1' : '';
-        $this->excludeClosedQuery = ($this->filters['exclude_closed'] ?? false) ? '1' : '';
+        $parameters = ParkingSpotSearchFilters::from($this->filters)->queryParameters();
+        $this->capacityQuery = $parameters['capacity'];
+        $this->open24HoursQuery = $parameters['open_24_hours'];
+        $this->hasFreeTimeQuery = $parameters['has_free_time'];
+        $this->excludeClosedQuery = $parameters['exclude_closed'];
 
-        if (! $preserveInvalidMaxRate || $this->maxRateIsValid($this->maxRateQuery)) {
-            $this->maxRateQuery = isset($this->filters['max_rate'])
-                ? (string) $this->filters['max_rate']
-                : '';
+        if (! $preserveInvalidMaxRate || ParkingSpotSearchFilters::maxRateIsValid($this->maxRateQuery)) {
+            $this->maxRateQuery = $parameters['max_rate'];
         }
-    }
-
-    private function normalizeFilters(array $filters): array
-    {
-        $normalized = [];
-        $capacities = $this->normalizedCapacities($filters['capacity'] ?? []);
-
-        if ($capacities !== []) {
-            $normalized['capacity'] = $capacities;
-        }
-
-        if ($this->filterIsEnabled($filters['open_24_hours'] ?? false)) {
-            $normalized['open_24_hours'] = true;
-        }
-
-        if ($this->filterIsEnabled($filters['has_free_time'] ?? false)) {
-            $normalized['has_free_time'] = true;
-        }
-
-        if ($this->filterIsEnabled($filters['exclude_closed'] ?? false)) {
-            $normalized['exclude_closed'] = true;
-        }
-
-        $maxRate = $filters['max_rate'] ?? null;
-
-        if ($this->maxRateIsValid($maxRate) && filled($maxRate)) {
-            $normalized['max_rate'] = (int) $maxRate;
-        }
-
-        return $normalized;
-    }
-
-    private function normalizedCapacities($capacities): array
-    {
-        $allowed = array_map('intval', array_keys(config('categories.parking_spot_capacity')));
-        $values = is_string($capacities) ? explode(',', $capacities) : Arr::wrap($capacities);
-
-        $normalized = collect($values)
-            ->filter(fn ($capacity): bool => is_scalar($capacity) && in_array((int) $capacity, $allowed, true))
-            ->map(fn ($capacity): int => (int) $capacity)
-            ->unique()
-            ->sort()
-            ->values()
-            ->all();
-
-        return $normalized;
-    }
-
-    private function normalizedEngineDisplacements(mixed $engineDisplacements): array
-    {
-        $values = is_string($engineDisplacements)
-            ? explode(',', $engineDisplacements)
-            : Arr::wrap($engineDisplacements);
-        $selectedValues = collect($values)
-            ->filter(fn ($value): bool => is_scalar($value))
-            ->map(fn ($value): string => (string) $value)
-            ->all();
-
-        return collect(EngineDisplacementClass::values())
-            ->filter(fn (string $value): bool => in_array($value, $selectedValues, true))
-            ->values()
-            ->all();
-    }
-
-    private function filterIsEnabled($value): bool
-    {
-        return in_array($value, [true, 1, '1', 'true', 'on'], true);
-    }
-
-    private function maxRateIsValid($value): bool
-    {
-        if (blank($value)) {
-            return true;
-        }
-
-        return filter_var($value, FILTER_VALIDATE_INT) !== false && (int) $value >= 1;
     }
 
     private function activeFilterLabels(): array
     {
-        $labels = collect($this->filters['capacity'] ?? [])
-            ->map(fn (int $capacity): string => '収容台数: '.config("categories.parking_spot_capacity.{$capacity}"))
-            ->all();
-
-        foreach ($this->engineDisplacements as $value) {
-            if ($engineDisplacement = EngineDisplacementClass::tryFrom($value)) {
-                $labels[] = '排気量: '.$engineDisplacement->searchLabel();
-            }
-        }
-
-        if ($this->filters['open_24_hours'] ?? false) {
-            $labels[] = '24時間営業';
-        }
-
-        if ($this->filters['has_free_time'] ?? false) {
-            $labels[] = '無料時間あり';
-        }
-
-        if ($this->filters['exclude_closed'] ?? false) {
-            $labels[] = '閉鎖済みを除外';
-        }
-
-        if (isset($this->filters['max_rate'])) {
-            $labels[] = '最大料金: '.number_format($this->filters['max_rate']).'円以下';
-        }
-
-        return $labels;
+        return ParkingSpotSearchFilters::from($this->filters, $this->engineDisplacements)->labels();
     }
 }

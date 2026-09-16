@@ -16,6 +16,17 @@ class SearchService
     public function getYolpLocation(Request $request): array
     {
         $keyword = $request->get('keyword');
+
+        // URLで共有された地図位置は、キーワード検索よりも再現性を優先する。
+        if ($this->hasValidRequestedCoordinates($request)) {
+            session()->forget('error');
+
+            return [
+                'lon' => $request->query('lon'),
+                'lat' => $request->query('lat'),
+            ];
+        }
+
         $location = null;
 
         if (filled($keyword)) {
@@ -42,5 +53,18 @@ class SearchService
             'lon' => $request->input('lon') ?? 139.767052,
             'lat' => $request->input('lat') ?? 35.681167,
         ];
+    }
+
+    private function hasValidRequestedCoordinates(Request $request): bool
+    {
+        $latitude = $request->query('lat');
+        $longitude = $request->query('lon');
+
+        return is_numeric($latitude)
+            && is_numeric($longitude)
+            && (float) $latitude >= -90
+            && (float) $latitude <= 90
+            && (float) $longitude >= -180
+            && (float) $longitude <= 180;
     }
 }
