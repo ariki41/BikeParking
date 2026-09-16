@@ -9,6 +9,7 @@ use App\Services\ParkingSpotConfirmationService;
 use App\Services\ParkingSpotPersistenceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\Feature\Concerns\InteractsWithParkingSpotRateFixtures;
 use Tests\TestCase;
@@ -164,6 +165,44 @@ class ParkingSpotRatePersistenceTest extends TestCase
         $this->assertDatabaseHas('parking_spot_rates', [
             'day_type' => '全日',
             'rate' => 100,
+            'max_rate' => null,
+        ]);
+    }
+
+    public function test_free_rate_is_normalized_before_persistence(): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+        Http::fake([
+            '*' => Http::response([
+                'Feature' => [[
+                    'Geometry' => ['Coordinates' => '139.753000,35.685000'],
+                    'Property' => ['Address' => '東京都千代田区千代田1-2'],
+                ]],
+            ]),
+        ]);
+
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'rates' => [$this->validRateInput([
+                    'rate' => 100,
+                    'free_minutes' => 30,
+                    'max_rate' => 1200,
+                    'is_free' => '1',
+                ])],
+            ]));
+
+        $response->assertOk();
+        $response->assertSee('無料');
+        $response->assertSessionHas(ParkingSpotConfirmationService::SESSION_KEY.'.input.rates.0.rate', 0);
+        $response->assertSessionHas(ParkingSpotConfirmationService::SESSION_KEY.'.input.rates.0.no_max_rate', '1');
+
+        $this->post(route('parking_spot.store'))
+            ->assertRedirect(route('home'));
+
+        $this->assertDatabaseHas('parking_spot_rates', [
+            'rate' => 0,
+            'free_minutes' => 0,
             'max_rate' => null,
         ]);
     }

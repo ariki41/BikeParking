@@ -27,6 +27,10 @@ class ParkingSpotRates extends Model
 
     public function getRateLabelAttribute(): string
     {
+        if ($this->rate === 0) {
+            return '無料';
+        }
+
         $label = $this->base_rate_label;
 
         if ($this->max_rate !== null) {
@@ -40,6 +44,10 @@ class ParkingSpotRates extends Model
 
     public function getBaseRateLabelAttribute(): string
     {
+        if ($this->rate === 0) {
+            return '無料';
+        }
+
         $unit = $this->formatMinutes($this->unit_minutes);
         $label = "{$unit} ".number_format($this->rate).'円';
 

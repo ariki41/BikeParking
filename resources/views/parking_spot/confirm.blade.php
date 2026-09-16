@@ -81,6 +81,9 @@
                                         </span>
                                     </div>
                                     <p class="mt-2 text-sm text-slate-700">
+                                        @if ((int) ($rate['rate'] ?? 0) === 0)
+                                            無料
+                                        @else
                                         @if ($freeMinutes > 0)
                                             最初の{{ $freeLabel }}無料 /
                                         @endif
@@ -89,6 +92,7 @@
                                             / 最大料金なし
                                         @elseif (($rate['max_rate'] ?? null) !== null && $rate['max_rate'] !== '')
                                             / 最大 {{ number_format($rate['max_rate']) }}円
+                                        @endif
                                         @endif
                                     </p>
                                 </div>

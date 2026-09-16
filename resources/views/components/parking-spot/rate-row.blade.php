@@ -11,6 +11,7 @@
     $namePrefix = $template ? null : "rates[{$index}]";
     $noFreeMinutes = (bool) ($rate['no_free_minutes'] ?? ((int) ($rate['free_minutes'] ?? 0) === 0));
     $noMaxRate = (bool) ($rate['no_max_rate'] ?? false);
+    $isFree = (bool) ($rate['is_free'] ?? ((int) ($rate['rate'] ?? 0) === 0));
 @endphp
 
 <div class="rate-item mb-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm" data-rate-item>
@@ -70,9 +71,17 @@
 
         <div>
             <x-input-label>料金（円）</x-input-label>
-            <input class="bp-input" data-rate-field="rate" type="number" value="{{ $rate['rate'] ?? '' }}"
-                min="0" required placeholder="例：100"
+            <input class="rate-input bp-input {{ $isFree ? 'cursor-not-allowed bg-slate-100 text-slate-500' : 'bg-white' }}" data-rate-field="rate" type="number" value="{{ $rate['rate'] ?? '' }}"
+                min="0" required placeholder="例：100" @readonly($isFree)
                 @if ($namePrefix !== null) name="{{ $namePrefix }}[rate]" @endif>
+            <label
+                class="mt-2 flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                <input
+                    class="free-parking-checkbox rounded border-slate-300 text-emerald-600 shadow-sm focus:ring-emerald-500"
+                    data-rate-field="is_free" type="checkbox" value="1" @checked($isFree)
+                    @if ($namePrefix !== null) name="{{ $namePrefix }}[is_free]" @endif>
+                <span>無料</span>
+            </label>
         </div>
     </div>
 

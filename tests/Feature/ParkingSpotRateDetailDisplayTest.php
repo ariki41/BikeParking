@@ -72,6 +72,29 @@ class ParkingSpotRateDetailDisplayTest extends TestCase
         $response->assertDontSee('以降30分 100円');
     }
 
+    public function test_parking_spot_detail_displays_free_rate_label(): void
+    {
+        [$parkingSpot, $user] = $this->createParkingSpot();
+
+        ParkingSpotRates::create([
+            'parking_spot_id' => $parkingSpot->id,
+            'day_type' => '全日',
+            'start_time' => '00:00:00',
+            'end_time' => '00:00:00',
+            'unit_minutes' => 30,
+            'rate' => 0,
+            'free_minutes' => 0,
+            'max_rate' => null,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->get(route('parking_spot.show', $parkingSpot->id));
+
+        $response->assertOk();
+        $response->assertSee('無料');
+        $response->assertDontSee('30分 0円');
+    }
+
     public function test_parking_spot_detail_displays_overnight_rate_end_time_as_next_day(): void
     {
         [$parkingSpot, $user] = $this->createParkingSpot();
@@ -146,6 +169,19 @@ class ParkingSpotRateDetailDisplayTest extends TestCase
         $response->assertSeeText('無料時間なし');
         $response->assertSee('name="rates[0][no_free_minutes]"', false);
         $response->assertSee('data-rate-field="no_free_minutes"', false);
+    }
+
+    public function test_parking_spot_create_form_can_select_free_rate(): void
+    {
+        [, $user] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)
+            ->get(route('parking_spot.create'));
+
+        $response->assertOk();
+        $response->assertSeeText('無料');
+        $response->assertSee('name="rates[0][is_free]"', false);
+        $response->assertSee('data-rate-field="is_free"', false);
     }
 
     public function test_no_free_minutes_input_is_normalized_on_confirm(): void
