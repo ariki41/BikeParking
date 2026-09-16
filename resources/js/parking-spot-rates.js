@@ -37,6 +37,22 @@ const syncMaxRateState = (item) => {
     }
 };
 
+const syncFreeParkingState = (item) => {
+    const checkbox = item.querySelector('.free-parking-checkbox');
+    const input = item.querySelector('.rate-input');
+
+    if (!checkbox || !input) {
+        return;
+    }
+
+    input.readOnly = checkbox.checked;
+    setInputDisabledAppearance(input, checkbox.checked);
+
+    if (checkbox.checked) {
+        input.value = '0';
+    }
+};
+
 export const initParkingSpotRates = (root) => {
     if (root.dataset.rateFormInitialized === 'true') {
         return;
@@ -66,6 +82,7 @@ export const initParkingSpotRates = (root) => {
             });
             syncFreeMinutesState(item);
             syncMaxRateState(item);
+            syncFreeParkingState(item);
         });
 
         list.querySelectorAll('[data-delete-rate]').forEach((button) => {
@@ -102,7 +119,7 @@ export const initParkingSpotRates = (root) => {
     });
 
     list.addEventListener('change', (event) => {
-        const checkbox = event.target.closest('.no-max-rate-checkbox, .no-free-minutes-checkbox');
+        const checkbox = event.target.closest('.free-parking-checkbox, .no-max-rate-checkbox, .no-free-minutes-checkbox');
         if (!checkbox || !list.contains(checkbox)) {
             return;
         }
@@ -114,6 +131,7 @@ export const initParkingSpotRates = (root) => {
 
         syncFreeMinutesState(item);
         syncMaxRateState(item);
+        syncFreeParkingState(item);
     });
 
     renumberRates();

@@ -26,6 +26,14 @@ class ParkingSpotRequest extends FormRequest
     {
         $rates = collect($this->input('rates', []))
             ->map(function ($rate) {
+                if (($rate['is_free'] ?? false)) {
+                    // 無料設定は金額・上限の手入力より優先し、料金0円・最大料金なしとして保存する。
+                    $rate['rate'] = 0;
+                    $rate['free_minutes'] = 0;
+                    $rate['max_rate'] = null;
+                    $rate['no_max_rate'] = '1';
+                }
+
                 if (($rate['no_free_minutes'] ?? false)) {
                     // 入力欄の値よりも「無料時間なし」の明示的な選択を優先して保存する。
                     $rate['free_minutes'] = 0;
@@ -127,6 +135,7 @@ class ParkingSpotRequest extends FormRequest
             'rates.*.end_time' => 'required|date_format:H:i',
             'rates.*.unit_minutes' => ['required', 'integer', Rule::in(array_keys(config('categories.parking_spot_rate_unit_minutes')))],
             'rates.*.rate' => 'required|integer|min:0',
+            'rates.*.is_free' => 'nullable|boolean',
             'rates.*.free_minutes' => 'nullable|integer|min:0',
             'rates.*.no_free_minutes' => 'nullable|boolean',
             'rates.*.no_max_rate' => 'nullable|boolean',

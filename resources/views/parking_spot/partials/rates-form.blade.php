@@ -34,6 +34,7 @@
             'end_time' => '00:00',
             'unit_minutes' => 30,
             'rate' => '',
+            'is_free' => false,
             'free_minutes' => 0,
             'no_free_minutes' => true,
             'max_rate' => '',
