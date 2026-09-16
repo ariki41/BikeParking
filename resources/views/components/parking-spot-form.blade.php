@@ -7,6 +7,7 @@
     'mode',
     'rateDayTypes',
     'rateUnitMinutes',
+    'maxRatePeriods',
     'ratesInput',
     'businessHourDayTypes',
     'businessHoursInput',

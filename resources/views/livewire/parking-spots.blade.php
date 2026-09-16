@@ -112,6 +112,7 @@
 
             <div>
                 <label class="text-sm font-semibold text-slate-800" for="max-rate-filter">最大料金上限</label>
+                <p class="mt-1 text-xs text-slate-500">適用期間・繰り返し可否を問わず、最大料金の金額で絞り込みます。</p>
                 <div class="mt-2 flex items-center gap-2">
                     <input class="bp-input" id="max-rate-filter" type="number" min="1" inputmode="numeric"
                         placeholder="例: 1000" wire:model="maxRateDraft"

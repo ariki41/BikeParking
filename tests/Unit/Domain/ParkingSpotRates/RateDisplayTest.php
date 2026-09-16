@@ -64,4 +64,17 @@ class RateDisplayTest extends TestCase
         $this->assertSame('1時間 200円 / 最大 800円', $display->rateLabel);
         $this->assertSame($display->rateLabel, $rate->rate_label);
     }
+
+    public function test_it_describes_max_rate_conditions(): void
+    {
+        $display = RateDisplay::fromArray([
+            'day_type' => '全日', 'start_time' => '00:00', 'end_time' => '00:00',
+            'unit_minutes' => 30, 'rate' => 100, 'free_minutes' => 0, 'max_rate' => 800,
+            'max_rate_period' => 'until_midnight', 'max_rate_repeats' => true,
+        ]);
+
+        $this->assertSame('800円', $display->maxRateLabel);
+        $this->assertSame('当日24時まで・繰り返し適用', $display->maxRateConditionLabel);
+        $this->assertSame('30分 100円 / 最大 800円（当日24時まで・繰り返し適用）', $display->rateLabel);
+    }
 }

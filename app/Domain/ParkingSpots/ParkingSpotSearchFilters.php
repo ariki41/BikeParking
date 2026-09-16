@@ -81,7 +81,7 @@ final readonly class ParkingSpotSearchFilters
         }
 
         if ($this->maxRate !== null) {
-            $labels[] = '最大料金: '.number_format($this->maxRate).'円以下';
+            $labels[] = '最大料金: '.number_format($this->maxRate).'円以下（適用条件を問わず）';
         }
 
         return $labels;

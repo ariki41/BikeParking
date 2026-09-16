@@ -3,6 +3,7 @@
     'rate',
     'rateDayTypes',
     'rateUnitMinutes',
+    'maxRatePeriods',
     'messages' => [],
     'template' => false,
 ])
@@ -118,6 +119,22 @@
                     @if ($namePrefix !== null) name="{{ $namePrefix }}[no_max_rate]" @endif>
                 <span>最大料金なし</span>
             </label>
+            <div class="mt-3">
+                <x-input-label>最大料金の適用期間</x-input-label>
+                <select class="max-rate-condition-input bp-select {{ $noMaxRate ? 'cursor-not-allowed bg-slate-100 text-slate-500' : 'bg-white' }}"
+                    data-rate-field="max_rate_period" @disabled($noMaxRate)
+                    @if ($namePrefix !== null) name="{{ $namePrefix }}[max_rate_period]" @endif>
+                    @foreach ($maxRatePeriods as $value => $label)
+                        <option value="{{ $value }}" @selected(($rate['max_rate_period'] ?? null) === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <label class="mt-2 flex items-center gap-2 text-sm text-slate-700">
+                    <input class="max-rate-condition-input rounded border-slate-300 text-emerald-600 shadow-sm focus:ring-emerald-500"
+                        data-rate-field="max_rate_repeats" type="checkbox" value="1" @checked($rate['max_rate_repeats'] ?? false) @disabled($noMaxRate)
+                        @if ($namePrefix !== null) name="{{ $namePrefix }}[max_rate_repeats]" @endif>
+                    <span>繰り返し適用する</span>
+                </label>
+            </div>
         </div>
     </div>
 </div>

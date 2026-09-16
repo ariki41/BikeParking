@@ -38,4 +38,9 @@ return [
         720 => '12時間',
         1440 => '24時間',
     ],
+    'parking_spot_max_rate_periods' => [
+        'entry_24_hours' => '入庫から24時間',
+        'until_midnight' => '当日24時まで',
+        'until_rate_period_ends' => '料金時間帯の終了まで',
+    ],
 ];

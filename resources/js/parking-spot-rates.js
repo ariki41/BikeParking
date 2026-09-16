@@ -24,6 +24,7 @@ const syncFreeMinutesState = (item) => {
 const syncMaxRateState = (item) => {
     const checkbox = item.querySelector('.no-max-rate-checkbox');
     const input = item.querySelector('.max-rate-input');
+    const conditionInputs = item.querySelectorAll('.max-rate-condition-input');
 
     if (!checkbox || !input) {
         return;
@@ -35,6 +36,11 @@ const syncMaxRateState = (item) => {
     if (checkbox.checked) {
         input.value = '';
     }
+
+    conditionInputs.forEach((conditionInput) => {
+        conditionInput.disabled = checkbox.checked;
+        setInputDisabledAppearance(conditionInput, checkbox.checked);
+    });
 };
 
 const syncFreeParkingState = (item) => {

@@ -76,6 +76,7 @@
                                             <th class="whitespace-nowrap px-3 py-3">時間帯</th>
                                             <th class="whitespace-nowrap px-3 py-3">料金</th>
                                             <th class="whitespace-nowrap px-3 py-3">最大料金</th>
+                                            <th class="whitespace-nowrap px-3 py-3">適用条件</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-100">
@@ -88,6 +89,7 @@
                                                     {{ $rateDisplay->baseRateLabel }}
                                                 </td>
                                                 <td class="whitespace-nowrap px-3 py-3">{{ $rateDisplay->maxRateLabel }}</td>
+                                                <td class="whitespace-nowrap px-3 py-3">{{ $rateDisplay->maxRateConditionLabel }}</td>
                                             </tr>
                                         @endforeach
                                     </tbody>
