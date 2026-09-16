@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\ParkingSpotRates\RateDisplay;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -27,116 +28,31 @@ class ParkingSpotRates extends Model
 
     public function getRateLabelAttribute(): string
     {
-        if ($this->rate === 0) {
-            return '無料';
-        }
-
-        $label = $this->base_rate_label;
-
-        if ($this->max_rate !== null) {
-            $label .= ' / 最大 '.number_format($this->max_rate).'円';
-        } else {
-            $label .= ' / 最大料金なし';
-        }
-
-        return $label;
+        return RateDisplay::fromModel($this)->rateLabel;
     }
 
     public function getBaseRateLabelAttribute(): string
     {
-        if ($this->rate === 0) {
-            return '無料';
-        }
-
-        $unit = $this->formatMinutes($this->unit_minutes);
-        $label = "{$unit} ".number_format($this->rate).'円';
-
-        if ($this->free_minutes > 0) {
-            return "最初の{$this->formatMinutes($this->free_minutes)}無料 / 以降{$label}";
-        }
-
-        return $label;
+        return RateDisplay::fromModel($this)->baseRateLabel;
     }
 
     public function getMaxRateLabelAttribute(): string
     {
-        if ($this->max_rate === null) {
-            return '最大料金なし';
-        }
-
-        return number_format($this->max_rate).'円';
+        return RateDisplay::fromModel($this)->maxRateLabel;
     }
 
     public function getTimeRangeLabelAttribute(): string
     {
-        return self::formatTimeRange($this->start_time, $this->end_time);
+        return RateDisplay::fromModel($this)->timeRangeLabel;
     }
 
     public static function formatTimeRange(?string $startTime, ?string $endTime): string
     {
-        // 料金設定では00:00から00:00を同時刻ではなく終日料金として扱う。
-        if (self::isFullDayRange($startTime, $endTime)) {
-            return '00:00 ～ 24:00';
-        }
-
-        $startLabel = self::formatTimeLabel($startTime);
-        $endLabel = self::formatTimeLabel($endTime, self::isOvernight($startTime, $endTime));
-
-        return "{$startLabel} ～ {$endLabel}";
+        return RateDisplay::formatTimeRange($startTime, $endTime);
     }
 
     public function parkingSpot(): BelongsTo
     {
         return $this->belongsTo(ParkingSpot::class);
-    }
-
-    private static function isOvernight(?string $startTime, ?string $endTime): bool
-    {
-        if ($startTime === null || $endTime === null) {
-            return false;
-        }
-
-        return self::normalizeTime($startTime) > self::normalizeTime($endTime);
-    }
-
-    private static function isFullDayRange(?string $startTime, ?string $endTime): bool
-    {
-        if ($startTime === null || $endTime === null) {
-            return false;
-        }
-
-        return self::normalizeTime($startTime) === '00:00'
-            && self::normalizeTime($endTime) === '00:00';
-    }
-
-    private static function formatTimeLabel(?string $time, bool $isNextDay = false): string
-    {
-        if ($time === null || $time === '') {
-            return '';
-        }
-
-        $label = self::normalizeTime($time);
-
-        if (! $isNextDay && $label === '00:00') {
-            return '24:00';
-        }
-
-        return $isNextDay ? "翌{$label}" : $label;
-    }
-
-    private static function normalizeTime(string $time): string
-    {
-        return date('H:i', strtotime($time));
-    }
-
-    private function formatMinutes(int $minutes): string
-    {
-        if ($minutes >= 60 && $minutes % 60 === 0) {
-            $hours = $minutes / 60;
-
-            return "{$hours}時間";
-        }
-
-        return "{$minutes}分";
     }
 }

@@ -80,13 +80,14 @@
                                     </thead>
                                     <tbody class="divide-y divide-slate-100">
                                         @foreach ($parkingSpot->rates as $rate)
+                                            @php($rateDisplay = \App\Domain\ParkingSpotRates\RateDisplay::fromModel($rate))
                                             <tr class="text-slate-700">
-                                                <td class="whitespace-nowrap px-3 py-3 font-semibold">{{ $rate->day_type }}</td>
-                                                <td class="whitespace-nowrap px-3 py-3">{{ $rate->time_range_label }}</td>
+                                                <td class="whitespace-nowrap px-3 py-3 font-semibold">{{ $rateDisplay->dayType }}</td>
+                                                <td class="whitespace-nowrap px-3 py-3">{{ $rateDisplay->timeRangeLabel }}</td>
                                                 <td class="min-w-40 px-3 py-3 font-semibold text-emerald-700">
-                                                    {{ $rate->base_rate_label }}
+                                                    {{ $rateDisplay->baseRateLabel }}
                                                 </td>
-                                                <td class="whitespace-nowrap px-3 py-3">{{ $rate->max_rate_label }}</td>
+                                                <td class="whitespace-nowrap px-3 py-3">{{ $rateDisplay->maxRateLabel }}</td>
                                             </tr>
                                         @endforeach
                                     </tbody>
