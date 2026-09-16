@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\ParkingSpotRates\RateDisplay;
 use App\Domain\ParkingSpots\EngineDisplacementClass;
 use App\Exceptions\YolpApiException;
 use App\Http\Requests\ParkingSpotRequest;
@@ -157,6 +158,7 @@ class ParkingSpotController extends Controller
 
         $capacity = config('categories.parking_spot_capacity');
         $displacementClass = EngineDisplacementClass::from($validatedData['max_displacement_class']);
+        $rateDisplays = array_map(RateDisplay::fromArray(...), $validatedData['rates']);
 
         $this->confirmation->confirm($request, $mode, $validatedData['id'], $validatedData);
 
@@ -167,7 +169,7 @@ class ParkingSpotController extends Controller
             )
             : collect();
 
-        return view('parking_spot.confirm', compact('validatedData', 'capacity', 'displacementClass', 'duplicateCandidates'));
+        return view('parking_spot.confirm', compact('validatedData', 'capacity', 'displacementClass', 'duplicateCandidates', 'rateDisplays'));
     }
 
     public function store(Request $request)

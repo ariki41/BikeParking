@@ -66,34 +66,16 @@
                     <div class="grid gap-3 py-3 sm:grid-cols-[140px_1fr] sm:gap-4 sm:last:pb-0">
                         <dt class="font-semibold text-slate-500">料金</dt>
                         <dd class="space-y-3 text-slate-900">
-                            @foreach ($validatedData['rates'] as $rate)
-                                @php
-                                    $unitMinutes = (int) ($rate['unit_minutes'] ?? 0);
-                                    $freeMinutes = (int) ($rate['free_minutes'] ?? 0);
-                                    $unitLabel = $unitMinutes >= 60 && $unitMinutes % 60 === 0 ? $unitMinutes / 60 . '時間' : $unitMinutes . '分';
-                                    $freeLabel = $freeMinutes >= 60 && $freeMinutes % 60 === 0 ? $freeMinutes / 60 . '時間' : $freeMinutes . '分';
-                                @endphp
+                            @foreach ($rateDisplays as $rate)
                                 <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <span class="bp-badge">{{ $rate['day_type'] ?? '' }}</span>
+                                        <span class="bp-badge">{{ $rate->dayType }}</span>
                                         <span class="text-sm font-semibold text-slate-700">
-                                            {{ \App\Models\ParkingSpotRates::formatTimeRange($rate['start_time'] ?? null, $rate['end_time'] ?? null) }}
+                                            {{ $rate->timeRangeLabel }}
                                         </span>
                                     </div>
                                     <p class="mt-2 text-sm text-slate-700">
-                                        @if ((int) ($rate['rate'] ?? 0) === 0)
-                                            無料
-                                        @else
-                                        @if ($freeMinutes > 0)
-                                            最初の{{ $freeLabel }}無料 /
-                                        @endif
-                                        {{ $unitLabel }} {{ number_format($rate['rate'] ?? 0) }}円
-                                        @if ($rate['no_max_rate'] ?? false)
-                                            / 最大料金なし
-                                        @elseif (($rate['max_rate'] ?? null) !== null && $rate['max_rate'] !== '')
-                                            / 最大 {{ number_format($rate['max_rate']) }}円
-                                        @endif
-                                        @endif
+                                        {{ $rate->rateLabel }}
                                     </p>
                                 </div>
                             @endforeach
