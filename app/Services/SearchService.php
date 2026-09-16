@@ -17,8 +17,8 @@ class SearchService
     {
         $keyword = $request->get('keyword');
 
-        // URLで共有された地図位置は、キーワード検索よりも再現性を優先する。
-        if ($this->hasValidRequestedCoordinates($request)) {
+        // キーワードがない共有URLだけ、保存済みの地図位置を再現する。
+        if (! filled($keyword) && $this->hasValidRequestedCoordinates($request)) {
             session()->forget('error');
 
             return [

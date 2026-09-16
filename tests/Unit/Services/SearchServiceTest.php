@@ -57,12 +57,18 @@ class SearchServiceTest extends TestCase
             'lon' => '135.000000',
             'lat' => '34.000000',
         ], $location);
-        $this->assertNull(session('error'));
+        $this->assertSame('検索結果が見つかりませんでした。', session('error'));
     }
 
-    public function test_search_preserves_requested_location_before_running_keyword_lookup(): void
+    public function test_search_keyword_takes_priority_over_requested_location(): void
     {
-        Http::fake();
+        Http::fake([
+            'https://yolp.test/local-search*' => Http::response([
+                'Feature' => [[
+                    'Geometry' => ['Coordinates' => '139.767052,35.681167'],
+                ]],
+            ]),
+        ]);
         $request = HttpRequest::create('/search', 'GET', [
             'keyword' => '東京駅',
             'lon' => '139.800000',
@@ -71,8 +77,8 @@ class SearchServiceTest extends TestCase
 
         $location = app(SearchService::class)->getYolpLocation($request);
 
-        $this->assertSame(['lon' => '139.800000', 'lat' => '35.700000'], $location);
-        Http::assertNothingSent();
+        $this->assertSame(['lon' => '139.767052', 'lat' => '35.681167'], $location);
+        Http::assertSentCount(1);
     }
 
     public function test_initial_display_with_a_missing_or_empty_keyword_does_not_search_or_flash_an_error(): void
