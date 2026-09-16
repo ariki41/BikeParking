@@ -168,4 +168,24 @@ class ParkingSpotRateSearchTest extends TestCase
             ]))
             ->assertSee('/storage/parking-spots/list.jpg');
     }
+
+    public function test_livewire_parking_spots_list_opens_image_and_name_links_in_a_new_tab(): void
+    {
+        [$parkingSpot] = $this->createParkingSpot();
+        $parkingSpot = $parkingSpot->fresh()->load('representativeRate')->loadCount('rates');
+
+        $component = Livewire::test(ParkingSpots::class)
+            ->set('spots', collect([$parkingSpot]));
+
+        $url = preg_quote(route('parking_spot.show', $parkingSpot), '/');
+
+        self::assertMatchesRegularExpression(
+            '/<a\\s+class="shrink-0"\\s+href="'.$url.'"\\s+target="_blank"\\s+rel="noopener noreferrer">/s',
+            $component->html(),
+        );
+        self::assertMatchesRegularExpression(
+            '/<a[^>]*href="'.$url.'"[^>]*target="_blank"[^>]*rel="noopener noreferrer"[^>]*data-longitude="'.$parkingSpot->longitude.'"[^>]*data-latitude="'.$parkingSpot->latitude.'"/s',
+            $component->html(),
+        );
+    }
 }
