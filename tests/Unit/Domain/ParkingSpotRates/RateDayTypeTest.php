@@ -23,16 +23,13 @@ class RateDayTypeTest extends TestCase
             'same weekday' => ['平日', '平日', true],
             'weekday and holiday' => ['平日', '土日祝', false],
             'all days and weekday' => ['全日', '平日', true],
-            'daytime and holiday' => ['昼間', '土日祝', true],
-            'nighttime and weekday' => ['夜間', '平日', true],
-            'daytime and nighttime' => ['昼間', '夜間', true],
         ];
     }
 
     public function test_it_exposes_all_supported_input_values(): void
     {
         $this->assertSame(
-            ['全日', '平日', '土日祝', '昼間', '夜間'],
+            ['全日', '平日', '土日祝'],
             RateDayType::values(),
         );
     }

@@ -197,7 +197,7 @@ class ParkingSpotRatePersistenceTest extends TestCase
             'closing_time' => '00:00',
             'rates' => [
                 [
-                    'day_type' => '夜間',
+                    'day_type' => '全日',
                     'start_time' => '20:00',
                     'end_time' => '08:00',
                     'unit_minutes' => 60,
@@ -223,7 +223,7 @@ class ParkingSpotRatePersistenceTest extends TestCase
         ]);
         $this->assertDatabaseHas('parking_spot_rates', [
             'parking_spot_id' => $parkingSpot->id,
-            'day_type' => '夜間',
+            'day_type' => '全日',
             'rate' => 200,
         ]);
         $this->assertDatabaseHas('parking_spot_rates', [

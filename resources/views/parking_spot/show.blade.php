@@ -72,7 +72,7 @@
                                 <table class="min-w-full table-auto border-collapse text-left text-sm">
                                     <thead>
                                         <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
-                                            <th class="whitespace-nowrap px-3 py-3">区分</th>
+                                            <th class="whitespace-nowrap px-3 py-3">適用曜日</th>
                                             <th class="whitespace-nowrap px-3 py-3">時間帯</th>
                                             <th class="whitespace-nowrap px-3 py-3">料金</th>
                                             <th class="whitespace-nowrap px-3 py-3">最大料金</th>

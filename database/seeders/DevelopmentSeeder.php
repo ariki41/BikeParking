@@ -82,7 +82,7 @@ class DevelopmentSeeder extends Seeder
                 'closing_time' => '00:00:00',
                 'rates' => [
                     ['day_type' => '平日', 'start_time' => '09:00:00', 'end_time' => '18:00:00', 'unit_minutes' => 30, 'rate' => 100, 'free_minutes' => 30, 'max_rate' => null],
-                    ['day_type' => '夜間', 'start_time' => '18:00:00', 'end_time' => '09:00:00', 'unit_minutes' => 60, 'rate' => 100, 'free_minutes' => 0, 'max_rate' => 700],
+                    ['day_type' => '全日', 'start_time' => '18:00:00', 'end_time' => '09:00:00', 'unit_minutes' => 60, 'rate' => 100, 'free_minutes' => 0, 'max_rate' => 700],
                 ],
             ],
             [

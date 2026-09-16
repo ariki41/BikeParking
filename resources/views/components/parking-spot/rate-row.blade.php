@@ -32,7 +32,7 @@
     @endif
 
     <div class="mb-4">
-        <x-input-label>料金区分</x-input-label>
+        <x-input-label>適用曜日</x-input-label>
         <select class="bp-select" data-rate-field="day_type"
             @if ($namePrefix !== null) name="{{ $namePrefix }}[day_type]" @endif>
             @foreach ($rateDayTypes as $key => $value)
