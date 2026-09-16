@@ -38,7 +38,7 @@ final readonly class RateDisplay
     }
 
     /**
-     * @param  array{day_type?: mixed, start_time?: mixed, end_time?: mixed, unit_minutes?: mixed, rate?: mixed, free_minutes?: mixed, max_rate?: mixed}  $rate
+     * @param  array{day_type?: mixed, start_time?: mixed, end_time?: mixed, unit_minutes?: mixed, rate?: mixed, free_minutes?: mixed, max_rate?: mixed, max_rate_period?: mixed, max_rate_repeats?: mixed}  $rate
      */
     public static function fromArray(array $rate): self
     {
