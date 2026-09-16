@@ -5,9 +5,29 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    @stack('meta')
+    @php
+        $appName = config('app.name', 'BikeParking');
+        $pageTitle = filled($title) ? $title.' | '.$appName : $appName;
+        $pageDescription = $description ?? 'バイク駐輪場の料金、営業時間、場所を検索できるBikeParking。';
+        $canonicalUrl = $canonical ?? url()->current();
+        $socialImage = $image ?? asset('images/bike-parking-logo.webp');
+    @endphp
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>{{ $pageTitle }}</title>
+    <meta name="description" content="{{ $pageDescription }}">
+    <link rel="canonical" href="{{ $canonicalUrl }}">
+    <link rel="icon" href="{{ asset('images/bike-parking-favicon.png') }}" type="image/png">
+    @if ($robots)
+        <meta name="robots" content="{{ $robots }}">
+    @endif
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="{{ $appName }}">
+    <meta property="og:title" content="{{ $pageTitle }}">
+    <meta property="og:description" content="{{ $pageDescription }}">
+    <meta property="og:url" content="{{ $canonicalUrl }}">
+    <meta property="og:image" content="{{ $socialImage }}">
+    <meta name="twitter:card" content="summary_large_image">
+    @stack('meta')
 
     <!-- Fonts -->
     <link href="https://fonts.bunny.net" rel="preconnect">

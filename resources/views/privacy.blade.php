@@ -1,4 +1,7 @@
-<x-app-layout>
+<x-app-layout
+    title="プライバシーポリシー"
+    description="BikeParkingのプライバシーポリシーです。"
+    :canonical="route('privacy')">
     <div class="bp-shell max-w-3xl">
         <article class="bp-panel p-6 sm:p-8">
             <h1 class="text-3xl font-bold text-slate-900">プライバシーポリシー</h1>

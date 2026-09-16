@@ -1,4 +1,7 @@
-<x-app-layout>
+<x-app-layout
+    title="お問い合わせ"
+    description="BikeParkingへのお問い合わせ窓口です。"
+    :canonical="route('contact')">
     <div class="bp-shell max-w-3xl">
         <article class="bp-panel p-6 sm:p-8">
             <h1 class="text-3xl font-bold text-slate-900">お問い合わせ</h1>

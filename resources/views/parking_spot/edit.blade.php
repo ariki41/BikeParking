@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout title="駐輪場を編集" robots="noindex, nofollow">
     <x-parking-spot-form action="{{ route('parking_spot.confirm') }}" :capacity="$capacity"
         :displacement-classes="$displacementClasses" :form-values="$formValues" :image-paths="$imagePaths"
         mode="edit" :parking-spot-id="$parkingSpot->id"

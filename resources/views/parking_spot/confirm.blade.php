@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout title="駐輪場情報を確認" robots="noindex, nofollow">
     <div class="bp-shell">
         <div class="mb-6">
             <h1 class="text-3xl font-bold text-slate-900">登録内容の確認</h1>

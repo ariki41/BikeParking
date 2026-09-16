@@ -1,4 +1,8 @@
-<x-app-layout>
+<x-app-layout
+    :title="filled($keyword) ? '「'.$keyword.'」のバイク駐輪場を検索' : 'バイク駐輪場を検索'"
+    :description="filled($keyword) ? '「'.$keyword.'」周辺のバイク駐輪場を、料金・営業時間・場所から検索できます。' : 'バイク駐輪場を、料金・営業時間・場所から検索できます。'"
+    :canonical="route('search')"
+    robots="noindex, follow">
     <div
         class="grid min-h-[calc(100vh-4rem)] grid-cols-1 bg-stone-50 lg:h-full lg:min-h-0 lg:grid-cols-[420px_minmax(0,1fr)]">
         <div
