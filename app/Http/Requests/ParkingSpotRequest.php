@@ -210,9 +210,9 @@ class ParkingSpotRequest extends FormRequest
             'rates.min' => '料金は1件以上入力してください。',
             'rates.max' => '料金帯は4件まで入力できます。',
 
-            'rates.*.day_type.required' => '料金区分は必須です。',
-            'rates.*.day_type.string' => '料金区分は文字列で入力してください。',
-            'rates.*.day_type.in' => '料金区分を選択してください。',
+            'rates.*.day_type.required' => '適用曜日は必須です。',
+            'rates.*.day_type.string' => '適用曜日は文字列で入力してください。',
+            'rates.*.day_type.in' => '適用曜日を選択してください。',
 
             'rates.*.start_time.required' => '料金開始時間は必須です。',
             'rates.*.start_time.date_format' => '料金開始時間の形式が正しくありません。例: 08:00',

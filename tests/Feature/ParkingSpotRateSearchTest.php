@@ -131,7 +131,7 @@ class ParkingSpotRateSearchTest extends TestCase
         ]);
         ParkingSpotRates::create([
             'parking_spot_id' => $parkingSpot->id,
-            'day_type' => '夜間',
+            'day_type' => '全日',
             'start_time' => '20:00:00',
             'end_time' => '08:00:00',
             'unit_minutes' => 60,

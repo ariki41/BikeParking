@@ -110,7 +110,7 @@ class ParkingSpotRateValidationTest extends TestCase
         $response->assertSee('料金帯1の「全日」と料金帯2の「平日」は適用条件が重複しています。');
     }
 
-    public function test_parking_spot_rate_validation_rejects_overlapping_ranges_with_different_broad_day_types(): void
+    public function test_parking_spot_rate_validation_rejects_legacy_time_of_day_category(): void
     {
         [, $user, $postalcode] = $this->createParkingSpot();
 
@@ -118,30 +118,18 @@ class ParkingSpotRateValidationTest extends TestCase
             ->followingRedirects()
             ->from(route('parking_spot.create'))
             ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
-                'rates' => [
-                    $this->validRateInput([
-                        'day_type' => '昼間',
-                        'start_time' => '09:00',
-                        'end_time' => '14:00',
-                    ]),
-                    $this->validRateInput([
-                        'day_type' => '夜間',
-                        'start_time' => '13:00',
-                        'end_time' => '18:00',
-                    ]),
-                ],
+                'rates' => [$this->validRateInput(['day_type' => '昼間'])],
             ]));
 
         $response->assertOk();
-        $response->assertSee('料金帯1の「昼間」と料金帯2の「夜間」は適用条件が重複しています。');
+        $response->assertSee('適用曜日を選択してください。');
     }
 
-    public function test_parking_spot_rate_validation_rejects_overlapping_ranges_between_holiday_and_broad_day_type(): void
+    public function test_parking_spot_rate_validation_allows_weekday_and_holiday_overlapping_time_ranges(): void
     {
         [, $user, $postalcode] = $this->createParkingSpot();
 
         $response = $this->actingAs($user)
-            ->followingRedirects()
             ->from(route('parking_spot.create'))
             ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
                 'rates' => [
@@ -151,7 +139,7 @@ class ParkingSpotRateValidationTest extends TestCase
                         'end_time' => '16:00',
                     ]),
                     $this->validRateInput([
-                        'day_type' => '昼間',
+                        'day_type' => '平日',
                         'start_time' => '12:00',
                         'end_time' => '18:00',
                     ]),
@@ -159,7 +147,7 @@ class ParkingSpotRateValidationTest extends TestCase
             ]));
 
         $response->assertOk();
-        $response->assertSee('料金帯1の「土日祝」と料金帯2の「昼間」は適用条件が重複しています。');
+        $response->assertSessionMissing('errors');
     }
 
     public function test_parking_spot_rate_validation_rejects_overnight_overlap_on_edit_flow(): void
@@ -173,12 +161,12 @@ class ParkingSpotRateValidationTest extends TestCase
                 'id' => $parkingSpot->id,
                 'rates' => [
                     $this->validRateInput([
-                        'day_type' => '夜間',
+                        'day_type' => '全日',
                         'start_time' => '22:00',
                         'end_time' => '06:00',
                     ]),
                     $this->validRateInput([
-                        'day_type' => '夜間',
+                        'day_type' => '全日',
                         'start_time' => '05:30',
                         'end_time' => '09:00',
                     ]),
@@ -186,7 +174,7 @@ class ParkingSpotRateValidationTest extends TestCase
             ]));
 
         $response->assertOk();
-        $response->assertSee('料金帯1の「夜間」と料金帯2の「夜間」は適用条件が重複しています。');
+        $response->assertSee('料金帯1の「全日」と料金帯2の「全日」は適用条件が重複しています。');
     }
 
     public function test_parking_spot_rate_validation_allows_adjacent_ranges_with_same_day_type(): void
@@ -226,7 +214,7 @@ class ParkingSpotRateValidationTest extends TestCase
         $response->assertSee('12:00 ～ 18:00');
     }
 
-    public function test_parking_spot_rate_validation_allows_adjacent_ranges_with_different_broad_day_types(): void
+    public function test_parking_spot_rate_validation_allows_adjacent_ranges_with_all_days(): void
     {
         [, $user, $postalcode] = $this->createParkingSpot();
         Http::fake([
@@ -245,12 +233,12 @@ class ParkingSpotRateValidationTest extends TestCase
             ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
                 'rates' => [
                     $this->validRateInput([
-                        'day_type' => '昼間',
+                        'day_type' => '全日',
                         'start_time' => '08:00',
                         'end_time' => '18:00',
                     ]),
                     $this->validRateInput([
-                        'day_type' => '夜間',
+                        'day_type' => '全日',
                         'start_time' => '18:00',
                         'end_time' => '23:00',
                     ]),

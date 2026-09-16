@@ -34,14 +34,14 @@ class RatePeriodTest extends TestCase
                 ['土日祝', '11:00', '15:00'],
                 false,
             ],
-            'overlapping day types with adjacent time' => [
-                ['昼間', '08:00', '18:00'],
-                ['夜間', '18:00', '23:00'],
+            'same day type with adjacent time' => [
+                ['全日', '08:00', '18:00'],
+                ['全日', '18:00', '23:00'],
                 false,
             ],
             'all days and overnight overlap' => [
                 ['全日', '00:00', '00:00'],
-                ['夜間', '22:00', '06:00'],
+                ['全日', '22:00', '06:00'],
                 true,
             ],
         ];

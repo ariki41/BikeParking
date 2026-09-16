@@ -7,8 +7,6 @@ enum RateDayType: string
     case AllDays = '全日';
     case Weekdays = '平日';
     case Holidays = '土日祝';
-    case Daytime = '昼間';
-    case Nighttime = '夜間';
 
     /**
      * @return list<string>
@@ -28,11 +26,10 @@ enum RateDayType: string
      */
     private function dayScopes(): array
     {
-        // 「昼間」「夜間」は時間帯の区分であり、曜日の適用範囲は全日と同じにする。
         return match ($this) {
             self::Weekdays => ['weekday'],
             self::Holidays => ['holiday'],
-            self::AllDays, self::Daytime, self::Nighttime => ['weekday', 'holiday'],
+            self::AllDays => ['weekday', 'holiday'],
         };
     }
 }

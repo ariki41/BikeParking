@@ -35,7 +35,7 @@ class ParkingSpotRateDetailDisplayTest extends TestCase
         $response->assertOk();
         $response->assertSee('〒100-0001');
         $response->assertSee('東京都千代田区千代田1-1');
-        $response->assertSee('区分');
+        $response->assertSee('適用曜日');
         $response->assertSee('時間帯');
         $response->assertSee('料金');
         $response->assertSee('最大料金');
@@ -78,7 +78,7 @@ class ParkingSpotRateDetailDisplayTest extends TestCase
 
         ParkingSpotRates::create([
             'parking_spot_id' => $parkingSpot->id,
-            'day_type' => '夜間',
+            'day_type' => '全日',
             'start_time' => '22:00:00',
             'end_time' => '06:00:00',
             'unit_minutes' => 60,
@@ -118,6 +118,8 @@ class ParkingSpotRateDetailDisplayTest extends TestCase
         $response->assertSee('<option value="12"', false);
         $response->assertSee('<option value="15"', false);
         $response->assertSee('<option value="30" selected', false);
+        $response->assertDontSee('<option value="昼間"', false);
+        $response->assertDontSee('<option value="夜間"', false);
         $response->assertSee('<option value="60"', false);
         $response->assertSee('<option value="120"', false);
         $response->assertSeeText('2時間');
@@ -198,7 +200,7 @@ class ParkingSpotRateDetailDisplayTest extends TestCase
             ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
                 'rates' => [
                     $this->validRateInput([
-                        'day_type' => '夜間',
+                        'day_type' => '全日',
                         'start_time' => '22:00',
                         'end_time' => '06:00',
                     ]),
