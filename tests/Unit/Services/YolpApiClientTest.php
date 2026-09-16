@@ -6,7 +6,9 @@ use App\Exceptions\YolpApiException;
 use App\Services\YolpApiClient;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use RuntimeException;
 use Tests\TestCase;
 
 class YolpApiClientTest extends TestCase
@@ -19,10 +21,12 @@ class YolpApiClientTest extends TestCase
             'services.yolp.search_url' => 'https://yolp.test/local-search',
             'services.yolp.geocode_url' => 'https://yolp.test/geocode',
             'services.yolp.client_id' => 'test-client-id',
+            'services.yolp.cache_ttl_seconds' => 300,
             'services.yolp.timeout_seconds' => 5,
             'services.yolp.retry.times' => 3,
             'services.yolp.retry.sleep_milliseconds' => 0,
         ]);
+        Cache::flush();
         Http::preventStrayRequests();
     }
 
@@ -86,6 +90,114 @@ class YolpApiClientTest extends TestCase
 
         $this->assertNull($client->search('存在しない駅'));
         $this->assertNull($client->geocode('存在しない住所'));
+    }
+
+    public function test_search_caches_successful_results_for_normalized_keywords(): void
+    {
+        Http::fake(['https://yolp.test/local-search*' => Http::response([
+            'Feature' => [[
+                'Geometry' => ['Coordinates' => '139.767052,35.681167'],
+            ]],
+        ])]);
+
+        $client = app(YolpApiClient::class);
+
+        $this->assertSame($client->search(' 東京 駅 '), $client->search('東京　駅'));
+        Http::assertSentCount(1);
+    }
+
+    public function test_search_caches_no_result_responses(): void
+    {
+        Http::fake(['https://yolp.test/local-search*' => Http::response(['Feature' => []])]);
+
+        $client = app(YolpApiClient::class);
+
+        $this->assertNull($client->search('存在しない駅'));
+        $this->assertNull($client->search('存在しない駅'));
+        Http::assertSentCount(1);
+    }
+
+    public function test_search_and_geocode_cache_keys_do_not_collide(): void
+    {
+        Http::fake([
+            'https://yolp.test/local-search*' => Http::response([
+                'Feature' => [[
+                    'Geometry' => ['Coordinates' => '139.767052,35.681167'],
+                ]],
+            ]),
+            'https://yolp.test/geocode*' => Http::response([
+                'Feature' => [[
+                    'Geometry' => ['Coordinates' => '139.753000,35.685000'],
+                    'Property' => ['Address' => '東京都'],
+                ]],
+            ]),
+        ]);
+
+        $client = app(YolpApiClient::class);
+
+        $this->assertNotNull($client->search('東京都'));
+        $this->assertNotNull($client->geocode('東京都'));
+        Http::assertSentCount(2);
+    }
+
+    public function test_expired_cache_entry_requests_yolp_again(): void
+    {
+        config()->set('services.yolp.cache_ttl_seconds', 60);
+        Http::fake(['https://yolp.test/local-search*' => Http::response([
+            'Feature' => [[
+                'Geometry' => ['Coordinates' => '139.767052,35.681167'],
+            ]],
+        ])]);
+
+        $client = app(YolpApiClient::class);
+        $client->search('東京駅');
+
+        $this->travel(61)->seconds();
+        $client->search('東京駅');
+
+        Http::assertSentCount(2);
+    }
+
+    public function test_yolp_failures_are_not_cached(): void
+    {
+        $attempts = 0;
+        Http::fake(function () use (&$attempts) {
+            $attempts++;
+
+            return $attempts <= 3
+                ? Http::failedConnection('connection failed')
+                : Http::response([
+                    'Feature' => [[
+                        'Geometry' => ['Coordinates' => '139.767052,35.681167'],
+                    ]],
+                ]);
+        });
+
+        try {
+            app(YolpApiClient::class)->search('東京駅');
+            $this->fail('YolpApiException was not thrown.');
+        } catch (YolpApiException) {
+            // API障害は既存の例外フローへ渡し、キャッシュ値として保存しない。
+        }
+
+        $this->assertNotNull(app(YolpApiClient::class)->search('東京駅'));
+        $this->assertSame(4, $attempts);
+    }
+
+    public function test_cache_failure_falls_back_to_the_existing_yolp_request_flow(): void
+    {
+        Cache::shouldReceive('get')->once()->andThrow(new RuntimeException('cache unavailable'));
+        Http::fake(['https://yolp.test/local-search*' => Http::response([
+            'Feature' => [[
+                'Geometry' => ['Coordinates' => '139.767052,35.681167'],
+            ]],
+        ])]);
+
+        $this->assertSame([
+            'lon' => '139.767052',
+            'lat' => '35.681167',
+        ], app(YolpApiClient::class)->search('東京駅'));
+        Http::assertSentCount(1);
     }
 
     public function test_connection_failure_is_retried_and_wrapped(): void
