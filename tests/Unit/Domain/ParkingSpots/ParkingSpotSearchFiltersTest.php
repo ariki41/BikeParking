@@ -40,7 +40,7 @@ class ParkingSpotSearchFiltersTest extends TestCase
             '24時間営業',
             '無料時間あり',
             '閉鎖済みを除外',
-            '最大料金: 1,000円以下',
+            '最大料金: 1,000円以下（適用条件を問わず）',
         ], $filters->labels());
     }
 

@@ -65,6 +65,7 @@ class ParkingSpotController extends Controller
         $displacementClasses = EngineDisplacementClass::cases();
         $rateDayTypes = config('categories.parking_spot_rate_day_types');
         $rateUnitMinutes = config('categories.parking_spot_rate_unit_minutes');
+        $maxRatePeriods = config('categories.parking_spot_max_rate_periods');
         $businessHourDayTypes = config('categories.parking_spot_business_hour_day_types');
         $formValues = [
             'name' => '',
@@ -80,7 +81,7 @@ class ParkingSpotController extends Controller
         $businessHoursInput = [$this->defaultBusinessHourInput()];
         $imagePaths = [];
 
-        return view('parking_spot.create', compact('capacity', 'displacementClasses', 'rateDayTypes', 'rateUnitMinutes', 'businessHourDayTypes', 'formValues', 'ratesInput', 'businessHoursInput', 'imagePaths'));
+        return view('parking_spot.create', compact('capacity', 'displacementClasses', 'rateDayTypes', 'rateUnitMinutes', 'maxRatePeriods', 'businessHourDayTypes', 'formValues', 'ratesInput', 'businessHoursInput', 'imagePaths'));
     }
 
     public function confirm(ParkingSpotRequest $request)
@@ -209,6 +210,7 @@ class ParkingSpotController extends Controller
         $displacementClasses = EngineDisplacementClass::cases();
         $rateDayTypes = config('categories.parking_spot_rate_day_types');
         $rateUnitMinutes = config('categories.parking_spot_rate_unit_minutes');
+        $maxRatePeriods = config('categories.parking_spot_max_rate_periods');
         $businessHourDayTypes = config('categories.parking_spot_business_hour_day_types');
 
         $address1 = $parkingSpot->postalcode->fullAddress();
@@ -234,6 +236,8 @@ class ParkingSpotController extends Controller
             'no_free_minutes' => $rate->free_minutes === 0 ? '1' : '0',
             'max_rate' => $rate->max_rate,
             'no_max_rate' => $rate->max_rate === null ? '1' : '0',
+            'max_rate_period' => $rate->max_rate_period,
+            'max_rate_repeats' => $rate->max_rate_repeats,
         ])->values()->all() ?: [$this->defaultRateInput()];
         $imagePaths = $parkingSpot->image_paths;
         $businessHoursInput = $parkingSpot->businessHours->map(fn ($hour) => [
@@ -246,7 +250,7 @@ class ParkingSpotController extends Controller
             'opening_time' => $formValues['opening_time'], 'closing_time' => $formValues['closing_time'],
         ]];
 
-        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'displacementClasses', 'rateDayTypes', 'rateUnitMinutes', 'businessHourDayTypes', 'formValues', 'ratesInput', 'businessHoursInput', 'imagePaths'));
+        return view('parking_spot.edit', compact('parkingSpot', 'capacity', 'displacementClasses', 'rateDayTypes', 'rateUnitMinutes', 'maxRatePeriods', 'businessHourDayTypes', 'formValues', 'ratesInput', 'businessHoursInput', 'imagePaths'));
     }
 
     public function update(Request $request, ParkingSpot $parkingSpot)
@@ -300,6 +304,8 @@ class ParkingSpotController extends Controller
             'no_free_minutes' => '1',
             'max_rate' => '',
             'no_max_rate' => '0',
+            'max_rate_period' => 'entry_24_hours',
+            'max_rate_repeats' => false,
         ];
     }
 

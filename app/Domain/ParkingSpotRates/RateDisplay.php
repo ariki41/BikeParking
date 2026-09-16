@@ -18,6 +18,7 @@ final readonly class RateDisplay
         public string $timeRangeLabel,
         public string $baseRateLabel,
         public string $maxRateLabel,
+        public string $maxRateConditionLabel,
         public string $rateLabel,
     ) {}
 
@@ -31,6 +32,8 @@ final readonly class RateDisplay
             $rate->rate,
             $rate->free_minutes,
             $rate->max_rate,
+            $rate->max_rate_period,
+            (bool) ($rate->max_rate_repeats ?? false),
         );
     }
 
@@ -47,6 +50,8 @@ final readonly class RateDisplay
             (int) ($rate['rate'] ?? 0),
             (int) ($rate['free_minutes'] ?? 0),
             self::nullableInteger($rate['max_rate'] ?? null),
+            self::nullableString($rate['max_rate_period'] ?? null),
+            (bool) ($rate['max_rate_repeats'] ?? false),
         );
     }
 
@@ -71,6 +76,8 @@ final readonly class RateDisplay
         int $rate,
         int $freeMinutes,
         ?int $maxRate,
+        ?string $maxRatePeriod,
+        bool $maxRateRepeats,
     ): self {
         if ($rate === 0) {
             return new self(
@@ -78,6 +85,7 @@ final readonly class RateDisplay
                 self::formatTimeRange($startTime, $endTime),
                 '無料',
                 self::maxRateLabel($maxRate),
+                self::maxRateConditionLabel($maxRate, $maxRatePeriod, $maxRateRepeats),
                 '無料',
             );
         }
@@ -89,19 +97,42 @@ final readonly class RateDisplay
         }
 
         $maxRateLabel = self::maxRateLabel($maxRate);
+        $maxRateConditionLabel = self::maxRateConditionLabel($maxRate, $maxRatePeriod, $maxRateRepeats);
 
         return new self(
             $dayType,
             self::formatTimeRange($startTime, $endTime),
             $baseRateLabel,
             $maxRateLabel,
-            $baseRateLabel.($maxRate === null ? ' / 最大料金なし' : ' / 最大 '.number_format($maxRate).'円'),
+            $maxRateConditionLabel,
+            $baseRateLabel.($maxRate === null
+                ? ' / 最大料金なし'
+                : ' / 最大 '.$maxRateLabel.($maxRateConditionLabel === '適用条件未設定' ? '' : '（'.$maxRateConditionLabel.'）')),
         );
     }
 
     private static function maxRateLabel(?int $maxRate): string
     {
-        return $maxRate === null ? '最大料金なし' : number_format($maxRate).'円';
+        if ($maxRate === null) {
+            return '最大料金なし';
+        }
+
+        return number_format($maxRate).'円';
+    }
+
+    private static function maxRateConditionLabel(?int $maxRate, ?string $period, bool $repeats): string
+    {
+        if ($maxRate === null) {
+            return '—';
+        }
+
+        $condition = MaxRatePeriod::tryFrom((string) $period);
+
+        if ($condition === null) {
+            return '適用条件未設定';
+        }
+
+        return $condition->label().'・'.($repeats ? '繰り返し適用' : '1回限り');
     }
 
     private static function isOvernight(?string $startTime, ?string $endTime): bool

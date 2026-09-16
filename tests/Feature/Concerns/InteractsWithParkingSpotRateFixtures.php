@@ -83,6 +83,8 @@ trait InteractsWithParkingSpotRateFixtures
             'rate' => 100,
             'free_minutes' => 0,
             'max_rate' => 1200,
+            'max_rate_period' => 'entry_24_hours',
+            'max_rate_repeats' => false,
         ], $overrides);
     }
 

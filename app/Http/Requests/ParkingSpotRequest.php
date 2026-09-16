@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Domain\ParkingSpotRates\MaxRatePeriod;
 use App\Domain\ParkingSpotRates\RateConflictDetector;
 use App\Domain\ParkingSpotRates\RateDayType;
 use App\Domain\ParkingSpotRates\RatePeriod;
@@ -32,6 +33,11 @@ class ParkingSpotRequest extends FormRequest
                     $rate['free_minutes'] = 0;
                     $rate['max_rate'] = null;
                     $rate['no_max_rate'] = '1';
+                }
+
+                if (($rate['no_max_rate'] ?? false)) {
+                    $rate['max_rate_period'] = null;
+                    $rate['max_rate_repeats'] = false;
                 }
 
                 if (($rate['no_free_minutes'] ?? false)) {
@@ -140,6 +146,8 @@ class ParkingSpotRequest extends FormRequest
             'rates.*.no_free_minutes' => 'nullable|boolean',
             'rates.*.no_max_rate' => 'nullable|boolean',
             'rates.*.max_rate' => 'required_unless:rates.*.no_max_rate,1|nullable|integer|min:1',
+            'rates.*.max_rate_period' => ['nullable', Rule::enum(MaxRatePeriod::class)],
+            'rates.*.max_rate_repeats' => 'nullable|boolean',
         ];
     }
 
@@ -243,6 +251,7 @@ class ParkingSpotRequest extends FormRequest
             'rates.*.max_rate.integer' => '最大料金は整数で入力してください。',
             'rates.*.max_rate.min' => '最大料金は1円以上で入力してください。',
             'rates.*.max_rate.required_unless' => '最大料金なしを選択しない場合、最大料金は必須です。',
+            'rates.*.max_rate_period.enum' => '最大料金の適用期間を選択してください。',
         ];
     }
 

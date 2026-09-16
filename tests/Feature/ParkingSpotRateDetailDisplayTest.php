@@ -27,6 +27,8 @@ class ParkingSpotRateDetailDisplayTest extends TestCase
             'rate' => 100,
             'free_minutes' => 30,
             'max_rate' => 1200,
+            'max_rate_period' => 'entry_24_hours',
+            'max_rate_repeats' => true,
         ]);
 
         $response = $this->actingAs($user)
@@ -44,6 +46,7 @@ class ParkingSpotRateDetailDisplayTest extends TestCase
         $response->assertSee('20:00');
         $response->assertSee('最初の30分無料 / 以降30分 100円');
         $response->assertSee('1,200円');
+        $response->assertSee('入庫から24時間・繰り返し適用');
     }
 
     public function test_parking_spot_detail_displays_no_max_rate_label(): void
@@ -70,6 +73,21 @@ class ParkingSpotRateDetailDisplayTest extends TestCase
         $response->assertSee('00:00 ～ 24:00');
         $response->assertDontSee('最初の0分無料');
         $response->assertDontSee('以降30分 100円');
+    }
+
+    public function test_parking_spot_create_form_can_select_max_rate_conditions(): void
+    {
+        [, $user] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)->get(route('parking_spot.create'));
+
+        $response->assertOk();
+        $response->assertSee('name="rates[0][max_rate_period]"', false);
+        $response->assertSeeText('入庫から24時間');
+        $response->assertSeeText('当日24時まで');
+        $response->assertSeeText('料金時間帯の終了まで');
+        $response->assertSee('name="rates[0][max_rate_repeats]"', false);
+        $response->assertSeeText('繰り返し適用する');
     }
 
     public function test_parking_spot_detail_displays_free_rate_label(): void

@@ -23,7 +23,7 @@
                 );
             @endphp
             <x-parking-spot.rate-row :index="$index" :messages="$itemErrors" :rate="$rate"
-                :rate-day-types="$rateDayTypes" :rate-unit-minutes="$rateUnitMinutes" />
+                :rate-day-types="$rateDayTypes" :rate-unit-minutes="$rateUnitMinutes" :max-rate-periods="$maxRatePeriods" />
         @endforeach
     </div>
 
@@ -39,6 +39,8 @@
             'no_free_minutes' => true,
             'max_rate' => '',
             'no_max_rate' => false,
-        ]" :rate-day-types="$rateDayTypes" :rate-unit-minutes="$rateUnitMinutes" template />
+            'max_rate_period' => 'entry_24_hours',
+            'max_rate_repeats' => false,
+        ]" :rate-day-types="$rateDayTypes" :rate-unit-minutes="$rateUnitMinutes" :max-rate-periods="$maxRatePeriods" template />
     </template>
 </div>

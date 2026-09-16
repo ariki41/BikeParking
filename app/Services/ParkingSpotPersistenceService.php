@@ -199,6 +199,8 @@ class ParkingSpotPersistenceService
                 'rate' => (int) $rate->rate,
                 'free_minutes' => (int) $rate->free_minutes,
                 'max_rate' => $rate->max_rate === null ? null : (int) $rate->max_rate,
+                'max_rate_period' => $rate->max_rate_period,
+                'max_rate_repeats' => (bool) $rate->max_rate_repeats,
             ])
             ->values()
             ->all();
@@ -217,6 +219,8 @@ class ParkingSpotPersistenceService
                 'max_rate' => ($rate['no_max_rate'] ?? false)
                     ? null
                     : (isset($rate['max_rate']) ? (int) $rate['max_rate'] : null),
+                'max_rate_period' => ($rate['no_max_rate'] ?? false) ? null : ($rate['max_rate_period'] ?? null),
+                'max_rate_repeats' => ($rate['no_max_rate'] ?? false) ? null : (bool) ($rate['max_rate_repeats'] ?? false),
             ])
             ->values()
             ->all();
@@ -259,6 +263,8 @@ class ParkingSpotPersistenceService
                 'rate' => $rate['rate'],
                 'free_minutes' => $rate['free_minutes'] ?? 0,
                 'max_rate' => ($rate['no_max_rate'] ?? false) ? null : ($rate['max_rate'] ?? null),
+                'max_rate_period' => ($rate['no_max_rate'] ?? false) ? null : ($rate['max_rate_period'] ?? null),
+                'max_rate_repeats' => ($rate['no_max_rate'] ?? false) ? null : (bool) ($rate['max_rate_repeats'] ?? false),
             ]);
         }
     }
