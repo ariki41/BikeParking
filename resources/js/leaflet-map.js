@@ -112,10 +112,11 @@ const livewireIsReady = () => Boolean(
     && (livewireInitialized || window.Livewire.all?.().length > 0),
 );
 
-const dispatchBounds = (instance) => {
+const dispatchBounds = (instance, isInitial = false) => {
     // livewire:init is too early: component event listeners are registered during initialization.
     if (!livewireIsReady()) {
         instance.boundsDispatchPending = true;
+        instance.pendingBoundsAreInitial = instance.pendingBoundsAreInitial || isInitial;
         return;
     }
 
@@ -123,6 +124,7 @@ const dispatchBounds = (instance) => {
     const center = instance.map.getCenter();
 
     window.Livewire.dispatch(instance.configuration.boundsEvent, {
+        isInitial,
         zoom: instance.map.getZoom(),
         center: {
             latitude: center.lat,
@@ -194,6 +196,7 @@ const initializeMap = (element) => {
             markers: [],
             livewireConnected: false,
             boundsDispatchPending: false,
+            pendingBoundsAreInitial: false,
         };
 
         mapInstances.set(element.id, instance);
@@ -201,7 +204,7 @@ const initializeMap = (element) => {
         connectLivewire(instance);
 
         if (configuration.boundsEvent) {
-            map.whenReady(() => dispatchBounds(instance));
+            map.whenReady(() => dispatchBounds(instance, true));
             map.on('moveend', () => dispatchBounds(instance));
         }
 
@@ -274,7 +277,8 @@ document.addEventListener('livewire:initialized', () => {
 
         if (instance.boundsDispatchPending) {
             instance.boundsDispatchPending = false;
-            dispatchBounds(instance);
+            dispatchBounds(instance, instance.pendingBoundsAreInitial);
+            instance.pendingBoundsAreInitial = false;
         }
     });
 });

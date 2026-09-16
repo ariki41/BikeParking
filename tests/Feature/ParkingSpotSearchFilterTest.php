@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Domain\ParkingSpots\ParkingSpotSearchFilters;
+use App\Domain\ParkingSpots\ParkingSpotSearchQuery;
 use App\Livewire\ParkingSpots;
 use App\Models\City;
 use App\Models\ParkingSpot;
@@ -67,6 +69,31 @@ class ParkingSpotSearchFilterTest extends TestCase
         $this->assertSame([1, 3], $component->get('filters')['capacity']);
         $this->assertSame('1,3', $component->get('capacityQuery'));
         $this->assertMarkerNames($component, ['収容区分1', '収容区分3']);
+    }
+
+    public function test_search_query_can_filter_spots_outside_the_livewire_component(): void
+    {
+        $matching = $this->createParkingSpot('Query対象', ['capacity' => 1]);
+        $this->createRate($matching, ['free_minutes' => 15, 'max_rate' => 900]);
+        $wrongCapacity = $this->createParkingSpot('Query収容台数対象外', ['capacity' => 3]);
+        $this->createRate($wrongCapacity, ['free_minutes' => 15, 'max_rate' => 900]);
+        $wrongRate = $this->createParkingSpot('Query料金対象外', ['capacity' => 1]);
+        $this->createRate($wrongRate, ['free_minutes' => 0, 'max_rate' => 1000]);
+
+        $results = app(ParkingSpotSearchQuery::class)->paginate(
+            $this->mapBounds(),
+            ParkingSpotSearchFilters::from([
+                'capacity' => '1',
+                'has_free_time' => '1',
+                'max_rate' => '900',
+            ]),
+            null,
+            page: 1,
+            perPage: 50,
+        );
+
+        $this->assertSame(1, $results['total']);
+        $this->assertSame(['Query対象'], $results['spots']->pluck('name')->all());
     }
 
     public function test_twenty_four_hour_filter_requires_both_times_to_be_midnight(): void
@@ -501,6 +528,22 @@ class ParkingSpotSearchFilterTest extends TestCase
             ->call('goToPage', 2)
             ->call('updateBounds', $this->mapBounds())
             ->assertSet('page', 1);
+    }
+
+    public function test_initial_map_bounds_preserve_the_page_restored_from_the_url(): void
+    {
+        foreach (range(1, 51) as $number) {
+            $this->createParkingSpot("対象{$number}");
+        }
+
+        Livewire::withQueryParams(['page' => '2'])
+            ->test(ParkingSpots::class)
+            ->call('updateBounds', $this->mapBounds(), 15, [
+                'latitude' => 35.68,
+                'longitude' => 139.75,
+            ], true)
+            ->assertSet('page', 2)
+            ->assertSee('対象51');
     }
 
     private function createParkingSpot(string $name, array $overrides = []): ParkingSpot
