@@ -25,6 +25,23 @@ docker compose -f compose.deploy.yml stop app scheduler tailscale
 
 アプリケーション更新後にヘルスチェックが失敗すると、デプロイスクリプトは直前のdigestのアプリケーションコンテナへ自動で戻します。初回デプロイで戻すイメージがない場合は、異常なアプリケーションコンテナを停止して終了します。データベースマイグレーションは前方互換で作成することを前提とします。
 
+### MySQL 8.0から8.4 LTSへの更新
+
+`compose.deploy.yml` はMySQL 8.4 LTSを使用します。既存の `mysql-data` ボリュームを8.4で起動する前に、メンテナンス時間を確保し、次の作業をサーバー上で完了してください。
+
+```bash
+cd /opt/bike-parking
+
+# システムスキーマを含む論理バックアップ
+docker compose -f compose.deploy.yml exec -T mysql sh -c 'exec mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" --single-transaction --routines --events --all-databases' > mysql-8.0-backup.sql
+
+# アプリケーションを停止してから、MySQLを正常停止する
+docker compose -f compose.deploy.yml stop app scheduler tailscale
+docker compose -f compose.deploy.yml stop mysql
+```
+
+実行前に、MySQL Shellの `util.checkForServerUpgrade()` で8.4への適合性を確認してください。その後、通常どおりActionsからデプロイを実行します。8.4起動後はMySQLログ、`php artisan migrate --force`、アプリケーションのヘルスチェックを確認してください。MySQL 8.4から8.0へのインプレースダウングレードはサポートされません。復旧が必要な場合は、8.0用に作成した空のボリュームへ `mysql-8.0-backup.sql` を復元するか、アップグレード前に取得したボリュームスナップショットを復元してください。
+
 ## 開発サーバーの初期設定
 
 対象は `kaede.tail06f222.ts.net` 上のUbuntu x86_64サーバーです。ホストのTailscaleはGitHub ActionsからのSSH接続に利用します。アプリの外部公開は、Docker内のTailscaleサイドカーが担当します。OpenSSH Server、Docker EngineとDocker Compose v2をあらかじめ導入し、`ariki` ユーザーでSSH接続できるようにします。
@@ -133,7 +150,7 @@ TailscaleのTrust credentialはGitHub ActionsをIssuerとし、Subjectを `repo:
 - `app`: Apache + PHP 8.5で動くLaravelアプリケーション。`/up` のヘルスチェックを通過するまでデプロイ完了としません。
 - `scheduler`: Laravelスケジューラを常時実行し、24時間経過した駐輪場確認用の一時画像を1時間ごとに削除し、日本郵便の最新郵便番号データを毎月2日3時に同期します。
 - `tailscale`: `bikeparking-dev` としてTailnetへ参加し、Tailscale FunnelからDocker内部の `app:80` へHTTPSで転送します。ホストポートは公開しません。
-- `mysql`: MySQL 8.0。データは名前付きボリューム `mysql-data` に保存されます。
+- `mysql`: MySQL 8.4 LTS。データは名前付きボリューム `mysql-data` に保存されます。
 - `app-storage`: アップロード画像などLaravelの永続ストレージです。
 
 デプロイスクリプトは新しいdigestのイメージを取得してからMySQLの起動を待ち、`php artisan migrate --force` を実行します。`SEED_DEVELOPMENT_DATA=true` の場合は、その後に開発用テストデータを投入して、最後にアプリケーション、スケジューラ、Tailscale Funnelを更新します。アプリまたはFunnelのヘルスチェックに失敗した場合は、直前のアプリケーションイメージへ戻します。初回のFunnel用DNS・証明書設定には数分かかることがあります。

@@ -26,13 +26,13 @@
 | --- | --- |
 | Backend | PHP 8.5 / Laravel 13 |
 | Frontend | Blade / Livewire 3 / Tailwind CSS / Alpine.js |
-| Database | MySQL 8.0 |
+| Database | MySQL 8.4 LTS |
 | Development environment | Laravel Sail / Docker Compose |
 | Asset build | Vite |
 
 検索・詳細・登録確認画面のLeaflet地図は `x-leaflet-map` コンポーネントを使用します。中心座標、ズーム、固定・動的マーカー、Livewireへの表示範囲通知を画面ごとに設定でき、初期化できない場合は地図領域にエラーメッセージを表示します。
 
-ローカル開発用のDocker Composeは、Laravelアプリケーションを実行する `laravel.test` とMySQL 8.0の `mysql` で構成します。セッション、キャッシュ、キューはデータベースドライバ、メールはログドライバを使用するため、Redis、Meilisearch、Mailpit、Seleniumは起動しません。
+ローカル開発用のDocker Composeは、Laravelアプリケーションを実行する `laravel.test` とMySQL 8.4 LTSの `mysql` で構成します。セッション、キャッシュ、キューはデータベースドライバ、メールはログドライバを使用するため、Redis、Meilisearch、Mailpit、Seleniumは起動しません。
 
 ## 必要な環境
 
@@ -95,6 +95,25 @@ FILESYSTEM_DISK=public
 ```
 
 `public` ディスクを利用するため、セットアップ手順どおり `php artisan storage:link` を実行してください。
+
+### MySQL 8.0から8.4 LTSへの更新
+
+既存の `sail-mysql` ボリュームをMySQL 8.4で起動すると、MySQLはデータディレクトリをアップグレードします。アップグレード後に8.0へインプレースで戻すことはできないため、必ずバックアップを取得してから実施してください。
+
+```bash
+# MySQLのシステムスキーマを含む論理バックアップをホストへ保存
+docker compose exec -T mysql sh -c 'exec mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" --single-transaction --routines --events --all-databases' > mysql-8.0-backup.sql
+
+# コンテナを正常停止する。名前付きボリュームは削除しない
+docker compose down
+
+# 8.4イメージを取得して、既存ボリュームで起動
+docker compose pull mysql
+docker compose up -d
+docker compose logs mysql
+```
+
+実行前に、MySQL Shellの `util.checkForServerUpgrade()` で8.4への適合性を確認してください。起動後は `docker compose exec laravel.test php artisan migrate` とテストスイートを実行し、アプリケーションを確認してください。アップグレードに失敗した場合や8.0へ戻す必要がある場合は、8.4で更新済みのボリュームを8.0で起動しないでください。8.0用の新しい空ボリュームを作成してバックアップを復元するか、アップグレード前のボリュームスナップショットへ戻してください。
 
 YOLP APIのURLは `.env.example` に設定済みです。住所検索・ジオコード機能を利用する場合は、取得したClient IDだけを `.env` の `YOLP_CLIENT_ID` に設定してください。
 
