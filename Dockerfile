@@ -38,7 +38,7 @@ RUN mkdir -p \
     --classmap-authoritative
 
 
-FROM php:8.3-apache-bookworm AS runtime
+FROM php:8.5-apache-bookworm AS runtime
 
 ENV APP_ENV=production \
     APP_DEBUG=false \

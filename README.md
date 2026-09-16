@@ -24,7 +24,7 @@
 
 | 項目 | 採用技術 |
 | --- | --- |
-| Backend | PHP 8.3 / Laravel 13 |
+| Backend | PHP 8.5 / Laravel 13 |
 | Frontend | Blade / Livewire 3 / Tailwind CSS / Alpine.js |
 | Database | MySQL 8.0 |
 | Development environment | Laravel Sail / Docker Compose |
@@ -38,7 +38,7 @@
 
 - Docker Desktop または Docker Engine
 - Docker Compose
-- PHP 8.3 / Composer
+- PHP 8.5 / Composer
 - Node.js / npm（ローカルでViteを実行する場合）
 
 ## セットアップ
@@ -176,7 +176,7 @@ Laravel Sailのショートカットを利用できる環境では、上記の `
 
 ### CIと同等の確認
 
-Pull Requestと`main`へのpushでは、GitHub Actionsの`CI/CD`ワークフローがPHP 8.3とNode.js 22を使用し、Pint、Larastan、Feature・Unitテスト、フロントエンドビルドを実行します。Composerとnpmのダウンロードキャッシュは、それぞれ`composer.lock`と`package-lock.json`に応じて更新されます。
+Pull Requestと`main`へのpushでは、GitHub Actionsの`CI/CD`ワークフローがPHP 8.5とNode.js 22を使用し、Pint、Larastan、Feature・Unitテスト、フロントエンドビルドを実行します。Composerとnpmのダウンロードキャッシュは、それぞれ`composer.lock`と`package-lock.json`に応じて更新されます。
 
 ローカルでは次のコマンドで同等の確認を実行できます。
 
