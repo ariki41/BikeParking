@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>{{ config('app.name', 'BikeParking') }}</title>
+    <link rel="icon" href="{{ asset('images/bike-parking-favicon.png') }}" type="image/png">
 
     <!-- Fonts -->
     <link href="https://fonts.bunny.net" rel="preconnect">

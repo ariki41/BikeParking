@@ -1,4 +1,15 @@
-<x-app-layout>
+@php
+    $region = $parkingSpot->postalcode->city->prefecture->name.$parkingSpot->postalcode->city->name;
+    $pageTitle = $parkingSpot->name.'（'.$region.'）のバイク駐輪場';
+    $pageDescription = $region.'の'.$parkingSpot->name.'。料金、営業時間、場所を確認できます。';
+@endphp
+
+<x-app-layout
+    :title="$pageTitle"
+    :description="$pageDescription"
+    :canonical="route('parking_spot.show', $parkingSpot)"
+    :image="$parkingSpot->image_url"
+    :robots="$parkingSpot->is_published ? null : 'noindex, nofollow'">
     <div class="bp-shell">
         @if (session('favorite_success'))
             <p class="mb-5 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">

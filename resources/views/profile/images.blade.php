@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout title="投稿した画像" robots="noindex, nofollow">
     <div class="bp-shell max-w-4xl space-y-6">
         <div class="mb-6">
             <h1 class="text-3xl font-bold text-slate-900">マイページ</h1>

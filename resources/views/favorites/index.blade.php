@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout title="お気に入り" robots="noindex, nofollow">
     <div class="bp-shell">
         <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>

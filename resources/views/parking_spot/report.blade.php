@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout title="駐輪場を通報" robots="noindex, nofollow">
     <div class="bp-shell max-w-3xl">
         <div class="mb-6">
             <h1 class="text-2xl font-bold text-slate-900">駐輪場を通報</h1>

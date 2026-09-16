@@ -1,4 +1,7 @@
-<x-app-layout>
+<x-app-layout
+    title="バイク駐輪場を探す"
+    description="駅名や地名から、バイク駐輪場の料金、営業時間、場所を検索できます。"
+    :canonical="route('home')">
     <div class="bp-shell">
         @if (session('error'))
             <p class="mb-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">

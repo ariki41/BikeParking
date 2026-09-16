@@ -1,4 +1,7 @@
-<x-app-layout>
+<x-app-layout
+    title="利用規約"
+    description="BikeParkingの利用規約です。"
+    :canonical="route('terms')">
     <div class="bp-shell max-w-3xl">
         <article class="bp-panel p-6 sm:p-8">
             <h1 class="text-3xl font-bold text-slate-900">利用規約</h1>
