@@ -39,6 +39,7 @@ return [
         'search_url' => env('YOLP_URL', 'https://map.yahooapis.jp/search/local/V1/localSearch'),
         'geocode_url' => env('YOLP_GEOCODE_URL', 'https://map.yahooapis.jp/geocode/V1/geoCoder'),
         'client_id' => env('YOLP_CLIENT_ID'),
+        'cache_ttl_seconds' => env('YOLP_CACHE_TTL_SECONDS', 86400),
         'timeout_seconds' => 5,
         'retry' => [
             'times' => 3,

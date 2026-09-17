@@ -17,8 +17,8 @@ class SearchService
     {
         $keyword = $request->get('keyword');
 
-        // URLで共有された地図位置は、キーワード検索よりも再現性を優先する。
-        if ($this->hasValidRequestedCoordinates($request)) {
+        // キーワードがない共有URLだけ、保存済みの地図位置を再現する。
+        if (! filled($keyword) && $this->hasValidRequestedCoordinates($request)) {
             session()->forget('error');
 
             return [
@@ -50,8 +50,8 @@ class SearchService
 
         // 検索語も位置指定もない初期表示では、地図の開始地点を東京駅にする。
         return [
-            'lon' => $request->input('lon') ?? 139.767052,
-            'lat' => $request->input('lat') ?? 35.681167,
+            'lon' => $request->input('lon') ?? config('parking_spot.search_map.default_longitude'),
+            'lat' => $request->input('lat') ?? config('parking_spot.search_map.default_latitude'),
         ];
     }
 

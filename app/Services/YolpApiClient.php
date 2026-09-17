@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Exceptions\YolpApiException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Throwable;
 
 class YolpApiClient
 {
@@ -14,7 +16,7 @@ class YolpApiClient
      */
     public function search(string $keyword): ?array
     {
-        return $this->request(
+        return $this->remember('search', $keyword, fn (): ?array => $this->request(
             (string) config('services.yolp.search_url'),
             [
                 'query' => $keyword,
@@ -24,7 +26,7 @@ class YolpApiClient
                 'detail' => 'simple',
                 'output' => 'json',
             ],
-        );
+        ));
     }
 
     /**
@@ -32,21 +34,68 @@ class YolpApiClient
      */
     public function geocode(string $address): ?array
     {
-        $location = $this->request(
-            (string) config('services.yolp.geocode_url'),
-            [
-                'query' => $address,
-                'sort' => 'score',
-                'results' => 1,
-                'output' => 'json',
-            ],
-        );
+        return $this->remember('geocode', $address, function () use ($address): ?array {
+            $location = $this->request(
+                (string) config('services.yolp.geocode_url'),
+                [
+                    'query' => $address,
+                    'sort' => 'score',
+                    'results' => 1,
+                    'output' => 'json',
+                ],
+            );
 
-        if ($location === null || ! isset($location['address'])) {
-            return null;
+            if ($location === null || ! isset($location['address'])) {
+                return null;
+            }
+
+            return $location;
+        });
+    }
+
+    /**
+     * @param  callable(): ?array{lon: string, lat: string, address?: string}  $resolver
+     * @return array{lon: string, lat: string, address?: string}|null
+     */
+    private function remember(string $operation, string $input, callable $resolver): ?array
+    {
+        $ttl = (int) config('services.yolp.cache_ttl_seconds');
+
+        if ($ttl <= 0) {
+            return $resolver();
+        }
+
+        $key = 'yolp:'.$operation.':'.hash('sha256', $this->normalizeCacheInput($input));
+        $miss = new \stdClass;
+
+        try {
+            $cached = Cache::get($key, $miss);
+        } catch (Throwable) {
+            // キャッシュ障害は外部APIの既存エラー処理を妨げないよう、直接問い合わせへ戻す。
+            return $resolver();
+        }
+
+        if (is_array($cached) && array_key_exists('location', $cached)) {
+            return $cached['location'];
+        }
+
+        $location = $resolver();
+
+        try {
+            // nullもラッパー配列で保存し、該当なし検索の連続API呼び出しを避ける。
+            Cache::put($key, ['location' => $location], now()->addSeconds($ttl));
+        } catch (Throwable) {
+            // 応答自体は利用できるため、保存失敗だけで検索・登録を失敗させない。
         }
 
         return $location;
+    }
+
+    private function normalizeCacheInput(string $input): string
+    {
+        $normalized = mb_strtolower(mb_convert_kana(trim($input), 'asKV'));
+
+        return preg_replace('/\\s+/u', ' ', $normalized) ?? $normalized;
     }
 
     /**
@@ -75,21 +124,15 @@ class YolpApiClient
 
         $payload = $response->json();
 
-        if (! is_array($payload) || ! array_key_exists('Feature', $payload) || ! is_array($payload['Feature'])) {
+        if (! is_array($payload)) {
             throw new YolpApiException(YolpApiException::CATEGORY_RESPONSE);
         }
 
-        if ($payload['Feature'] === []) {
-            return null;
-        }
-
-        $location = $this->normalizeFeature($payload['Feature'][0] ?? null);
-
-        if ($location === null) {
+        if (! array_key_exists('Feature', $payload) || ! is_array($payload['Feature'])) {
             throw new YolpApiException(YolpApiException::CATEGORY_RESPONSE);
         }
 
-        return $location;
+        return $this->normalizeFeature($payload['Feature'][0] ?? null);
     }
 
     private function connectionFailureCategory(ConnectionException $exception): string
