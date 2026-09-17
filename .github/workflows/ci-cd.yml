@@ -16,6 +16,7 @@ on:
 jobs:
   test:
     name: Quality checks, tests, and asset build
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     services:
       mysql:
@@ -101,6 +102,12 @@ jobs:
           YOLP_CLIENT_ID: test-client-id
         run: php artisan test
 
+      - name: Cache Playwright browser
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
@@ -151,6 +158,7 @@ jobs:
   image:
     name: Build production image
     needs: test
+    if: always() && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:
       contents: read

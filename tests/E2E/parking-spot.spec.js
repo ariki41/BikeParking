@@ -66,11 +66,13 @@ test('画像、料金帯、営業時間フォームをブラウザで操作し�
     await page.locator('#max_displacement_class').selectOption({ index: 1 });
     await page.locator('.rate-input').first().fill('100');
     await page.locator('[data-rate-item]').first().getByText('最大料金なし').click();
+    await page.getByRole('button', { name: '画像1を削除' }).click();
+    await expect(page.locator('[data-image-preview-item]')).toHaveCount(0);
     await page.getByRole('button', { name: '確認画面へ進む' }).click();
 
     await expect(page.getByText('E2E 入力復元駐輪場')).toBeVisible();
     await page.getByRole('button', { name: '戻る' }).click();
     await expect(page.locator('#name')).toHaveValue('E2E 入力復元駐輪場');
-    await expect(page.locator('[data-image-preview-item]')).toHaveCount(1);
+    await expect(page.locator('[data-image-preview-item]')).toHaveCount(0);
     await expect(page.locator('[data-business-hour-item]')).toHaveCount(2);
 });
