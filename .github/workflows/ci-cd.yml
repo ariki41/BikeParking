@@ -113,9 +113,12 @@ jobs:
           DB_DATABASE: testing
           DB_USERNAME: sail
           DB_PASSWORD: password
+          YOLP_URL: http://127.0.0.1:8081/local-search
+          YOLP_GEOCODE_URL: http://127.0.0.1:8081/geocode
         run: |
           php artisan migrate:fresh --force
           php artisan db:seed --class=BrowserE2ETestSeeder --force
+          node tests/E2E/yolp-stub.js > storage/logs/e2e-yolp.log 2>&1 &
           php artisan serve --host=127.0.0.1 --port=8000 > storage/logs/e2e-server.log 2>&1 &
 
       - name: Run browser E2E tests
@@ -128,8 +131,8 @@ jobs:
           DB_USERNAME: sail
           DB_PASSWORD: password
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:8000
-          YOLP_URL: https://example.test/local-search
-          YOLP_GEOCODE_URL: https://example.test/geocode
+          YOLP_URL: http://127.0.0.1:8081/local-search
+          YOLP_GEOCODE_URL: http://127.0.0.1:8081/geocode
           YOLP_CLIENT_ID: test-client-id
         run: npm run test:e2e
 
@@ -142,6 +145,7 @@ jobs:
             playwright-report/
             test-results/
             storage/logs/e2e-server.log
+            storage/logs/e2e-yolp.log
           if-no-files-found: warn
 
   image:
