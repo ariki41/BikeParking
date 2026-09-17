@@ -55,6 +55,7 @@ test('画像、料金帯、営業時間フォームをブラウザで操作し�
 
     await page.getByRole('button', { name: '営業時間を追加' }).click();
     await expect(page.locator('[data-business-hour-item]')).toHaveCount(2);
+    await page.locator('[data-business-hour-item]').first().locator('select').selectOption('土日祝');
     await page.locator('[data-business-hour-item]').nth(1).locator('.business-hour-time').first().fill('09:00');
 
     await page.locator('#name').fill('E2E 入力復元駐輪場');
@@ -64,6 +65,7 @@ test('画像、料金帯、営業時間フォームをブラウザで操作し�
     await page.locator('#capacity').selectOption('1');
     await page.locator('#max_displacement_class').selectOption({ index: 1 });
     await page.locator('.rate-input').first().fill('100');
+    await page.locator('[data-rate-item]').first().getByText('最大料金なし').click();
     await page.getByRole('button', { name: '確認画面へ進む' }).click();
 
     await expect(page.getByText('E2E 入力復元駐輪場')).toBeVisible();
