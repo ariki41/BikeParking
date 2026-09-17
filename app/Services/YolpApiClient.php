@@ -124,21 +124,15 @@ class YolpApiClient
 
         $payload = $response->json();
 
-        if (! is_array($payload) || ! array_key_exists('Feature', $payload) || ! is_array($payload['Feature'])) {
+        if (! is_array($payload)) {
             throw new YolpApiException(YolpApiException::CATEGORY_RESPONSE);
         }
 
-        if ($payload['Feature'] === []) {
-            return null;
-        }
-
-        $location = $this->normalizeFeature($payload['Feature'][0] ?? null);
-
-        if ($location === null) {
+        if (! array_key_exists('Feature', $payload) || ! is_array($payload['Feature'])) {
             throw new YolpApiException(YolpApiException::CATEGORY_RESPONSE);
         }
 
-        return $location;
+        return $this->normalizeFeature($payload['Feature'][0] ?? null);
     }
 
     private function connectionFailureCategory(ConnectionException $exception): string

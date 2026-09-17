@@ -26,8 +26,8 @@ class SearchController extends Controller
             ]);
             session()->flash('error', $exception->userMessage());
             $yolpLocation = [
-                'lon' => $request->input('lon') ?? 139.767052,
-                'lat' => $request->input('lat') ?? 35.681167,
+                'lon' => $request->input('lon') ?? config('parking_spot.search_map.default_longitude'),
+                'lat' => $request->input('lat') ?? config('parking_spot.search_map.default_latitude'),
             ];
         }
 

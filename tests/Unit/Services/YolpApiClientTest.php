@@ -92,6 +92,17 @@ class YolpApiClientTest extends TestCase
         $this->assertNull($client->geocode('存在しない住所'));
     }
 
+    public function test_search_returns_null_when_yolp_feature_has_no_usable_coordinates(): void
+    {
+        Http::fake(['https://yolp.test/local-search*' => Http::response([
+            'Feature' => [[
+                'Geometry' => [],
+            ]],
+        ])]);
+
+        $this->assertNull(app(YolpApiClient::class)->search('愛知県1'));
+    }
+
     public function test_search_caches_successful_results_for_normalized_keywords(): void
     {
         Http::fake(['https://yolp.test/local-search*' => Http::response([
@@ -220,6 +231,18 @@ class YolpApiClientTest extends TestCase
 
         try {
             app(YolpApiClient::class)->search('東京駅');
+            $this->fail('YolpApiException was not thrown.');
+        } catch (YolpApiException $exception) {
+            $this->assertSame(YolpApiException::CATEGORY_RESPONSE, $exception->category());
+        }
+    }
+
+    public function test_client_error_is_wrapped_as_a_response_failure_without_caching_it(): void
+    {
+        Http::fake(['https://yolp.test/local-search*' => Http::response(['Error' => []], 400)]);
+
+        try {
+            app(YolpApiClient::class)->search('愛知県1');
             $this->fail('YolpApiException was not thrown.');
         } catch (YolpApiException $exception) {
             $this->assertSame(YolpApiException::CATEGORY_RESPONSE, $exception->category());

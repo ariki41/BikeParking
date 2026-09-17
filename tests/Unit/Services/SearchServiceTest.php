@@ -84,13 +84,17 @@ class SearchServiceTest extends TestCase
     public function test_initial_display_with_a_missing_or_empty_keyword_does_not_search_or_flash_an_error(): void
     {
         Http::fake();
+        config()->set([
+            'parking_spot.search_map.default_latitude' => 35.0,
+            'parking_spot.search_map.default_longitude' => 139.0,
+        ]);
 
         foreach ([[], ['keyword' => '']] as $query) {
             $location = app(SearchService::class)->getYolpLocation(HttpRequest::create('/search', 'GET', $query));
 
             $this->assertSame([
-                'lon' => 139.767052,
-                'lat' => 35.681167,
+                'lon' => 139.0,
+                'lat' => 35.0,
             ], $location);
             $this->assertNull(session('error'));
         }

@@ -50,8 +50,8 @@ class SearchService
 
         // 検索語も位置指定もない初期表示では、地図の開始地点を東京駅にする。
         return [
-            'lon' => $request->input('lon') ?? 139.767052,
-            'lat' => $request->input('lat') ?? 35.681167,
+            'lon' => $request->input('lon') ?? config('parking_spot.search_map.default_longitude'),
+            'lat' => $request->input('lat') ?? config('parking_spot.search_map.default_latitude'),
         ];
     }
 
