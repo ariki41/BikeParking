@@ -15,9 +15,12 @@ use App\Models\Postalcode;
 use App\Models\Prefecture;
 use App\Models\Review;
 use App\Models\User;
+use App\Services\ParkingSpotModerationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use Mockery;
+use RuntimeException;
 use Tests\TestCase;
 
 class ParkingSpotModerationTest extends TestCase
@@ -75,6 +78,7 @@ class ParkingSpotModerationTest extends TestCase
 
         $this->assertDatabaseHas('parking_spots', ['id' => $spot->id, 'is_published' => false]);
         $this->assertDatabaseHas('parking_spot_moderation_actions', ['parking_spot_id' => $spot->id, 'user_id' => $admin->id, 'action' => 'hidden', 'details->reason' => '閉鎖を確認しました。']);
+        $this->assertDatabaseHas('parking_spot_reports', ['parking_spot_id' => $spot->id, 'status' => 'resolved', 'reviewed_by' => $admin->id]);
         $this->get(route('parking_spot.show', $spot))
             ->assertOk()
             ->assertSee('この駐輪場は閉鎖済みです。')
@@ -104,6 +108,7 @@ class ParkingSpotModerationTest extends TestCase
         $spot->is_published = false;
         $spot->save();
         $admin = User::factory()->create(['prefecture_id' => $prefecture->id, 'is_admin' => true]);
+        $report = ParkingSpotReport::create(['parking_spot_id' => $spot->id, 'user_id' => $admin->id, 'reason' => '再公開前の通報です。']);
 
         $this->actingAs($admin)->post(route('admin.parking_spots.publish', $spot), ['moderation_reason' => '営業再開を確認しました。'])->assertRedirect();
 
@@ -114,7 +119,55 @@ class ParkingSpotModerationTest extends TestCase
             'action' => 'published',
             'details->reason' => '営業再開を確認しました。',
         ]);
+        $this->assertDatabaseHas('parking_spot_reports', ['id' => $report->id, 'status' => 'resolved', 'reviewed_by' => $admin->id]);
         $this->get(route('parking_spot.show', $spot))->assertOk();
+    }
+
+    public function test_moderation_resolves_only_pending_reports_captured_for_the_target_spot(): void
+    {
+        [$spot, $prefecture] = $this->parkingSpot();
+        [$otherSpot] = $this->parkingSpot($prefecture);
+        $admin = User::factory()->create(['prefecture_id' => $prefecture->id, 'is_admin' => true]);
+        $history = ParkingSpotUpdateHistory::create(['parking_spot_id' => $spot->id, 'user_id' => $admin->id, 'changes' => []]);
+        $spotReport = ParkingSpotReport::create(['parking_spot_id' => $spot->id, 'user_id' => $admin->id, 'reason' => '施設全体の通報です。']);
+        $historyReport = ParkingSpotReport::create(['parking_spot_id' => $spot->id, 'parking_spot_update_history_id' => $history->id, 'user_id' => $admin->id, 'reason' => '更新履歴の通報です。']);
+        $reviewedAt = now()->subDay()->startOfSecond();
+        $reviewedReport = ParkingSpotReport::create(['parking_spot_id' => $spot->id, 'user_id' => $admin->id, 'reason' => '解決済み通報です。', 'status' => 'resolved', 'reviewed_by' => $admin->id, 'reviewed_at' => $reviewedAt]);
+        $otherSpotReport = ParkingSpotReport::create(['parking_spot_id' => $otherSpot->id, 'user_id' => $admin->id, 'reason' => '別施設の通報です。']);
+
+        $this->actingAs($admin)->post(route('admin.parking_spots.hide', $spot), ['moderation_reason' => '内容を確認しました。'])->assertRedirect();
+
+        $this->assertDatabaseHas('parking_spot_reports', ['id' => $spotReport->id, 'status' => 'resolved', 'reviewed_by' => $admin->id]);
+        $this->assertDatabaseHas('parking_spot_reports', ['id' => $historyReport->id, 'status' => 'resolved', 'reviewed_by' => $admin->id]);
+        $this->assertDatabaseHas('parking_spot_reports', ['id' => $reviewedReport->id, 'status' => 'resolved', 'reviewed_at' => $reviewedAt->format('Y-m-d H:i:s')]);
+        $this->assertDatabaseHas('parking_spot_reports', ['id' => $otherSpotReport->id, 'status' => 'pending', 'reviewed_by' => null]);
+    }
+
+    public function test_hiding_rolls_back_the_spot_action_and_reports_when_report_resolution_fails(): void
+    {
+        [$spot, $prefecture] = $this->parkingSpot();
+        $admin = User::factory()->create(['prefecture_id' => $prefecture->id, 'is_admin' => true]);
+        $report = ParkingSpotReport::create(['parking_spot_id' => $spot->id, 'user_id' => $admin->id, 'reason' => '失敗時の通報です。']);
+        $spot->refresh();
+        $originalLockVersion = $spot->lock_version;
+        $moderation = Mockery::mock(ParkingSpotModerationService::class)->makePartial();
+        $moderation->shouldAllowMockingProtectedMethods()
+            ->shouldReceive('resolveReports')
+            ->once()
+            ->andThrow(new RuntimeException('通報の解決に失敗しました。'));
+        $this->app->instance(ParkingSpotModerationService::class, $moderation);
+
+        try {
+            $this->withoutExceptionHandling()
+                ->actingAs($admin)
+                ->post(route('admin.parking_spots.hide', $spot), ['moderation_reason' => '失敗を再現します。']);
+        } catch (RuntimeException $exception) {
+            $this->assertSame('通報の解決に失敗しました。', $exception->getMessage());
+        }
+
+        $this->assertDatabaseHas('parking_spots', ['id' => $spot->id, 'is_published' => true, 'lock_version' => $originalLockVersion]);
+        $this->assertDatabaseMissing('parking_spot_moderation_actions', ['parking_spot_id' => $spot->id, 'action' => 'hidden']);
+        $this->assertDatabaseHas('parking_spot_reports', ['id' => $report->id, 'status' => 'pending', 'reviewed_by' => null, 'reviewed_at' => null]);
     }
 
     public function test_admin_can_restore_basic_information_rates_and_business_hours_and_audits_the_restoration_as_history(): void
@@ -126,6 +179,7 @@ class ParkingSpotModerationTest extends TestCase
         $target = ParkingSpotUpdateHistory::create(['parking_spot_id' => $spot->id, 'user_id' => $spot->user_id, 'changes' => ['name' => ['before' => '元の名称', 'after' => '中間の名称'], 'capacity' => ['before' => 1, 'after' => 2], 'rates' => ['before' => [['day_type' => '全日', 'start_time' => '00:00', 'end_time' => '00:00', 'unit_minutes' => 30, 'rate' => 100, 'free_minutes' => 0, 'max_rate' => 1000, 'max_rate_period' => null, 'max_rate_repeats' => false]], 'after' => []], 'business_hours' => ['before' => [['day_type' => '全日', 'is_closed' => false, 'opening_time' => '08:00', 'closing_time' => '20:00']], 'after' => []]]]);
         ParkingSpotUpdateHistory::create(['parking_spot_id' => $spot->id, 'user_id' => $spot->user_id, 'changes' => ['name' => ['before' => '中間の名称', 'after' => '最新の名称'], 'capacity' => ['before' => 2, 'after' => 9], 'rates' => ['before' => [['day_type' => '全日', 'start_time' => '00:00', 'end_time' => '00:00', 'unit_minutes' => 30, 'rate' => 200, 'free_minutes' => 0, 'max_rate' => 1200, 'max_rate_period' => null, 'max_rate_repeats' => false]], 'after' => []], 'business_hours' => ['before' => [['day_type' => '平日', 'is_closed' => false, 'opening_time' => '09:00', 'closing_time' => '19:00']], 'after' => []], 'images' => ['before' => ['old.jpg'], 'after' => ['parking-spots/current.jpg']]]]);
         $admin = User::factory()->create(['prefecture_id' => $prefecture->id, 'is_admin' => true]);
+        $report = ParkingSpotReport::create(['parking_spot_id' => $spot->id, 'parking_spot_update_history_id' => $target->id, 'user_id' => $admin->id, 'reason' => '差し戻し前の通報です。']);
 
         $this->actingAs($admin)->post(route('admin.parking_spots.histories.restore', [$spot, $target]), ['moderation_reason' => '誤登録を修正します。'])->assertRedirect();
 
@@ -143,6 +197,7 @@ class ParkingSpotModerationTest extends TestCase
         $this->assertSame('土日祝', $restoration->changes['business_hours']['before'][0]['day_type']);
         $this->assertSame('平日', $restoration->changes['business_hours']['after'][0]['day_type']);
         $this->assertDatabaseHas('parking_spot_moderation_actions', ['parking_spot_id' => $spot->id, 'parking_spot_update_history_id' => $target->id, 'user_id' => $admin->id, 'action' => 'restored', 'details->reason' => '誤登録を修正します。']);
+        $this->assertDatabaseHas('parking_spot_reports', ['id' => $report->id, 'status' => 'resolved', 'reviewed_by' => $admin->id]);
 
         $spot->forceFill(['name' => '復元後の編集'])->save();
         $spot->rates()->delete();

@@ -35,8 +35,7 @@ class ParkingSpotReportController extends Controller
     {
         Gate::authorize('viewAdmin', ParkingSpotReport::class);
         $parkingSpot = ParkingSpot::query()->findOrFail($parkingSpot);
-        $this->moderation->hide($parkingSpot, $request->user(), $request->validated('moderation_reason'));
-        $this->completeRelatedReports($parkingSpot, $request);
+        $this->moderation->hide($parkingSpot, $request->user(), $request->validated('moderation_reason'), resolveRelatedReports: true);
 
         return back()->with('status', '駐輪場を非公開にしました。');
     }
@@ -46,8 +45,7 @@ class ParkingSpotReportController extends Controller
         Gate::authorize('viewAdmin', ParkingSpotReport::class);
         $parkingSpot = ParkingSpot::query()->findOrFail($parkingSpot);
         abort_unless($history->parking_spot_id === $parkingSpot->id, 404);
-        $this->moderation->restoreToHistory($parkingSpot, $history, $request->user(), $request->validated('moderation_reason'));
-        $this->completeRelatedReports($parkingSpot, $request);
+        $this->moderation->restoreToHistory($parkingSpot, $history, $request->user(), $request->validated('moderation_reason'), resolveRelatedReports: true);
 
         return back()->with('status', '指定した更新時点へ基本情報・料金・営業時間を差し戻しました。画像は変更していません。');
     }
@@ -56,7 +54,7 @@ class ParkingSpotReportController extends Controller
     {
         Gate::authorize('viewAdmin', ParkingSpotReport::class);
         $parkingSpot = ParkingSpot::query()->findOrFail($parkingSpot);
-        $this->moderation->publish($parkingSpot, $request->user(), $request->validated('moderation_reason'));
+        $this->moderation->publish($parkingSpot, $request->user(), $request->validated('moderation_reason'), resolveRelatedReports: true);
 
         return back()->with('status', '駐輪場を公開しました。');
     }
@@ -77,10 +75,5 @@ class ParkingSpotReportController extends Controller
         $this->deletion->delete($deletionRequest, $request->user(), $request->validated('moderation_reason'));
 
         return back()->with('status', '誤登録の駐輪場を削除しました。');
-    }
-
-    private function completeRelatedReports(ParkingSpot $parkingSpot, Request $request): void
-    {
-        $parkingSpot->reports()->where('status', 'pending')->update(['status' => 'resolved', 'reviewed_by' => $request->user()->id, 'reviewed_at' => now()]);
     }
 }
