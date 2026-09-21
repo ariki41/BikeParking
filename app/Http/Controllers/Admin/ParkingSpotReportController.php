@@ -49,7 +49,7 @@ class ParkingSpotReportController extends Controller
         $this->moderation->restoreToHistory($parkingSpot, $history, $request->user(), $request->validated('moderation_reason'));
         $this->completeRelatedReports($parkingSpot, $request);
 
-        return back()->with('status', '指定した更新時点へ基本情報・料金を差し戻しました。画像は変更していません。');
+        return back()->with('status', '指定した更新時点へ基本情報・料金・営業時間を差し戻しました。画像は変更していません。');
     }
 
     public function publish(ParkingSpotModerationRequest $request, int $parkingSpot): RedirectResponse
