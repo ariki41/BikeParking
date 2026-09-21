@@ -27,6 +27,7 @@ class ParkingSpot extends Model
         return [
             'longitude' => 'float',
             'latitude' => 'float',
+            'lock_version' => 'integer',
             'max_displacement_class' => EngineDisplacementClass::class,
             'is_published' => 'boolean',
         ];

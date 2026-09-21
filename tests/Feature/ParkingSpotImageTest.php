@@ -484,6 +484,7 @@ class ParkingSpotImageTest extends TestCase
             ParkingSpotConfirmationService::SESSION_KEY => [
                 'mode' => $mode,
                 'parking_spot_id' => $input['id'] ?? null,
+                'parking_spot_version' => isset($input['id']) ? ParkingSpot::find($input['id'])?->lock_version : null,
                 'input' => $input,
                 'temporary_image_paths' => array_values(array_filter(
                     $input['image_paths'] ?? array_values(array_filter([$input['image_path'] ?? null])),

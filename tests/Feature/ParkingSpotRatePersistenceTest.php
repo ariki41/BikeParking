@@ -252,6 +252,7 @@ class ParkingSpotRatePersistenceTest extends TestCase
 
         app(ParkingSpotPersistenceService::class)->update([
             'id' => $parkingSpot->id,
+            'lock_version' => $parkingSpot->fresh()->lock_version,
             'name' => $parkingSpot->name,
             'postalcode' => '1000001',
             'address' => $parkingSpot->address,

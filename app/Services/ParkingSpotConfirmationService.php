@@ -19,9 +19,9 @@ class ParkingSpotConfirmationService
         $this->begin($request, self::MODE_CREATE, null);
     }
 
-    public function beginEdit(Request $request, int $parkingSpotId): void
+    public function beginEdit(Request $request, int $parkingSpotId, int $parkingSpotVersion): void
     {
-        $this->begin($request, self::MODE_EDIT, $parkingSpotId);
+        $this->begin($request, self::MODE_EDIT, $parkingSpotId, $parkingSpotVersion);
     }
 
     public function hasState(Request $request): bool
@@ -120,9 +120,15 @@ class ParkingSpotConfirmationService
         if ($mode === self::MODE_EDIT) {
             $parkingSpotId = $state['parking_spot_id'] ?? null;
 
-            if (! is_int($parkingSpotId) || (int) ($input['id'] ?? 0) !== $parkingSpotId) {
+            $parkingSpotVersion = $state['parking_spot_version'] ?? null;
+
+            if (! is_int($parkingSpotId)
+                || ! is_int($parkingSpotVersion)
+                || (int) ($input['id'] ?? 0) !== $parkingSpotId) {
                 return null;
             }
+
+            $input['lock_version'] = $parkingSpotVersion;
         }
 
         return $input;
@@ -185,24 +191,7 @@ class ParkingSpotConfirmationService
         $request->session()->forget(self::SESSION_KEY);
     }
 
-    private function begin(Request $request, string $mode, ?int $parkingSpotId): void
-    {
-        if ($this->matches($request, $mode, $parkingSpotId)) {
-            return;
-        }
-
-        $this->discard($request);
-
-        $request->session()->put(self::SESSION_KEY, [
-            'mode' => $mode,
-            'parking_spot_id' => $parkingSpotId,
-            'input' => null,
-            'temporary_image_paths' => [],
-            'expires_at' => now()->addHours(config('parking_spot.confirmation.lifetime_hours'))->getTimestamp(),
-        ]);
-    }
-
-    private function discard(Request $request): void
+    public function discard(Request $request): void
     {
         $state = $this->state($request);
 
@@ -211,6 +200,25 @@ class ParkingSpotConfirmationService
         }
 
         $this->forget($request);
+    }
+
+    private function begin(Request $request, string $mode, ?int $parkingSpotId, ?int $parkingSpotVersion = null): void
+    {
+        if ($this->matches($request, $mode, $parkingSpotId)
+            && ($mode !== self::MODE_EDIT || ($this->state($request)['parking_spot_version'] ?? null) === $parkingSpotVersion)) {
+            return;
+        }
+
+        $this->discard($request);
+
+        $request->session()->put(self::SESSION_KEY, [
+            'mode' => $mode,
+            'parking_spot_id' => $parkingSpotId,
+            'parking_spot_version' => $parkingSpotVersion,
+            'input' => null,
+            'temporary_image_paths' => [],
+            'expires_at' => now()->addHours(config('parking_spot.confirmation.lifetime_hours'))->getTimestamp(),
+        ]);
     }
 
     private function state(Request $request): ?array

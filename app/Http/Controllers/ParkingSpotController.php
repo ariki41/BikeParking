@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\ParkingSpotRates\RateDisplay;
 use App\Domain\ParkingSpots\EngineDisplacementClass;
+use App\Exceptions\ParkingSpotVersionConflictException;
 use App\Exceptions\YolpApiException;
 use App\Http\Requests\ParkingSpotRequest;
 use App\Models\ParkingSpot;
@@ -204,7 +205,7 @@ class ParkingSpotController extends Controller
     {
         $parkingSpot->load(['postalcode.city.prefecture', 'images', 'rates', 'businessHours']);
         Gate::authorize('update', $parkingSpot);
-        $this->confirmation->beginEdit($request, $parkingSpot->id);
+        $this->confirmation->beginEdit($request, $parkingSpot->id, $parkingSpot->lock_version);
 
         $capacity = config('categories.parking_spot_capacity');
         $displacementClasses = EngineDisplacementClass::cases();
@@ -270,6 +271,11 @@ class ParkingSpotController extends Controller
 
         try {
             $this->persistence->update($input, $request->user());
+        } catch (ParkingSpotVersionConflictException) {
+            $this->confirmation->discard($request);
+
+            return redirect()->route('parking_spot.edit', $parkingSpot)
+                ->withErrors(['confirmation' => '他のユーザーによって駐輪場情報が更新されました。最新の内容を確認して、もう一度編集してください。']);
         } catch (ValidationException $exception) {
             return redirect()->route('parking_spot.edit', $parkingSpot)
                 ->withErrors($exception->errors())

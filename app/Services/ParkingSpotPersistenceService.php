@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\ParkingSpotVersionConflictException;
 use App\Models\ParkingSpot;
 use App\Models\ParkingSpotBusinessHour;
 use App\Models\ParkingSpotRates;
@@ -76,11 +77,18 @@ class ParkingSpotPersistenceService
                     ->lockForUpdate()
                     ->findOrFail($input['id']);
                 $parkingSpot->load(['images', 'rates', 'businessHours']);
+
+                if ((int) ($input['lock_version'] ?? 0) !== $parkingSpot->lock_version) {
+                    throw new ParkingSpotVersionConflictException;
+                }
+
                 $originalImagePaths = $parkingSpot->image_paths;
                 $originalRates = $this->normalizeStoredRates($parkingSpot);
                 $originalBusinessHours = $this->normalizeStoredBusinessHours($parkingSpot);
 
                 $this->fillParkingSpot($parkingSpot, $input, $postalcode);
+                // 関連する料金・画像・営業時間だけが変わる場合も、確認内容を古くする。
+                $parkingSpot->lock_version++;
                 $persistedImages = $this->images->persistConfirmedImages(
                     $parkingSpot,
                     $this->confirmedImagePaths($input),
@@ -89,7 +97,7 @@ class ParkingSpotPersistenceService
 
                 $changes = collect($parkingSpot->getDirty())
                     // 先頭画像はimagesの変更としてまとめ、代表画像のミラー値を重複して履歴化しない。
-                    ->except(['image_path', 'updated_at'])
+                    ->except(['image_path', 'lock_version', 'updated_at'])
                     ->mapWithKeys(fn ($after, string $field) => [
                         $field => [
                             'before' => $parkingSpot->getOriginal($field),
