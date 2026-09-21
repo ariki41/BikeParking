@@ -6,17 +6,21 @@ use App\Models\ParkingSpot;
 use App\Models\ParkingSpotBusinessHour;
 use App\Models\ParkingSpotModerationAction;
 use App\Models\ParkingSpotRates;
+use App\Models\ParkingSpotReport;
 use App\Models\ParkingSpotUpdateHistory;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class ParkingSpotModerationService
 {
-    public function hide(ParkingSpot $parkingSpot, User $actor, string $reason): void
+    public function hide(ParkingSpot $parkingSpot, User $actor, string $reason, bool $resolveRelatedReports = false): void
     {
-        DB::transaction(function () use ($parkingSpot, $actor, $reason): void {
+        DB::transaction(function () use ($parkingSpot, $actor, $reason, $resolveRelatedReports): void {
             $parkingSpot = ParkingSpot::query()->lockForUpdate()->findOrFail($parkingSpot->id);
+            $pendingReportIds = $resolveRelatedReports ? $this->pendingReportIds($parkingSpot) : [];
             if (! $parkingSpot->is_published) {
+                $this->resolveReports($pendingReportIds, $actor);
+
                 return;
             }
 
@@ -24,14 +28,18 @@ class ParkingSpotModerationService
             $parkingSpot->lock_version++;
             $parkingSpot->save();
             $this->recordAction($parkingSpot, $actor, 'hidden', reason: $reason);
+            $this->resolveReports($pendingReportIds, $actor);
         });
     }
 
-    public function publish(ParkingSpot $parkingSpot, User $actor, string $reason): void
+    public function publish(ParkingSpot $parkingSpot, User $actor, string $reason, bool $resolveRelatedReports = false): void
     {
-        DB::transaction(function () use ($parkingSpot, $actor, $reason): void {
+        DB::transaction(function () use ($parkingSpot, $actor, $reason, $resolveRelatedReports): void {
             $parkingSpot = ParkingSpot::query()->lockForUpdate()->findOrFail($parkingSpot->id);
+            $pendingReportIds = $resolveRelatedReports ? $this->pendingReportIds($parkingSpot) : [];
             if ($parkingSpot->is_published) {
+                $this->resolveReports($pendingReportIds, $actor);
+
                 return;
             }
 
@@ -39,13 +47,15 @@ class ParkingSpotModerationService
             $parkingSpot->lock_version++;
             $parkingSpot->save();
             $this->recordAction($parkingSpot, $actor, 'published', reason: $reason);
+            $this->resolveReports($pendingReportIds, $actor);
         });
     }
 
-    public function restoreToHistory(ParkingSpot $parkingSpot, ParkingSpotUpdateHistory $target, User $actor, string $reason): void
+    public function restoreToHistory(ParkingSpot $parkingSpot, ParkingSpotUpdateHistory $target, User $actor, string $reason, bool $resolveRelatedReports = false): void
     {
-        DB::transaction(function () use ($parkingSpot, $target, $actor, $reason): void {
+        DB::transaction(function () use ($parkingSpot, $target, $actor, $reason, $resolveRelatedReports): void {
             $parkingSpot = ParkingSpot::query()->lockForUpdate()->findOrFail($parkingSpot->id);
+            $pendingReportIds = $resolveRelatedReports ? $this->pendingReportIds($parkingSpot) : [];
             $parkingSpot->load(['rates', 'businessHours']);
             $originalRates = $this->normalizeRates($parkingSpot->rates);
             $originalBusinessHours = $this->normalizeBusinessHours($parkingSpot->businessHours);
@@ -97,7 +107,40 @@ class ParkingSpotModerationService
                 'changes' => $changes,
             ]);
             $this->recordAction($parkingSpot, $actor, 'restored', $target, $reason);
+            $this->resolveReports($pendingReportIds, $actor);
         });
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function pendingReportIds(ParkingSpot $parkingSpot): array
+    {
+        // The parent row lock establishes this operation's report scope; later reports belong to a subsequent review.
+        return ParkingSpotReport::query()
+            ->where('parking_spot_id', $parkingSpot->id)
+            ->where('status', 'pending')
+            ->lockForUpdate()
+            ->pluck('id')
+            ->all();
+    }
+
+    /**
+     * @param  list<int>  $reportIds
+     */
+    protected function resolveReports(array $reportIds, User $actor): void
+    {
+        if ($reportIds === []) {
+            return;
+        }
+
+        ParkingSpotReport::query()
+            ->whereKey($reportIds)
+            ->update([
+                'status' => 'resolved',
+                'reviewed_by' => $actor->id,
+                'reviewed_at' => now(),
+            ]);
     }
 
     private function replaceRates(ParkingSpot $parkingSpot, array $rates): void
