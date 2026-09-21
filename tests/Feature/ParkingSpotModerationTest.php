@@ -117,13 +117,14 @@ class ParkingSpotModerationTest extends TestCase
         $this->get(route('parking_spot.show', $spot))->assertOk();
     }
 
-    public function test_admin_can_restore_basic_information_and_rates_to_a_selected_history_without_changing_images(): void
+    public function test_admin_can_restore_basic_information_rates_and_business_hours_and_audits_the_restoration_as_history(): void
     {
         [$spot, $prefecture] = $this->parkingSpot();
         $spot->forceFill(['name' => '最新の名称', 'capacity' => 9, 'image_path' => 'parking-spots/current.jpg'])->save();
         ParkingSpotRates::create(['parking_spot_id' => $spot->id, 'day_type' => '平日', 'start_time' => '09:00', 'end_time' => '18:00', 'unit_minutes' => 60, 'rate' => 300, 'free_minutes' => 0, 'max_rate' => 1800]);
-        $target = ParkingSpotUpdateHistory::create(['parking_spot_id' => $spot->id, 'user_id' => $spot->user_id, 'changes' => ['name' => ['before' => '元の名称', 'after' => '中間の名称'], 'capacity' => ['before' => 1, 'after' => 2], 'rates' => ['before' => [['day_type' => '全日', 'start_time' => '00:00', 'end_time' => '00:00', 'unit_minutes' => 30, 'rate' => 100, 'free_minutes' => 0, 'max_rate' => 1000]], 'after' => []]]]);
-        $later = ParkingSpotUpdateHistory::create(['parking_spot_id' => $spot->id, 'user_id' => $spot->user_id, 'changes' => ['name' => ['before' => '中間の名称', 'after' => '最新の名称'], 'capacity' => ['before' => 2, 'after' => 9], 'rates' => ['before' => [['day_type' => '全日', 'start_time' => '00:00', 'end_time' => '00:00', 'unit_minutes' => 30, 'rate' => 200, 'free_minutes' => 0, 'max_rate' => 1200]], 'after' => []], 'images' => ['before' => ['old.jpg'], 'after' => ['parking-spots/current.jpg']]]]);
+        $spot->businessHours()->create(['day_type' => '土日祝', 'is_closed' => false, 'opening_time' => '10:00', 'closing_time' => '17:00']);
+        $target = ParkingSpotUpdateHistory::create(['parking_spot_id' => $spot->id, 'user_id' => $spot->user_id, 'changes' => ['name' => ['before' => '元の名称', 'after' => '中間の名称'], 'capacity' => ['before' => 1, 'after' => 2], 'rates' => ['before' => [['day_type' => '全日', 'start_time' => '00:00', 'end_time' => '00:00', 'unit_minutes' => 30, 'rate' => 100, 'free_minutes' => 0, 'max_rate' => 1000, 'max_rate_period' => null, 'max_rate_repeats' => false]], 'after' => []], 'business_hours' => ['before' => [['day_type' => '全日', 'is_closed' => false, 'opening_time' => '08:00', 'closing_time' => '20:00']], 'after' => []]]]);
+        ParkingSpotUpdateHistory::create(['parking_spot_id' => $spot->id, 'user_id' => $spot->user_id, 'changes' => ['name' => ['before' => '中間の名称', 'after' => '最新の名称'], 'capacity' => ['before' => 2, 'after' => 9], 'rates' => ['before' => [['day_type' => '全日', 'start_time' => '00:00', 'end_time' => '00:00', 'unit_minutes' => 30, 'rate' => 200, 'free_minutes' => 0, 'max_rate' => 1200, 'max_rate_period' => null, 'max_rate_repeats' => false]], 'after' => []], 'business_hours' => ['before' => [['day_type' => '平日', 'is_closed' => false, 'opening_time' => '09:00', 'closing_time' => '19:00']], 'after' => []], 'images' => ['before' => ['old.jpg'], 'after' => ['parking-spots/current.jpg']]]]);
         $admin = User::factory()->create(['prefecture_id' => $prefecture->id, 'is_admin' => true]);
 
         $this->actingAs($admin)->post(route('admin.parking_spots.histories.restore', [$spot, $target]), ['moderation_reason' => '誤登録を修正します。'])->assertRedirect();
@@ -133,7 +134,33 @@ class ParkingSpotModerationTest extends TestCase
         $this->assertSame(2, $spot->capacity);
         $this->assertSame('parking-spots/current.jpg', $spot->image_path);
         $this->assertDatabaseHas('parking_spot_rates', ['parking_spot_id' => $spot->id, 'rate' => 200, 'max_rate' => 1200]);
+        $this->assertDatabaseHas('parking_spot_business_hours', ['parking_spot_id' => $spot->id, 'day_type' => '平日', 'opening_time' => '09:00:00', 'closing_time' => '19:00:00']);
+        $restoration = ParkingSpotUpdateHistory::latest('id')->firstOrFail();
+        $this->assertSame($admin->id, $restoration->user_id);
+        $this->assertEqualsCanonicalizing(['name', 'capacity', 'rates', 'business_hours'], array_keys($restoration->changes));
+        $this->assertSame('最新の名称', $restoration->changes['name']['before']);
+        $this->assertSame('中間の名称', $restoration->changes['name']['after']);
+        $this->assertSame('土日祝', $restoration->changes['business_hours']['before'][0]['day_type']);
+        $this->assertSame('平日', $restoration->changes['business_hours']['after'][0]['day_type']);
         $this->assertDatabaseHas('parking_spot_moderation_actions', ['parking_spot_id' => $spot->id, 'parking_spot_update_history_id' => $target->id, 'user_id' => $admin->id, 'action' => 'restored', 'details->reason' => '誤登録を修正します。']);
+
+        $spot->forceFill(['name' => '復元後の編集'])->save();
+        $spot->rates()->delete();
+        ParkingSpotRates::create(['parking_spot_id' => $spot->id, 'day_type' => '全日', 'start_time' => '00:00', 'end_time' => '00:00', 'unit_minutes' => 30, 'rate' => 400, 'free_minutes' => 0, 'max_rate' => 2000]);
+        $spot->businessHours()->delete();
+        $spot->businessHours()->create(['day_type' => '土日祝', 'is_closed' => true, 'opening_time' => '00:00', 'closing_time' => '00:00']);
+        ParkingSpotUpdateHistory::create(['parking_spot_id' => $spot->id, 'user_id' => $spot->user_id, 'changes' => [
+            'name' => ['before' => '中間の名称', 'after' => '復元後の編集'],
+            'rates' => ['before' => $restoration->changes['rates']['after'], 'after' => [['day_type' => '全日', 'start_time' => '00:00', 'end_time' => '00:00', 'unit_minutes' => 30, 'rate' => 400, 'free_minutes' => 0, 'max_rate' => 2000]]],
+            'business_hours' => ['before' => $restoration->changes['business_hours']['after'], 'after' => [['day_type' => '土日祝', 'is_closed' => true, 'opening_time' => '00:00', 'closing_time' => '00:00']]],
+        ]]);
+
+        $this->actingAs($admin)->post(route('admin.parking_spots.histories.restore', [$spot, $restoration]), ['moderation_reason' => '編集後の状態を差し戻します。'])->assertRedirect();
+
+        $spot->refresh();
+        $this->assertSame('中間の名称', $spot->name);
+        $this->assertDatabaseHas('parking_spot_rates', ['parking_spot_id' => $spot->id, 'rate' => 200, 'max_rate' => 1200]);
+        $this->assertDatabaseHas('parking_spot_business_hours', ['parking_spot_id' => $spot->id, 'day_type' => '平日', 'opening_time' => '09:00:00', 'closing_time' => '19:00:00']);
     }
 
     public function test_editor_can_mark_a_closed_spot_as_unpublished(): void
