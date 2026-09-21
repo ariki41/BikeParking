@@ -50,7 +50,7 @@ class ParkingSpotRequest extends FormRequest
             ->all();
 
         $businessHours = $this->input('business_hours');
-        if (! is_array($businessHours) || $businessHours === []) {
+        if (! $this->exists('business_hours')) {
             // 旧フォーム・確認セッションからの入力も全日営業時間として受け入れる。
             $businessHours = [[
                 'day_type' => '全日', 'is_closed' => false,
@@ -59,13 +59,21 @@ class ParkingSpotRequest extends FormRequest
             ]];
         }
 
-        $businessHours = collect($businessHours)->values()->map(function (array $hour): array {
-            $hour['is_closed'] = filter_var($hour['is_closed'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        if (is_array($businessHours)) {
+            $businessHours = collect($businessHours)->values()->map(function (mixed $hour): mixed {
+                if (! is_array($hour)) {
+                    return $hour;
+                }
 
-            return $hour;
-        })->all();
+                $hour['is_closed'] = filter_var($hour['is_closed'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-        $representative = collect($businessHours)->first(fn (array $hour) => ! $hour['is_closed']) ?? $businessHours[0];
+                return $hour;
+            })->all();
+        }
+
+        $representative = is_array($businessHours)
+            ? collect($businessHours)->first(fn (mixed $hour) => is_array($hour) && ! ($hour['is_closed'] ?? false)) ?? []
+            : [];
         $this->merge([
             'rates' => $rates,
             'business_hours' => $businessHours,
@@ -131,6 +139,7 @@ class ParkingSpotRequest extends FormRequest
             'opening_time' => 'required|date_format:H:i',
             'closing_time' => 'required|date_format:H:i',
             'business_hours' => 'required|array|min:1|max:8',
+            'business_hours.*' => 'array',
             'business_hours.*.day_type' => ['required', 'string', Rule::in(array_keys(config('categories.parking_spot_business_hour_day_types')))],
             'business_hours.*.is_closed' => 'nullable|boolean',
             'business_hours.*.opening_time' => 'required|date_format:H:i',
@@ -213,6 +222,7 @@ class ParkingSpotRequest extends FormRequest
 
             'business_hours.required' => '営業時間は1件以上入力してください。',
             'business_hours.array' => '営業時間の形式が正しくありません。',
+            'business_hours.*.array' => '営業時間の形式が正しくありません。',
             'business_hours.min' => '営業時間は1件以上入力してください。',
             'business_hours.max' => '営業時間は8件まで入力できます。',
             'business_hours.*.day_type.required' => '曜日区分を選択してください。',
@@ -293,7 +303,9 @@ class ParkingSpotRequest extends FormRequest
     private function validateBusinessHourConflicts(Validator $validator): void
     {
         $hours = $this->input('business_hours');
-        if (! is_array($hours) || $validator->errors()->has('business_hours')) {
+        if (! is_array($hours)
+            || $validator->errors()->has('business_hours')
+            || collect($hours)->contains(fn (mixed $hour) => ! is_array($hour))) {
             return;
         }
 

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Feature\Concerns\InteractsWithParkingSpotRateFixtures;
 use Tests\TestCase;
 
@@ -11,6 +12,31 @@ class ParkingSpotRateValidationTest extends TestCase
 {
     use InteractsWithParkingSpotRateFixtures;
     use RefreshDatabase;
+
+    #[DataProvider('invalidBusinessHoursProvider')]
+    public function test_parking_spot_business_hour_validation_rejects_invalid_nested_input(mixed $businessHours, string $errorKey): void
+    {
+        [, $user, $postalcode] = $this->createParkingSpot();
+
+        $response = $this->actingAs($user)
+            ->from(route('parking_spot.create'))
+            ->post(route('parking_spot.confirm'), $this->validParkingSpotInput($postalcode, [
+                'business_hours' => $businessHours,
+            ]));
+
+        $response->assertRedirect(route('parking_spot.create'));
+        $response->assertSessionHasErrors([$errorKey]);
+    }
+
+    public static function invalidBusinessHoursProvider(): array
+    {
+        return [
+            'string instead of array' => ['invalid', 'business_hours'],
+            'null instead of array' => [null, 'business_hours'],
+            'scalar array element' => [['invalid'], 'business_hours.0'],
+            'incomplete array element' => [[['day_type' => '全日']], 'business_hours.0.opening_time'],
+        ];
+    }
 
     public function test_parking_spot_rate_validation_rejects_zero_yen_max_rate(): void
     {
