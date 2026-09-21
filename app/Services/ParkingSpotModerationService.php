@@ -21,6 +21,7 @@ class ParkingSpotModerationService
             }
 
             $parkingSpot->is_published = false;
+            $parkingSpot->lock_version++;
             $parkingSpot->save();
             $this->recordAction($parkingSpot, $actor, 'hidden', reason: $reason);
         });
@@ -35,6 +36,7 @@ class ParkingSpotModerationService
             }
 
             $parkingSpot->is_published = true;
+            $parkingSpot->lock_version++;
             $parkingSpot->save();
             $this->recordAction($parkingSpot, $actor, 'published', reason: $reason);
         });
@@ -76,6 +78,7 @@ class ParkingSpotModerationService
                     $field => ['before' => $parkingSpot->getOriginal($field), 'after' => $after],
                 ])
                 ->all();
+            $parkingSpot->lock_version++;
             $parkingSpot->save();
 
             $updatedRates = $this->normalizeRates($parkingSpot->rates()->get());

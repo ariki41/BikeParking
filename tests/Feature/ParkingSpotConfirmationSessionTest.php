@@ -212,6 +212,41 @@ class ParkingSpotConfirmationSessionTest extends TestCase
         $this->assertSame('戻って再試行した駐輪場', $parkingSpot->fresh()->name);
     }
 
+    public function test_stale_confirmation_from_another_session_does_not_overwrite_newer_changes(): void
+    {
+        [$parkingSpot, $user, $postalcode] = $this->createParkingSpot();
+        $this->fakeGeocode();
+        $staleInput = $this->validFormInput($postalcode, [
+            'id' => $parkingSpot->id,
+            'name' => '古い確認内容の名称',
+        ]);
+
+        $this->actingAs($user)->get(route('parking_spot.edit', $parkingSpot))->assertOk();
+        $this->post(route('parking_spot.confirm'), $staleInput)
+            ->assertOk()
+            ->assertSessionHas(ParkingSpotConfirmationService::SESSION_KEY.'.parking_spot_version', 1);
+
+        // 別セッションが確認済みのバージョンで先に保存した状態を再現する。
+        app(ParkingSpotPersistenceService::class)->update([
+            ...$staleInput,
+            'name' => '他のセッションが保存した名称',
+            'address' => '東京都千代田区千代田1-2',
+            'latitude' => 35.685,
+            'longitude' => 139.753,
+            'lock_version' => 1,
+        ], $user);
+
+        $this->put(route('parking_spot.update', $parkingSpot))
+            ->assertRedirect(route('parking_spot.edit', $parkingSpot))
+            ->assertSessionHasErrors(['confirmation'])
+            ->assertSessionMissing(ParkingSpotConfirmationService::SESSION_KEY);
+
+        $parkingSpot->refresh();
+        $this->assertSame('他のセッションが保存した名称', $parkingSpot->name);
+        $this->assertSame(2, $parkingSpot->lock_version);
+        $this->assertCount(1, $parkingSpot->updateHistories);
+    }
+
     public function test_edit_back_navigation_keeps_marker_correction_when_address_is_unchanged(): void
     {
         [$parkingSpot, $user, $postalcode] = $this->createParkingSpot();

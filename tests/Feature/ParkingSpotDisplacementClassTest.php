@@ -142,6 +142,7 @@ class ParkingSpotDisplacementClassTest extends TestCase
             ParkingSpotConfirmationService::SESSION_KEY => [
                 'mode' => ParkingSpotConfirmationService::MODE_EDIT,
                 'parking_spot_id' => $parkingSpot->id,
+                'parking_spot_version' => $parkingSpot->fresh()->lock_version,
                 'input' => $input,
                 'temporary_image_paths' => [],
                 'expires_at' => now()->addDay()->getTimestamp(),
