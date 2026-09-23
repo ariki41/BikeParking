@@ -11,7 +11,7 @@ sudo install -d -o <deploy-user> -g <deploy-user> /opt/motolotz/{releases,shared
 sudo install -m 600 -o <deploy-user> -g <deploy-user> /dev/null /opt/motolotz/shared/.env
 ```
 
-`.env` には `APP_ENV=production`、`APP_DEBUG=false`、`APP_URL=https://motolotz.com`、DB接続情報、`APP_KEY`、YOLP Client IDを設定します。GitHubの`production` Environmentには `DEPLOY_HOST`、`DEPLOY_USER`、`DEPLOY_PORT`、`DEPLOY_PATH=/opt/motolotz` とSSH/Tailscale用Secretsを設定します。
+`.env` には `APP_ENV=production`、`APP_DEBUG=false`、`APP_URL=https://motolotz.com`、DB接続情報、`APP_KEY`、YOLP Client IDを設定します。GitHubの`production` Environmentには `DEPLOY_HOST`、`DEPLOY_USER`、`DEPLOY_PORT`、`DEPLOY_PATH=/opt/motolotz` と `DEPLOY_SSH_PRIVATE_KEY`、`DEPLOY_KNOWN_HOSTS` を設定します。
 
 ## 公開とTLS
 
