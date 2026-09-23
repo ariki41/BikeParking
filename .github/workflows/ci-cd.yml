@@ -304,7 +304,7 @@ jobs:
             -o BatchMode=yes \
             -o StrictHostKeyChecking=yes \
             "$DEPLOY_USER@$DEPLOY_HOST" \
-            "mkdir -p '$DEPLOY_PATH/docker/nginx'"
+            "mkdir -p '$DEPLOY_PATH'"
           scp \
             -p \
             -P "$DEPLOY_PORT" \
@@ -312,12 +312,6 @@ jobs:
             -o StrictHostKeyChecking=yes \
             compose.deploy.yml deploy.env.example scripts/deploy.sh \
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
-          scp \
-            -P "$DEPLOY_PORT" \
-            -o BatchMode=yes \
-            -o StrictHostKeyChecking=yes \
-            docker/nginx/default.conf.template \
-            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/docker/nginx/"
       - name: Deploy immutable image
         run: |
           ssh \

@@ -4,8 +4,6 @@ set -Eeuo pipefail
 deploy_path="${1:?Deployment path is required.}"
 : "${IMAGE_NAME:?IMAGE_NAME is required.}"
 : "${IMAGE_DIGEST:?IMAGE_DIGEST is required.}"
-: "${APP_DOMAIN:?APP_DOMAIN is required.}"
-: "${LETSENCRYPT_EMAIL:?LETSENCRYPT_EMAIL is required.}"
 
 cd "$deploy_path"
 
@@ -16,7 +14,7 @@ fi
 
 export IMAGE_NAME IMAGE_DIGEST
 
-docker compose -f compose.deploy.yml pull app scheduler worker nginx certbot
+docker compose -f compose.deploy.yml pull app scheduler worker
 docker compose -f compose.deploy.yml up -d --wait mysql
 docker compose -f compose.deploy.yml run --rm --no-deps app php artisan migrate --force
 
@@ -27,13 +25,7 @@ if previous_container_id="$(docker compose -f compose.deploy.yml ps -q app 2>/de
     fi
 fi
 
-if ! docker compose -f compose.deploy.yml run --rm --no-deps certbot certificates -d "$APP_DOMAIN" 2>/dev/null | grep -q 'Certificate Name:'; then
-    docker compose -f compose.deploy.yml stop nginx || true
-    docker compose -f compose.deploy.yml run --rm --no-deps --service-ports certbot certonly \
-        --standalone --non-interactive --agree-tos --email "$LETSENCRYPT_EMAIL" -d "$APP_DOMAIN"
-fi
-
-if ! docker compose -f compose.deploy.yml up -d --wait app scheduler worker nginx; then
+if ! docker compose -f compose.deploy.yml up -d --wait app scheduler worker; then
     echo 'The application did not become healthy. Reverting the application container.' >&2
 
     if [[ "$previous_image" == *@* ]]; then
@@ -41,10 +33,10 @@ if ! docker compose -f compose.deploy.yml up -d --wait app scheduler worker ngin
         previous_image_digest="${previous_image#*@}"
 
         IMAGE_NAME="$previous_image_name" IMAGE_DIGEST="$previous_image_digest" \
-            docker compose -f compose.deploy.yml up -d --wait app scheduler worker nginx
+            docker compose -f compose.deploy.yml up -d --wait app scheduler worker
         echo "Rollback completed: $previous_image" >&2
     else
-        docker compose -f compose.deploy.yml stop app scheduler worker nginx
+        docker compose -f compose.deploy.yml stop app scheduler worker
         echo 'No previous application image was found; the unhealthy application container was stopped.' >&2
     fi
 

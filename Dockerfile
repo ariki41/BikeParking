@@ -70,6 +70,9 @@ RUN apt-get update \
         /etc/apache2/apache2.conf \
         /etc/apache2/conf-available/*.conf \
     && sed -ri 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf \
+    && sed -ri 's/Listen 80/Listen 8000/g; s/<VirtualHost \*:80>/<VirtualHost *:8000>/g' \
+        /etc/apache2/ports.conf \
+        /etc/apache2/sites-available/*.conf \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www/html
