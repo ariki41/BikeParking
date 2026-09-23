@@ -2,46 +2,48 @@
 set -Eeuo pipefail
 
 deploy_path="${1:?Deployment path is required.}"
-: "${IMAGE_NAME:?IMAGE_NAME is required.}"
-: "${IMAGE_DIGEST:?IMAGE_DIGEST is required.}"
+release_id="${2:?Release ID is required.}"
+releases_path="$deploy_path/releases"
+shared_path="$deploy_path/shared"
+release_path="$releases_path/$release_id"
+archive_path="$releases_path/$release_id.tar.gz"
 
-cd "$deploy_path"
+test -f "$archive_path"
+test -f "$shared_path/.env"
+test -d "$shared_path/storage"
+test ! -e "$release_path"
 
-if [[ ! -f .env ]]; then
-    echo "Missing $deploy_path/.env. Copy deploy.env.example and configure it on the server." >&2
+mkdir "$release_path"
+trap 'rm -rf "$release_path" "$archive_path"' ERR
+tar -xzf "$archive_path" -C "$release_path"
+rm -f "$archive_path"
+
+ln -s "$shared_path/.env" "$release_path/.env"
+rm -rf "$release_path/storage"
+ln -s "$shared_path/storage" "$release_path/storage"
+
+cd "$release_path"
+composer install --no-dev --no-interaction --no-progress --prefer-dist --optimize-autoloader
+npm ci
+npm run build
+php artisan storage:link
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan migrate --force
+
+previous_release="$(readlink -f "$deploy_path/current" || true)"
+ln -sfn "$release_path" "$deploy_path/current"
+sudo systemctl reload php8.5-fpm
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl restart motolotz-worker:*
+
+if ! curl --fail --silent --max-time 10 http://127.0.0.1/up >/dev/null; then
+    if [[ -n "$previous_release" ]]; then
+        ln -sfn "$previous_release" "$deploy_path/current"
+        sudo systemctl reload php8.5-fpm
+        sudo supervisorctl restart motolotz-worker:*
+    fi
     exit 1
 fi
-
-export IMAGE_NAME IMAGE_DIGEST
-
-docker compose -f compose.deploy.yml pull app scheduler worker
-docker compose -f compose.deploy.yml up -d --wait mysql
-docker compose -f compose.deploy.yml run --rm --no-deps app php artisan migrate --force
-
-previous_image=''
-if previous_container_id="$(docker compose -f compose.deploy.yml ps -q app 2>/dev/null)"; then
-    if [[ -n "$previous_container_id" ]]; then
-        previous_image="$(docker inspect --format '{{.Config.Image}}' "$previous_container_id")"
-    fi
-fi
-
-if ! docker compose -f compose.deploy.yml up -d --wait app scheduler worker; then
-    echo 'The application did not become healthy. Reverting the application container.' >&2
-
-    if [[ "$previous_image" == *@* ]]; then
-        previous_image_name="${previous_image%@*}"
-        previous_image_digest="${previous_image#*@}"
-
-        IMAGE_NAME="$previous_image_name" IMAGE_DIGEST="$previous_image_digest" \
-            docker compose -f compose.deploy.yml up -d --wait app scheduler worker
-        echo "Rollback completed: $previous_image" >&2
-    else
-        docker compose -f compose.deploy.yml stop app scheduler worker
-        echo 'No previous application image was found; the unhealthy application container was stopped.' >&2
-    fi
-
-    exit 1
-fi
-
-echo "Deployment completed: $IMAGE_NAME@$IMAGE_DIGEST"
-docker compose -f compose.deploy.yml ps
