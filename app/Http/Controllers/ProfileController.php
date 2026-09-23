@@ -58,6 +58,39 @@ class ProfileController extends Controller
     }
 
     /**
+     * Display parking spots registered by the authenticated user.
+     */
+    public function parkingSpots(Request $request): View
+    {
+        $parkingSpots = $request->user()
+            ->parkingSpots()
+            ->latest('created_at')
+            ->latest('id')
+            ->paginate(10);
+
+        return view('profile.parking-spots', [
+            'parkingSpots' => $parkingSpots,
+        ]);
+    }
+
+    /**
+     * Display update histories created by the authenticated user.
+     */
+    public function editedParkingSpots(Request $request): View
+    {
+        $updateHistories = $request->user()
+            ->parkingSpotUpdateHistories()
+            ->with('parkingSpot')
+            ->latest('created_at')
+            ->latest('id')
+            ->paginate(10);
+
+        return view('profile.edited-parking-spots', [
+            'updateHistories' => $updateHistories,
+        ]);
+    }
+
+    /**
      * Update the user's profile information.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse

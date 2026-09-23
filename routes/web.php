@@ -39,6 +39,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('/profile/reviews', [ProfileController::class, 'reviews'])->name('profile.reviews');
     Route::get('/profile/images', [ProfileController::class, 'images'])->name('profile.images');
+    Route::get('/profile/parking-spots', [ProfileController::class, 'parkingSpots'])->name('profile.parking-spots');
+    Route::get('/profile/edited-parking-spots', [ProfileController::class, 'editedParkingSpots'])->name('profile.edited-parking-spots');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
