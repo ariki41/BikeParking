@@ -1,12 +1,12 @@
 <x-app-layout
     title="プライバシーポリシー"
-    description="motolotzのプライバシーポリシーです。"
+    description="MotoLotzのプライバシーポリシーです。"
     :canonical="route('privacy')">
     <div class="bp-shell max-w-3xl">
         <article class="bp-panel p-6 sm:p-8">
             <h1 class="text-3xl font-bold text-slate-900">プライバシーポリシー</h1>
             <p class="mt-4 text-sm leading-7 text-slate-700">
-                motolotz運営（以下「運営者」）は、利用者の情報を適切に取り扱うため、本ポリシーを定めます。
+                MotoLotz運営（以下「運営者」）は、利用者の情報を適切に取り扱うため、本ポリシーを定めます。
             </p>
 
             <section class="mt-8">

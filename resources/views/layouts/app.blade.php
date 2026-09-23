@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @php
-        $appName = config('app.name', 'motolotz');
+        $appName = config('app.name', 'MotoLotz');
         $pageTitle = filled($title) ? $title.' | '.$appName : $appName;
-        $pageDescription = $description ?? 'バイク駐輪場の料金、営業時間、場所を検索できるmotolotz。';
+        $pageDescription = $description ?? 'バイク駐輪場の料金、営業時間、場所を検索できるMotoLotz。';
         $canonicalUrl = $canonical ?? url()->current();
         $socialImage = $image ?? asset('images/motolotz-logo.png');
     @endphp

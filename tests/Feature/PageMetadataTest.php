@@ -18,28 +18,28 @@ class PageMetadataTest extends TestCase
     {
         parent::setUp();
 
-        config(['app.name' => 'motolotz']);
+        config(['app.name' => 'MotoLotz']);
     }
 
     public function test_home_search_and_static_pages_render_distinct_metadata(): void
     {
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee('<title>バイク駐輪場を探す | motolotz</title>', false)
+            ->assertSee('<title>バイク駐輪場を探す | MotoLotz</title>', false)
             ->assertSee('<meta name="description" content="駅名や地名から、バイク駐輪場の料金、営業時間、場所を検索できます。">', false)
             ->assertSee('<link rel="canonical" href="'.route('home').'">', false)
             ->assertSee('href="'.asset('images/motolotz-favicon.png').'"', false);
 
         $this->get(route('search', ['keyword' => '東京駅']))
             ->assertOk()
-            ->assertSee('<title>「東京駅」のバイク駐輪場を検索 | motolotz</title>', false)
+            ->assertSee('<title>「東京駅」のバイク駐輪場を検索 | MotoLotz</title>', false)
             ->assertSee('<meta name="robots" content="noindex, follow">', false)
             ->assertSee('<link rel="canonical" href="'.route('search').'">', false);
 
         foreach (['privacy' => 'プライバシーポリシー', 'terms' => '利用規約', 'contact' => 'お問い合わせ'] as $route => $title) {
             $this->get(route($route))
                 ->assertOk()
-                ->assertSee('<title>'.$title.' | motolotz</title>', false)
+                ->assertSee('<title>'.$title.' | MotoLotz</title>', false)
                 ->assertSee('<link rel="canonical" href="'.route($route).'">', false);
         }
     }
@@ -47,7 +47,7 @@ class PageMetadataTest extends TestCase
     public function test_published_parking_spot_has_regional_share_metadata(): void
     {
         $parkingSpot = $this->createParkingSpot();
-        $title = '東京千代田区のテスト駐輪場（東京都千代田区）のバイク駐輪場 | motolotz';
+        $title = '東京千代田区のテスト駐輪場（東京都千代田区）のバイク駐輪場 | MotoLotz';
         $description = '東京都千代田区の東京千代田区のテスト駐輪場。料金、営業時間、場所を確認できます。';
 
         $this->get(route('parking_spot.show', $parkingSpot))
@@ -78,7 +78,7 @@ class PageMetadataTest extends TestCase
         $this->actingAs($user)
             ->get(route('parking_spot.create'))
             ->assertOk()
-            ->assertSee('<title>駐輪場を登録 | motolotz</title>', false)
+            ->assertSee('<title>駐輪場を登録 | MotoLotz</title>', false)
             ->assertSee('<meta name="robots" content="noindex, nofollow">', false);
 
         foreach ([
@@ -92,7 +92,7 @@ class PageMetadataTest extends TestCase
             $this->actingAs($user)
                 ->get(route($route))
                 ->assertOk()
-                ->assertSee('<title>'.$title.' | motolotz</title>', false)
+                ->assertSee('<title>'.$title.' | MotoLotz</title>', false)
                 ->assertSee('<meta name="robots" content="noindex, nofollow">', false);
         }
     }

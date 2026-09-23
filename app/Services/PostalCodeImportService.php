@@ -59,7 +59,7 @@ class PostalCodeImportService
     private function download(string $url, string $archivePath): void
     {
         $response = Http::accept('application/zip')
-            ->withUserAgent('motolotz postal-code-sync')
+            ->withUserAgent('MotoLotz postal-code-sync')
             ->timeout((int) config('postal_codes.http.timeout_seconds'))
             ->retry(
                 (int) config('postal_codes.http.retry_times'),

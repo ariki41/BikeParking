@@ -12,7 +12,7 @@
                 <div class="flex shrink-0 items-center">
                     <a class="flex items-center gap-3" href="{{ route('home') }}">
                         <x-application-logo class="h-12 w-12 rounded-md object-contain" />
-                        <span class="sr-only">motolotz</span>
+                        <span class="sr-only">MotoLotz</span>
                     </a>
                 </div>
                 <div class="hidden items-center space-x-4 lg:ms-10 lg:flex">
