@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\ParkingSpot;
 use App\Models\ParkingSpotImage;
+use App\Models\ParkingSpotUpdateHistory;
 use App\Models\RetiredUserId;
 use App\Models\Review;
 use App\Models\User;
@@ -29,6 +30,8 @@ class ProfileTest extends TestCase
             ->assertSee('アカウント設定')
             ->assertSee(route('profile.reviews'), false)
             ->assertSee(route('profile.images'), false)
+            ->assertSee(route('profile.parking-spots'), false)
+            ->assertSee(route('profile.edited-parking-spots'), false)
             ->assertSee('登録した駐輪場・料金・画像、投稿したレビュー、更新履歴は退会済みユーザーとして匿名化して残ります。')
             ->assertSee('あなたのお気に入りは削除されます。')
             ->assertSee('同じユーザーIDでは再登録できません。');
@@ -178,6 +181,130 @@ class ProfileTest extends TestCase
             ->assertOk()
             ->assertSee('投稿した画像はまだありません。')
             ->assertSee('駐輪場の登録・編集画面から画像を追加できます。');
+    }
+
+    public function test_profile_displays_only_registered_parking_spots_with_links_and_without_n_plus_one_queries(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $olderParkingSpot = ParkingSpot::factory()->for($user)->create([
+            'name' => '古い登録の駐輪場',
+            'created_at' => Carbon::parse('2026-09-01 10:00:00'),
+        ]);
+        $newerParkingSpot = ParkingSpot::factory()->for($user)->create([
+            'name' => '新しい登録の駐輪場',
+            'created_at' => Carbon::parse('2026-09-02 10:00:00'),
+            'is_published' => false,
+        ]);
+        $otherParkingSpot = ParkingSpot::factory()->for($otherUser)->create(['name' => '他ユーザーの登録駐輪場']);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $this->actingAs($user)
+            ->get(route('profile.parking-spots'))
+            ->assertOk()
+            ->assertSee('登録した駐輪場')
+            ->assertSee('全2件')
+            ->assertSeeInOrder(['新しい登録の駐輪場', '閉鎖済み', '古い登録の駐輪場'])
+            ->assertSee(route('parking_spot.show', $newerParkingSpot), false)
+            ->assertSee(route('parking_spot.edit', $olderParkingSpot), false)
+            ->assertDontSee(route('parking_spot.edit', $newerParkingSpot), false)
+            ->assertDontSee('他ユーザーの登録駐輪場');
+
+        $parkingSpotQueries = collect(DB::getQueryLog())
+            ->filter(fn (array $query): bool => str_contains($query['query'], 'from `parking_spots`'));
+        // ページネーションの件数取得と一覧取得の2クエリだけに抑える。
+        $this->assertCount(2, $parkingSpotQueries);
+    }
+
+    public function test_profile_paginates_registered_parking_spots(): void
+    {
+        $user = User::factory()->create();
+        $baseTime = Carbon::parse('2026-09-01 10:00:00');
+
+        foreach (range(1, 12) as $position) {
+            ParkingSpot::factory()->for($user)->create([
+                'name' => sprintf('登録ページネーション駐輪場-%02d', $position),
+                'created_at' => $baseTime->copy()->addMinutes($position),
+            ]);
+        }
+
+        $this->actingAs($user)
+            ->get(route('profile.parking-spots'))
+            ->assertOk()
+            ->assertSee('全12件')
+            ->assertSee(route('profile.parking-spots', ['page' => 2]), false)
+            ->assertSee('登録ページネーション駐輪場-12')
+            ->assertDontSee('登録ページネーション駐輪場-02');
+    }
+
+    public function test_profile_displays_only_the_authenticated_users_update_histories_with_links_and_without_n_plus_one_queries(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $olderParkingSpot = ParkingSpot::factory()->create(['name' => '古い編集の駐輪場']);
+        $newerParkingSpot = ParkingSpot::factory()->create(['name' => '新しい編集の駐輪場']);
+        $otherParkingSpot = ParkingSpot::factory()->create(['name' => '他ユーザーの編集駐輪場']);
+
+        ParkingSpotUpdateHistory::forceCreate([
+            'user_id' => $user->id,
+            'parking_spot_id' => $olderParkingSpot->id,
+            'changes' => ['name' => ['before' => '編集前', 'after' => '編集後']],
+            'created_at' => Carbon::parse('2026-09-01 10:00:00'),
+        ]);
+        ParkingSpotUpdateHistory::forceCreate([
+            'user_id' => $user->id,
+            'parking_spot_id' => $newerParkingSpot->id,
+            'changes' => ['capacity' => ['before' => 1, 'after' => 2]],
+            'created_at' => Carbon::parse('2026-09-02 10:00:00'),
+        ]);
+        ParkingSpotUpdateHistory::forceCreate([
+            'user_id' => $otherUser->id,
+            'parking_spot_id' => $otherParkingSpot->id,
+            'changes' => [],
+        ]);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $this->actingAs($user)
+            ->get(route('profile.edited-parking-spots'))
+            ->assertOk()
+            ->assertSee('編集した駐輪場')
+            ->assertSee('全2件')
+            ->assertSeeInOrder(['新しい編集の駐輪場', '収容台数', '古い編集の駐輪場', '駐輪場名'])
+            ->assertSee(route('parking_spot.show', $newerParkingSpot), false)
+            ->assertSee(route('parking_spot.edit', $newerParkingSpot), false)
+            ->assertDontSee('他ユーザーの編集駐輪場');
+
+        $parkingSpotQueries = collect(DB::getQueryLog())
+            ->filter(fn (array $query): bool => str_contains($query['query'], 'from `parking_spots`'));
+        $this->assertCount(1, $parkingSpotQueries);
+    }
+
+    public function test_profile_paginates_update_histories(): void
+    {
+        $user = User::factory()->create();
+        $parkingSpot = ParkingSpot::factory()->create();
+        $baseTime = Carbon::parse('2026-09-01 10:00:00');
+
+        foreach (range(1, 12) as $position) {
+            ParkingSpotUpdateHistory::forceCreate([
+                'user_id' => $user->id,
+                'parking_spot_id' => $parkingSpot->id,
+                'changes' => [sprintf('履歴-%02d', $position) => ['before' => null, 'after' => null]],
+                'created_at' => $baseTime->copy()->addMinutes($position),
+            ]);
+        }
+
+        $this->actingAs($user)
+            ->get(route('profile.edited-parking-spots'))
+            ->assertOk()
+            ->assertSee('全12件')
+            ->assertSee(route('profile.edited-parking-spots', ['page' => 2]), false)
+            ->assertSee('履歴-12')
+            ->assertDontSee('履歴-02');
     }
 
     public function test_profile_information_can_be_updated(): void

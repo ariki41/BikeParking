@@ -85,6 +85,8 @@ class PageMetadataTest extends TestCase
             'profile.edit' => 'プロフィール',
             'profile.reviews' => '投稿したレビュー',
             'profile.images' => '投稿した画像',
+            'profile.parking-spots' => '登録した駐輪場',
+            'profile.edited-parking-spots' => '編集した駐輪場',
             'favorites.index' => 'お気に入り',
         ] as $route => $title) {
             $this->actingAs($user)
