@@ -1,6 +1,6 @@
 # KAGOYA Cloud 本番デプロイ
 
-`main` への push は、テスト済みの OCI イメージを GHCR へ公開します。本番への反映は、GitHub Actions の手動実行で `本番環境へデプロイする` を有効にした場合だけ行います。開発環境用のデプロイ、Tailscale Funnel、開発用シーダーは使用しません。
+`main` への push は、テスト済みの OCI イメージを GHCR へ公開します。本番への反映は、GitHub Actions の手動実行で `本番環境へデプロイする` を有効にした場合だけ行います。アプリコンテナは `127.0.0.1:8000` にだけ公開し、公開TLS終端はホストOSのNginxが担います。
 
 ## 初回準備
 
@@ -15,20 +15,18 @@ sudo install -d -o <deploy-user> -g <deploy-user> /opt/motolotz
 chmod 700 /opt/motolotz
 ```
 
-## デプロイとTLS
+## NginxとTLS
 
-Actions の **CI/CD** で `main` を選び、`本番環境へデプロイする` を有効にして実行します。初回は Certbot が Let’s Encrypt の HTTP-01 challenge で証明書を発行し、Nginx が HTTP を HTTPS へリダイレクトします。証明書とアップロード画像は名前付きボリュームに永続化されます。
+ホストOSのNginxで `motolotz.com` と `www.motolotz.com` の80/443番を待受し、`127.0.0.1:8000` へproxyします。Let’s Encrypt証明書はホストOS上のCertbotで発行・更新します。Docker Composeには80/443を公開するサービスを置かないため、Dockerの公開ポートがUFWルールを迂回する問題を回避できます。
+
+Actions の **CI/CD** で `main` を選び、`本番環境へデプロイする` を有効にして実行します。
 
 更新後は `https://<APP_DOMAIN>/up`、会員登録・ログイン・検索・詳細・登録・画像表示を手動確認します。Issue には対象コミット、日時、実施者、結果を記録します。
 
-証明書更新はサーバーのroot cronで1日2回実行します。
-
-```cron
-17 3,15 * * * cd /opt/motolotz && docker compose -f compose.deploy.yml run --rm --no-deps certbot renew --webroot -w /var/www/certbot && docker compose -f compose.deploy.yml exec -T nginx nginx -s reload
-```
+証明書更新はホストOSの `certbot.timer` を有効にして管理します。
 
 ## 運用
 
-ログは各コンテナでローテーションされます。確認は `docker compose -f compose.deploy.yml logs --tail=200 app nginx worker scheduler` を使います。障害通知先は監視サービスで設定し、通知先と担当者をIssueへ記録します。
+ログは各コンテナでローテーションされます。確認は `docker compose -f compose.deploy.yml logs --tail=200 app worker scheduler` と `journalctl -u nginx` を使います。障害通知先は監視サービスで設定し、通知先と担当者をIssueへ記録します。
 
 毎日、MySQL の論理バックアップと `app-storage` ボリュームをサーバー外へ暗号化して保存します。保持期間と保存先を決め、初回リリース前に別環境で復元手順を検証してください。マイグレーションは前方互換にし、アプリイメージのロールバックではDBを自動で戻さない点に注意します。以前のdigestへ戻す場合は、停止前にバックアップを取り、`IMAGE_NAME` と `IMAGE_DIGEST` を指定して `scripts/deploy.sh` を実行します。
