@@ -1,32 +1,36 @@
 # KAGOYA Cloud 本番デプロイ
 
-`main` への push は、テスト済みの OCI イメージを GHCR へ公開します。本番への反映は、GitHub Actions の手動実行で `本番環境へデプロイする` を有効にした場合だけ行います。アプリコンテナは `127.0.0.1:8000` にだけ公開し、公開TLS終端はホストOSのNginxが担います。
+本番はDockerを使わず、GitHub Actionsがテスト済みソースを `/opt/motolotz/releases/<release-id>` へ配置します。`/opt/motolotz/current` を新リリースへ切り替えるため、コードのロールバックは以前のreleaseへのシンボリックリンク切替で行えます。
 
-## 初回準備
+## サーバー準備
 
-KAGOYA Cloud の Ubuntu x86_64 サーバーに Docker Engine と Docker Compose v2、OpenSSH を導入し、時刻同期を有効にします。Firewall は HTTP (80)、HTTPS (443)、および管理元を限定した SSH だけを許可します。DNS の A/AAAA レコードをサーバーへ向け、証明書発行前に外部から 80 番ポートへ到達できることを確認します。
-
-GitHub の `production` Environment を作成し、必要なら required reviewers を設定します。変数は `DEPLOY_HOST`、`DEPLOY_USER`、`DEPLOY_PORT`、`DEPLOY_PATH`、`IMAGE_NAME`、Secrets は `TS_OAUTH_CLIENT_ID`、`TS_AUDIENCE`、`DEPLOY_SSH_PRIVATE_KEY`、`DEPLOY_KNOWN_HOSTS` を設定します。Tailscale は Actions からの管理用 SSH 接続だけに使い、公開経路には使いません。
-
-サーバーでデプロイ先を作り、`.env` を `deploy.env.example` から作成します。`APP_URL=https://motolotz.com` と `APP_DOMAIN=motolotz.com`、`LETSENCRYPT_EMAIL` は証明書通知先に設定し、`APP_KEY`、DB パスワード、YOLP Client ID などの機密情報はサーバー上だけに保管します。
+Ubuntu x86_64に PHP 8.5-FPM、Composer、Node.js 22、npm、MySQL 8、Nginx、Supervisor、Certbotを導入します。`/opt/motolotz/shared/.env` と `/opt/motolotz/shared/storage` はリリース間で共有し、`.env` は600権限でGit管理しません。
 
 ```bash
-sudo install -d -o <deploy-user> -g <deploy-user> /opt/motolotz
-chmod 700 /opt/motolotz
+sudo install -d -o <deploy-user> -g <deploy-user> /opt/motolotz/{releases,shared/storage,scripts}
+sudo install -m 600 -o <deploy-user> -g <deploy-user> /dev/null /opt/motolotz/shared/.env
 ```
 
-## NginxとTLS
+`.env` には `APP_ENV=production`、`APP_DEBUG=false`、`APP_URL=https://motolotz.com`、DB接続情報、`APP_KEY`、YOLP Client IDを設定します。GitHubの`production` Environmentには `DEPLOY_HOST`、`DEPLOY_USER`、`DEPLOY_PORT`、`DEPLOY_PATH=/opt/motolotz` とSSH/Tailscale用Secretsを設定します。
 
-ホストOSのNginxで `motolotz.com` と `www.motolotz.com` の80/443番を待受し、`127.0.0.1:8000` へproxyします。Let’s Encrypt証明書はホストOS上のCertbotで発行・更新します。Docker Composeには80/443を公開するサービスを置かないため、Dockerの公開ポートがUFWルールを迂回する問題を回避できます。
+## 公開とTLS
 
-Actions の **CI/CD** で `main` を選び、`本番環境へデプロイする` を有効にして実行します。
+UFWは80/443と管理元限定SSHだけを許可します。Nginx設定 [motolotz.com.conf](../deploy/nginx/motolotz.com.conf) を `/etc/nginx/sites-available/` へ配置して有効化します。PHP-FPMはUnix socketを使うため、アプリのコンテナ公開ポートは不要です。
 
-更新後は `https://<APP_DOMAIN>/up`、会員登録・ログイン・検索・詳細・登録・画像表示を手動確認します。Issue には対象コミット、日時、実施者、結果を記録します。
+DNSのA/AAAAレコードをKAGOYAサーバーへ向けた後、HTTP設定を有効にしてCertbotを実行します。
 
-証明書更新はホストOSの `certbot.timer` を有効にして管理します。
+```bash
+sudo ln -s /etc/nginx/sites-available/motolotz.com.conf /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d motolotz.com -d www.motolotz.com
+sudo certbot renew --dry-run
+sudo systemctl enable --now certbot.timer
+```
 
-## 運用
+Supervisor設定 [motolotz-worker.conf](../deploy/supervisor/motolotz-worker.conf) を `/etc/supervisor/conf.d/` へ配置し、`sudo supervisorctl reread && sudo supervisorctl update` を実行します。デプロイユーザーには、パスワードなしで `systemctl reload php8.5-fpm` と `supervisorctl` を実行できる限定sudo権限を与えます。
 
-ログは各コンテナでローテーションされます。確認は `docker compose -f compose.deploy.yml logs --tail=200 app worker scheduler` と `journalctl -u nginx` を使います。障害通知先は監視サービスで設定し、通知先と担当者をIssueへ記録します。
+## リリースと運用
 
-毎日、MySQL の論理バックアップと `app-storage` ボリュームをサーバー外へ暗号化して保存します。保持期間と保存先を決め、初回リリース前に別環境で復元手順を検証してください。マイグレーションは前方互換にし、アプリイメージのロールバックではDBを自動で戻さない点に注意します。以前のdigestへ戻す場合は、停止前にバックアップを取り、`IMAGE_NAME` と `IMAGE_DIGEST` を指定して `scripts/deploy.sh` を実行します。
+Actionsの **CI/CD** を`main`で手動実行し、`本番環境へデプロイする`を有効にします。サーバーではComposerとnpmによる依存導入・ビルド、キャッシュ生成、マイグレーション、`current`切替、PHP-FPM/ワーカー再読み込み、`/up`確認を実施します。
+
+毎日、MySQL論理バックアップと`shared/storage`を暗号化してサーバー外へ保存し、初回リリース前に復元を検証します。マイグレーションは前方互換にします。Issue #170はHTTPS、主要機能、バックアップ復元、監視を確認してからクローズします。
