@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Quality checks, tests, and asset build
+    runs-on: ubuntu-24.04
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: testing
+          MYSQL_USER: sail
+          MYSQL_PASSWORD: password
+          MYSQL_ROOT_PASSWORD: password
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ppassword --silent"
+          --health-interval=10s --health-timeout=5s --health-retries=12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: bcmath, gd, intl, mbstring, pdo_mysql, zip
+          tools: composer:v2
+          coverage: none
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: |
+          npm ci
+          npm audit --audit-level=low
+          npm run build
+      - name: Prepare Laravel test environment
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: testing
+          DB_USERNAME: sail
+          DB_PASSWORD: password
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+          php artisan migrate --force
+      - run: vendor/bin/pint --test
+      - run: composer analyse
+      - name: Run test suite
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: testing
+          DB_USERNAME: sail
+          DB_PASSWORD: password
+          YOLP_URL: https://example.test/local-search
+          YOLP_GEOCODE_URL: https://example.test/geocode
+          YOLP_CLIENT_ID: test-client-id
+        run: php artisan test
+      - name: Install and run browser tests
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: testing
+          DB_USERNAME: sail
+          DB_PASSWORD: password
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:8000
+          YOLP_URL: http://127.0.0.1:8081/local-search
+          YOLP_GEOCODE_URL: http://127.0.0.1:8081/geocode
+          YOLP_CLIENT_ID: test-client-id
+        run: |
+          npx playwright install --with-deps chromium
+          php artisan migrate:fresh --force
+          php artisan db:seed --class=BrowserE2ETestSeeder --force
+          node tests/E2E/yolp-stub.js > storage/logs/e2e-yolp.log 2>&1 &
+          php artisan serve --host=127.0.0.1 --port=8000 > storage/logs/e2e-server.log 2>&1 &
+          npm run test:e2e

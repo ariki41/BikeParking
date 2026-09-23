@@ -2,48 +2,27 @@
 set -Eeuo pipefail
 
 deploy_path="${1:?Deployment path is required.}"
-release_id="${2:?Release ID is required.}"
-releases_path="$deploy_path/releases"
-shared_path="$deploy_path/shared"
-release_path="$releases_path/$release_id"
-archive_path="$releases_path/$release_id.tar.gz"
 
-test -f "$archive_path"
-test -f "$shared_path/.env"
-test -d "$shared_path/storage"
-test ! -e "$release_path"
+test -f "$deploy_path/.env"
+test -f "$deploy_path/compose.deploy.yml"
+test -n "${IMAGE_NAME:-}"
+test -n "${IMAGE_DIGEST:-}"
 
-mkdir "$release_path"
-trap 'rm -rf "$release_path" "$archive_path"' ERR
-tar -xzf "$archive_path" -C "$release_path"
-rm -f "$archive_path"
+cd "$deploy_path"
+export IMAGE_NAME IMAGE_DIGEST
 
-ln -s "$shared_path/.env" "$release_path/.env"
-rm -rf "$release_path/storage"
-ln -s "$shared_path/storage" "$release_path/storage"
+docker compose -f compose.deploy.yml pull
+docker compose -f compose.deploy.yml up -d --remove-orphans
+docker compose -f compose.deploy.yml exec -T app php artisan migrate --force
 
-cd "$release_path"
-composer install --no-dev --no-interaction --no-progress --prefer-dist --optimize-autoloader
-npm ci
-npm run build
-php artisan storage:link
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-php artisan migrate --force
-
-previous_release="$(readlink -f "$deploy_path/current" || true)"
-ln -sfn "$release_path" "$deploy_path/current"
-sudo systemctl reload php8.5-fpm
-sudo supervisorctl reread
-sudo supervisorctl update
-sudo supervisorctl restart motolotz-worker:*
-
-if ! curl --fail --silent --max-time 10 http://127.0.0.1/up >/dev/null; then
-    if [[ -n "$previous_release" ]]; then
-        ln -sfn "$previous_release" "$deploy_path/current"
-        sudo systemctl reload php8.5-fpm
-        sudo supervisorctl restart motolotz-worker:*
+for attempt in $(seq 1 12); do
+    if curl --fail --silent --max-time 10 http://127.0.0.1:8000/up >/dev/null; then
+        exit 0
     fi
-    exit 1
-fi
+
+    sleep 5
+done
+
+docker compose -f compose.deploy.yml ps
+docker compose -f compose.deploy.yml logs --tail=100 app
+exit 1
