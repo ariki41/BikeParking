@@ -6,17 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @php
-        $appName = config('app.name', 'BikeParking');
+        $appName = config('app.name', 'MotoLotz');
         $pageTitle = filled($title) ? $title.' | '.$appName : $appName;
-        $pageDescription = $description ?? 'バイク駐輪場の料金、営業時間、場所を検索できるBikeParking。';
+        $pageDescription = $description ?? 'バイク駐輪場の料金、営業時間、場所を検索できるMotoLotz。';
         $canonicalUrl = $canonical ?? url()->current();
-        $socialImage = $image ?? asset('images/bike-parking-logo.webp');
+        $socialImage = $image ?? asset('images/motolotz-logo.png');
     @endphp
 
     <title>{{ $pageTitle }}</title>
     <meta name="description" content="{{ $pageDescription }}">
     <link rel="canonical" href="{{ $canonicalUrl }}">
-    <link rel="icon" href="{{ asset('images/bike-parking-favicon.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('images/motolotz-favicon.png') }}" type="image/png">
     @if ($robots)
         <meta name="robots" content="{{ $robots }}">
     @endif

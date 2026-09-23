@@ -1,1 +1,1 @@
-<img {{ $attributes->merge(['src' => asset('images/bike-parking-logo.webp'), 'alt' => 'BikeParking']) }}>
+<img {{ $attributes->merge(['src' => asset('images/motolotz-logo.png'), 'alt' => 'MotoLotz']) }}>
