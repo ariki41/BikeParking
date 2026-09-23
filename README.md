@@ -75,6 +75,18 @@ npm run dev
 
 本番用アセットを生成する場合は `npm run build` を実行してください。
 
+### Vite開発サーバーのセキュリティ
+
+Vite開発サーバーはソースファイルを配信する開発専用プロセスです。`vite.config.js` では
+`127.0.0.1` にだけバインドし、許可Hostを `localhost`、CORS Originを `localhost`・loopback IPに
+限定しています。開発サーバーをLANやインターネットへ公開しないでください。リモート開発が必要な
+場合は、この設定を広げず、認証されたリバースプロキシまたはポートフォワーディングを利用します。
+
+`npm audit` はビルド時に使うVite、PostCSS、Tailwind、Playwrightなどの開発依存と、ブラウザに
+バンドルされるAxiosを含めて検査します。ビルド済み資産のみを配信する本番環境ではVite・PostCSS・
+Playwrightの開発サーバー／ビルドツールは実行されませんが、脆弱な依存を開発・CIに残さない方針です。
+Axiosはクライアント資産に含まれるため、開発依存として記録されていても更新対象に含めます。
+
 ### 4. アプリケーションへのアクセス
 
 ブラウザで [http://localhost](http://localhost) を開きます。
@@ -195,7 +207,7 @@ Laravel Sailのショートカットを利用できる環境では、上記の `
 
 ### CIと同等の確認
 
-Pull Requestと`main`へのpushでは、GitHub Actionsの`CI/CD`ワークフローがPHP 8.5とNode.js 22を使用し、Pint、Larastan、Feature・Unitテスト、フロントエンドビルドを実行します。Composerとnpmのダウンロードキャッシュは、それぞれ`composer.lock`と`package-lock.json`に応じて更新されます。
+Pull Requestと`main`へのpushでは、GitHub Actionsの`CI/CD`ワークフローがPHP 8.5とNode.js 22を使用し、npm依存の脆弱性監査（Low以上を失敗扱い）、Pint、Larastan、Feature・Unitテスト、フロントエンドビルドを実行します。Composerとnpmのダウンロードキャッシュは、それぞれ`composer.lock`と`package-lock.json`に応じて更新されます。
 
 ローカルでは次のコマンドで同等の確認を実行できます。
 
@@ -204,6 +216,7 @@ Pull Requestと`main`へのpushでは、GitHub Actionsの`CI/CD`ワークフロ�
 ./vendor/bin/sail composer analyse
 ./vendor/bin/sail test
 ./vendor/bin/sail npm ci
+./vendor/bin/sail npm audit --audit-level=low
 ./vendor/bin/sail npm run build
 ```
 

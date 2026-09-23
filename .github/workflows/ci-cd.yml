@@ -63,9 +63,13 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Build frontend assets
+      - name: Install and audit frontend dependencies
         run: |
           npm ci
+          npm audit --audit-level=low
+
+      - name: Build frontend assets
+        run: |
           npm run build
 
       - name: Prepare Laravel test environment
