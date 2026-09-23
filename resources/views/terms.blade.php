@@ -1,11 +1,11 @@
 <x-app-layout
     title="利用規約"
-    description="BikeParkingの利用規約です。"
+    description="motolotzの利用規約です。"
     :canonical="route('terms')">
     <div class="bp-shell max-w-3xl">
         <article class="bp-panel p-6 sm:p-8">
             <h1 class="text-3xl font-bold text-slate-900">利用規約</h1>
-            <p class="mt-4 text-sm leading-7 text-slate-700">この利用規約は、BikeParking運営（以下「運営者」）が提供するBikeParking（以下「本サービス」）の利用条件を定めるものです。</p>
+            <p class="mt-4 text-sm leading-7 text-slate-700">この利用規約は、motolotz運営（以下「運営者」）が提供するmotolotz（以下「本サービス」）の利用条件を定めるものです。</p>
 
             <section class="mt-8">
                 <h2 class="text-xl font-semibold text-slate-900">サービスと投稿内容</h2>

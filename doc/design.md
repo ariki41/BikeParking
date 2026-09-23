@@ -1,10 +1,10 @@
-# Bike Parking 簡易設計書
+# motolotz 簡易設計書
 
 ## 1. 文書情報
 
 | 項目 | 内容 |
 | --- | --- |
-| 対象 | Bike Parking Web アプリケーション |
+| 対象 | motolotz Web アプリケーション |
 | 作成日 | 2026-07-13 |
 | 対象コード | Laravel アプリケーションの現行実装 |
 | 関連図 | [状態遷移図](state-transition.md) |
