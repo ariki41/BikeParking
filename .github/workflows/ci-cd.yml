@@ -91,22 +91,49 @@ jobs:
           php artisan serve --host=127.0.0.1 --port=8000 > storage/logs/e2e-server.log 2>&1 &
           npm run test:e2e
 
+  image:
+    name: Build production image
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_digest: ${{ steps.build.outputs.digest }}
+    env:
+      IMAGE_NAME: ghcr.io/ariki41/bikeparking
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+
   deploy-production:
     name: Deploy production server
-    needs: test
+    needs: image
     if: github.event_name == 'workflow_dispatch' && inputs.deploy_production == true && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     environment: production
-    concurrency:
-      group: deployment-production
-      cancel-in-progress: false
-    permissions:
-      contents: read
+    concurrency: { group: deployment-production, cancel-in-progress: false }
+    permissions: { contents: read }
     env:
       DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
       DEPLOY_USER: ${{ vars.DEPLOY_USER }}
       DEPLOY_PORT: ${{ vars.DEPLOY_PORT }}
       DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      IMAGE_NAME: ghcr.io/ariki41/bikeparking
+      IMAGE_DIGEST: ${{ needs.image.outputs.image_digest }}
     steps:
       - uses: actions/checkout@v7
       - name: Configure SSH
@@ -123,25 +150,12 @@ jobs:
           ssh -p "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" "sh -s -- '$DEPLOY_PATH'" <<'REMOTE'
           set -eu
           test -d "$1" && test -w "$1"
-          mkdir -p "$1/releases" "$1/scripts"
-          command -v php
-          command -v composer
-          command -v node
-          command -v npm
-          command -v nginx
-          command -v supervisorctl
+          docker info >/dev/null
+          docker compose version >/dev/null
           REMOTE
-      - name: Package release source
+      - name: Upload and activate image
         run: |
-          tar --exclude-vcs --exclude=.env --exclude=storage --exclude=vendor --exclude=node_modules \
-            -czf release.tar.gz .
-      - name: Upload and activate release
-        env:
-          RELEASE_ID: ${{ github.sha }}-${{ github.run_id }}
-        run: |
-          scp -P "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes scripts/deploy.sh \
-            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/scripts/deploy.sh"
-          scp -P "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes release.tar.gz \
-            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/releases/$RELEASE_ID.tar.gz"
+          scp -P "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes compose.deploy.yml deploy.env.example scripts/deploy.sh \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
           ssh -p "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" \
-            "bash '$DEPLOY_PATH/scripts/deploy.sh' '$DEPLOY_PATH' '$RELEASE_ID'"
+            "env IMAGE_NAME='$IMAGE_NAME' IMAGE_DIGEST='$IMAGE_DIGEST' bash '$DEPLOY_PATH/scripts/deploy.sh' '$DEPLOY_PATH'"
