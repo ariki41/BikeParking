@@ -126,6 +126,8 @@ jobs:
 
           scp -P "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes "$env_file" \
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/.env"
+          ssh -p "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+            "chmod 600 '$DEPLOY_PATH/.env'"
           scp -P "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes compose.deploy.yml scripts/deploy.sh \
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
           ssh -p "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" \
