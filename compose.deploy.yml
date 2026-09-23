@@ -6,8 +6,6 @@ services:
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
-      SEED_DEVELOPMENT_DATA: "${SEED_DEVELOPMENT_DATA:-false}"
-      DEVELOPMENT_SEED_PASSWORD: "${DEVELOPMENT_SEED_PASSWORD:-}"
     volumes:
       - app-storage:/var/www/html/storage
     depends_on:
@@ -19,30 +17,52 @@ services:
       timeout: 5s
       retries: 12
       start_period: 20s
+    logging: &json-file-logging
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "5"
     restart: unless-stopped
 
-  tailscale:
-    image: tailscale/tailscale:stable
+  nginx:
+    image: nginx:1.27-alpine
     env_file:
       - .env
-    hostname: "${TS_HOSTNAME:-bikeparking-dev}"
     environment:
-      TS_AUTHKEY: "${TS_AUTHKEY:?TS_AUTHKEY is required}"
-      TS_STATE_DIR: /var/lib/tailscale
-      TS_SERVE_CONFIG: /config/funnel.json
+      APP_DOMAIN: "${APP_DOMAIN:?APP_DOMAIN is required}"
+    ports:
+      - "80:80"
+      - "443:443"
     volumes:
-      - tailscale-state:/var/lib/tailscale
-      - ./docker/tailscale:/config:ro
+      - ./docker/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - certbot-webroot:/var/www/certbot:ro
+      - letsencrypt:/etc/letsencrypt:ro
     depends_on:
       app:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "tailscale funnel status --json | grep -q '\"AllowFunnel\"'"]
+      test: ["CMD-SHELL", "wget --no-check-certificate --header=\"Host: $$APP_DOMAIN\" -q -O /dev/null https://127.0.0.1/up || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 60
-      start_period: 30s
+      retries: 12
+      start_period: 20s
+    logging: *json-file-logging
     restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot:v3.1.0
+    env_file:
+      - .env
+    environment:
+      APP_DOMAIN: "${APP_DOMAIN:?APP_DOMAIN is required}"
+      LETSENCRYPT_EMAIL: "${LETSENCRYPT_EMAIL:?LETSENCRYPT_EMAIL is required}"
+    ports:
+      - "80:80"
+    volumes:
+      - certbot-webroot:/var/www/certbot
+      - letsencrypt:/etc/letsencrypt
+    profiles:
+      - certbot
 
   scheduler:
     image: "${IMAGE_NAME:?IMAGE_NAME is required}@${IMAGE_DIGEST:?IMAGE_DIGEST is required}"
@@ -52,13 +72,28 @@ services:
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
-      SEED_DEVELOPMENT_DATA: "${SEED_DEVELOPMENT_DATA:-false}"
-      DEVELOPMENT_SEED_PASSWORD: "${DEVELOPMENT_SEED_PASSWORD:-}"
     volumes:
       - app-storage:/var/www/html/storage
     depends_on:
       mysql:
         condition: service_healthy
+    logging: *json-file-logging
+    restart: unless-stopped
+
+  worker:
+    image: "${IMAGE_NAME:?IMAGE_NAME is required}@${IMAGE_DIGEST:?IMAGE_DIGEST is required}"
+    command: php artisan queue:work --sleep=3 --tries=3 --timeout=90
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+    volumes:
+      - app-storage:/var/www/html/storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+    logging: *json-file-logging
     restart: unless-stopped
 
   mysql:
@@ -78,9 +113,11 @@ services:
       timeout: 5s
       retries: 12
       start_period: 30s
+    logging: *json-file-logging
     restart: unless-stopped
 
 volumes:
   app-storage:
   mysql-data:
-  tailscale-state:
+  certbot-webroot:
+  letsencrypt:
