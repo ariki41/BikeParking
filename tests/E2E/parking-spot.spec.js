@@ -30,6 +30,32 @@ test('地図の初期化、マーカー更新、移動後のURL復元と検索�
     await expect(page.locator('#parking-spots')).toContainText('E2E 駐輪場 51');
 });
 
+test('無料料金は関連項目を無効化し、無料以外へ戻すと再び操作できる', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByLabel('ユーザーID').fill('e2e-user');
+    await page.getByLabel('パスワード').fill('password');
+    await page.getByRole('button', { name: 'ログイン' }).click();
+    await page.goto('/parking-spots/create');
+
+    const rateItem = page.locator('[data-rate-item]').first();
+    await rateItem.locator('.free-parking-checkbox').click();
+
+    await expect(rateItem.getByText('無料をチェックすると料金単位・無料時間・最大料金・適用期間を無効化します。')).toBeVisible();
+    await expect(rateItem.locator('.rate-unit-minutes-input')).toBeDisabled();
+    await expect(rateItem.locator('.free-minutes-input')).toBeDisabled();
+    await expect(rateItem.locator('.max-rate-input')).toBeDisabled();
+    await expect(rateItem.locator('[data-rate-field="max_rate_period"]')).toBeDisabled();
+
+    await rateItem.locator('.free-parking-checkbox').click();
+
+    await expect(rateItem.getByText('無料をチェックすると料金単位・無料時間・最大料金・適用期間を無効化します。')).toBeHidden();
+    await expect(rateItem.locator('.rate-unit-minutes-input')).toBeEnabled();
+    await expect(rateItem.locator('.no-free-minutes-checkbox')).toBeEnabled();
+    await expect(rateItem.locator('.no-max-rate-checkbox')).toBeEnabled();
+    await expect(rateItem.locator('.max-rate-input')).toBeEnabled();
+    await expect(rateItem.locator('[data-rate-field="max_rate_period"]')).toBeEnabled();
+});
+
 test('画像、料金帯、営業時間フォームをブラウザで操作し、確認画面から入力を復元する', async ({ page }) => {
     await page.goto('/login');
     await page.getByLabel('ユーザーID').fill('e2e-user');

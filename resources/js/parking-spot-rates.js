@@ -8,15 +8,18 @@ const setInputDisabledAppearance = (input, disabled) => {
 const syncFreeMinutesState = (item) => {
     const checkbox = item.querySelector('.no-free-minutes-checkbox');
     const input = item.querySelector('.free-minutes-input');
+    const isFree = item.querySelector('.free-parking-checkbox')?.checked ?? false;
 
     if (!checkbox || !input) {
         return;
     }
 
+    input.disabled = isFree;
     input.readOnly = checkbox.checked;
-    setInputDisabledAppearance(input, checkbox.checked);
+    checkbox.disabled = isFree;
+    setInputDisabledAppearance(input, isFree || checkbox.checked);
 
-    if (checkbox.checked) {
+    if (isFree || checkbox.checked) {
         input.value = '0';
     }
 };
@@ -25,27 +28,32 @@ const syncMaxRateState = (item) => {
     const checkbox = item.querySelector('.no-max-rate-checkbox');
     const input = item.querySelector('.max-rate-input');
     const conditionInputs = item.querySelectorAll('.max-rate-condition-input');
+    const isFree = item.querySelector('.free-parking-checkbox')?.checked ?? false;
 
     if (!checkbox || !input) {
         return;
     }
 
-    input.disabled = checkbox.checked;
-    setInputDisabledAppearance(input, checkbox.checked);
+    input.disabled = isFree || checkbox.checked;
+    checkbox.disabled = isFree;
+    setInputDisabledAppearance(input, isFree || checkbox.checked);
 
-    if (checkbox.checked) {
+    if (isFree || checkbox.checked) {
         input.value = '';
     }
 
     conditionInputs.forEach((conditionInput) => {
-        conditionInput.disabled = checkbox.checked;
-        setInputDisabledAppearance(conditionInput, checkbox.checked);
+        conditionInput.disabled = isFree || checkbox.checked;
+        setInputDisabledAppearance(conditionInput, isFree || checkbox.checked);
     });
 };
 
 const syncFreeParkingState = (item) => {
     const checkbox = item.querySelector('.free-parking-checkbox');
     const input = item.querySelector('.rate-input');
+    const unitMinutesInput = item.querySelector('.rate-unit-minutes-input');
+    const unitMinutesValue = item.querySelector('.free-rate-unit-minutes-value');
+    const notice = item.querySelector('.free-rate-notice');
 
     if (!checkbox || !input) {
         return;
@@ -57,6 +65,15 @@ const syncFreeParkingState = (item) => {
     if (checkbox.checked) {
         input.value = '0';
     }
+
+    if (unitMinutesInput && unitMinutesValue) {
+        unitMinutesInput.disabled = checkbox.checked;
+        unitMinutesValue.disabled = !checkbox.checked;
+        unitMinutesValue.value = unitMinutesInput.value;
+        setInputDisabledAppearance(unitMinutesInput, checkbox.checked);
+    }
+
+    notice?.classList.toggle('hidden', !checkbox.checked);
 };
 
 export const initParkingSpotRates = (root) => {
@@ -86,9 +103,12 @@ export const initParkingSpotRates = (root) => {
             item.querySelectorAll('[data-rate-field]').forEach((field) => {
                 field.name = `rates[${index}][${field.dataset.rateField}]`;
             });
+            item.querySelectorAll('[data-rate-hidden-field]').forEach((field) => {
+                field.name = `rates[${index}][${field.dataset.rateHiddenField}]`;
+            });
+            syncFreeParkingState(item);
             syncFreeMinutesState(item);
             syncMaxRateState(item);
-            syncFreeParkingState(item);
         });
 
         list.querySelectorAll('[data-delete-rate]').forEach((button) => {
@@ -135,9 +155,9 @@ export const initParkingSpotRates = (root) => {
             return;
         }
 
+        syncFreeParkingState(item);
         syncFreeMinutesState(item);
         syncMaxRateState(item);
-        syncFreeParkingState(item);
     });
 
     renumberRates();

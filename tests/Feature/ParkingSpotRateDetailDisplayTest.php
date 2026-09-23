@@ -202,6 +202,31 @@ class ParkingSpotRateDetailDisplayTest extends TestCase
         $response->assertSee('data-rate-field="is_free"', false);
     }
 
+    public function test_edit_form_disables_rate_related_fields_for_an_existing_free_rate(): void
+    {
+        [$parkingSpot, $user] = $this->createParkingSpot();
+
+        ParkingSpotRates::create([
+            'parking_spot_id' => $parkingSpot->id,
+            'day_type' => '全日',
+            'start_time' => '00:00:00',
+            'end_time' => '00:00:00',
+            'unit_minutes' => 30,
+            'rate' => 0,
+            'free_minutes' => 0,
+            'max_rate' => null,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('parking_spot.edit', $parkingSpot));
+
+        $response->assertOk();
+        $response->assertSee('data-rate-field="unit_minutes" required disabled', false);
+        $response->assertSee('class="free-minutes-input bp-input cursor-not-allowed bg-slate-100 text-slate-500"', false);
+        $response->assertSee('class="max-rate-input bp-input cursor-not-allowed bg-slate-100 text-slate-500"', false);
+        $response->assertSee('data-rate-field="max_rate_period" disabled', false);
+        $response->assertSeeText('無料をチェックすると料金単位・無料時間・最大料金・適用期間を無効化します。');
+    }
+
     public function test_no_free_minutes_input_is_normalized_on_confirm(): void
     {
         [, $user, $postalcode] = $this->createParkingSpot();
