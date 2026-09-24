@@ -56,6 +56,7 @@ jobs:
       PRODUCTION_DB_USERNAME: ${{ vars.PRODUCTION_DB_USERNAME || 'motolotz' }}
       PRODUCTION_YOLP_URL: ${{ vars.PRODUCTION_YOLP_URL }}
       PRODUCTION_YOLP_GEOCODE_URL: ${{ vars.PRODUCTION_YOLP_GEOCODE_URL }}
+      PRODUCTION_JAPAN_POST_POSTAL_CODE_URL: ${{ vars.PRODUCTION_JAPAN_POST_POSTAL_CODE_URL }}
     steps:
       - uses: actions/checkout@v7
       - name: Configure SSH
@@ -77,7 +78,7 @@ jobs:
           REMOTE
       - name: Upload and activate image
         run: |
-          for required_value in PRODUCTION_APP_KEY PRODUCTION_DB_PASSWORD PRODUCTION_MYSQL_ROOT_PASSWORD PRODUCTION_YOLP_URL PRODUCTION_YOLP_GEOCODE_URL; do
+          for required_value in PRODUCTION_APP_KEY PRODUCTION_DB_PASSWORD PRODUCTION_MYSQL_ROOT_PASSWORD PRODUCTION_YOLP_URL PRODUCTION_YOLP_GEOCODE_URL PRODUCTION_JAPAN_POST_POSTAL_CODE_URL; do
             if [ -z "${!required_value}" ]; then
               echo "The Production environment value ${required_value} is required." >&2
               exit 1
@@ -124,6 +125,7 @@ jobs:
             write_dotenv YOLP_URL "$PRODUCTION_YOLP_URL"
             write_dotenv YOLP_GEOCODE_URL "$PRODUCTION_YOLP_GEOCODE_URL"
             write_dotenv YOLP_CLIENT_ID "$PRODUCTION_YOLP_CLIENT_ID"
+            write_dotenv JAPAN_POST_POSTAL_CODE_URL "$PRODUCTION_JAPAN_POST_POSTAL_CODE_URL"
           } > "$env_file"
 
           scp -P "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes "$env_file" \
