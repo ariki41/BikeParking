@@ -1,8 +1,17 @@
 services:
+  alloy-init:
+    image: grafana/alloy:v1.10.1
+    entrypoint: ["/bin/sh", "-ec"]
+    command: ['mkdir -p /var/lib/alloy/data && chown -R 473:473 /var/lib/alloy']
+    user: "0:0"
+    volumes:
+      - "alloy-data:/var/lib/alloy"
   alloy:
     image: grafana/alloy:v1.10.1
     command: run --server.http.listen-addr=127.0.0.1:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
-    user: "0:0"
+    environment:
+      LOKI_URL: "${LOKI_URL:?}"
+    user: "473:473"
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
@@ -10,7 +19,10 @@ services:
       - "./deploy/alloy/config.alloy:/etc/alloy/config.alloy:ro"
       - "app-storage:/var/www/html/storage:ro"
       - "/var/log/nginx:/var/log/nginx:ro"
-      - "alloy-data:/var/lib/alloy/data"
+      - "alloy-data:/var/lib/alloy"
+    depends_on:
+      alloy-init:
+        condition: service_completed_successfully
     restart: unless-stopped
   app:
     image: "${IMAGE_NAME:?}@${IMAGE_DIGEST:?}"
