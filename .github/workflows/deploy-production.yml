@@ -16,7 +16,7 @@ jobs:
     outputs:
       image_digest: ${{ steps.build.outputs.digest }}
     env:
-      IMAGE_NAME: ghcr.io/ariki41/bikeparking
+      IMAGE_NAME: ghcr.io/ariki41/motolotz
     steps:
       - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v3
@@ -45,7 +45,7 @@ jobs:
       DEPLOY_USER: ${{ vars.DEPLOY_USER }}
       DEPLOY_PORT: ${{ vars.DEPLOY_PORT }}
       DEPLOY_PATH: /opt/motolotz
-      IMAGE_NAME: ghcr.io/ariki41/bikeparking
+      IMAGE_NAME: ghcr.io/ariki41/motolotz
       IMAGE_DIGEST: ${{ needs.image.outputs.image_digest }}
     steps:
       - uses: actions/checkout@v7
