@@ -4,14 +4,33 @@
 
 ## サーバー準備
 
-Ubuntu x86_64に Docker Engine、Docker Compose plugin、Nginx、Certbotを導入します。デプロイユーザーがDockerを実行できるようにし、`/opt/motolotz/.env` は600権限でGit管理しません。
+Ubuntu x86_64に Docker Engine、Docker Compose plugin、Nginx、Certbotを導入します。デプロイユーザーがDockerを実行できるようにします。`/opt/motolotz/.env` は、デプロイ時にGitHub Actionsが生成して600権限で配置するため、Git管理もサーバーでの手作業作成も不要です。
 
 ```bash
 sudo install -d -o <deploy-user> -g <deploy-user> /opt/motolotz
-sudo install -m 600 -o <deploy-user> -g <deploy-user> /dev/null /opt/motolotz/.env
 ```
 
-`.env` には `APP_ENV=production`、`APP_DEBUG=false`、`APP_URL=https://motolotz.com`、DB接続情報、`APP_KEY`、YOLP Client IDを設定します。GitHubの`production` Environmentには `DEPLOY_HOST`、`DEPLOY_USER`、`DEPLOY_PORT`、`DEPLOY_SSH_PRIVATE_KEY`、`DEPLOY_KNOWN_HOSTS` を設定します。配置先はワークフローで `/opt/motolotz` に固定されています。
+GitHubの `production` Environment に次を登録します。アプリケーションの秘匿値は **Secrets**、公開してもよい設定値は **Variables** に分けます。配置先はワークフローで `/opt/motolotz` に固定されています。
+
+| 種別 | 名前 | 用途 |
+| --- | --- | --- |
+| Secret | `DEPLOY_SSH_PRIVATE_KEY` | デプロイ用SSH秘密鍵 |
+| Secret | `DEPLOY_KNOWN_HOSTS` | 接続先SSHホスト鍵 |
+| Secret | `PRODUCTION_APP_KEY` | Laravelの `APP_KEY` |
+| Secret | `PRODUCTION_DB_PASSWORD` | アプリケーションMySQLユーザーのパスワード |
+| Secret | `PRODUCTION_MYSQL_ROOT_PASSWORD` | MySQL rootパスワード |
+| Secret | `PRODUCTION_YOLP_CLIENT_ID` | Yahoo!ローカルサーチAPI Client ID。未利用なら空でも可 |
+| Variable | `DEPLOY_HOST` | サーバーIPまたはホスト名 |
+| Variable | `DEPLOY_USER` | SSHユーザー |
+| Variable | `DEPLOY_PORT` | SSHポート |
+| Variable | `PRODUCTION_APP_URL` | `https://motolotz.com`（未登録時もこの値） |
+| Variable | `PRODUCTION_DB_DATABASE` | `motolotz`（未登録時もこの値） |
+| Variable | `PRODUCTION_DB_USERNAME` | `motolotz`（未登録時もこの値） |
+| Variable | `PRODUCTION_YOLP_URL` | ローカル検索API URL（必須） |
+| Variable | `PRODUCTION_YOLP_GEOCODE_URL` | ジオコーダーAPI URL（必須） |
+| Variable | `PRODUCTION_JAPAN_POST_POSTAL_CODE_URL` | 日本郵便の郵便番号ZIP URL（必須） |
+
+Actionsはこれらから `.env` を一時生成して `/opt/motolotz/.env` に転送します。値をログ出力せず、GitHub Actionsランナーの一時ファイルはジョブ終了時に削除されます。
 
 ## 公開とTLS
 

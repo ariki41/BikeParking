@@ -47,6 +47,16 @@ jobs:
       DEPLOY_PATH: /opt/motolotz
       IMAGE_NAME: ghcr.io/ariki41/bikeparking
       IMAGE_DIGEST: ${{ needs.image.outputs.image_digest }}
+      PRODUCTION_APP_KEY: ${{ secrets.PRODUCTION_APP_KEY }}
+      PRODUCTION_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+      PRODUCTION_MYSQL_ROOT_PASSWORD: ${{ secrets.PRODUCTION_MYSQL_ROOT_PASSWORD }}
+      PRODUCTION_YOLP_CLIENT_ID: ${{ secrets.PRODUCTION_YOLP_CLIENT_ID }}
+      PRODUCTION_APP_URL: ${{ vars.PRODUCTION_APP_URL || 'https://motolotz.com' }}
+      PRODUCTION_DB_DATABASE: ${{ vars.PRODUCTION_DB_DATABASE || 'motolotz' }}
+      PRODUCTION_DB_USERNAME: ${{ vars.PRODUCTION_DB_USERNAME || 'motolotz' }}
+      PRODUCTION_YOLP_URL: ${{ vars.PRODUCTION_YOLP_URL }}
+      PRODUCTION_YOLP_GEOCODE_URL: ${{ vars.PRODUCTION_YOLP_GEOCODE_URL }}
+      PRODUCTION_JAPAN_POST_POSTAL_CODE_URL: ${{ vars.PRODUCTION_JAPAN_POST_POSTAL_CODE_URL }}
     steps:
       - uses: actions/checkout@v7
       - name: Configure SSH
@@ -68,6 +78,60 @@ jobs:
           REMOTE
       - name: Upload and activate image
         run: |
+          for required_value in PRODUCTION_APP_KEY PRODUCTION_DB_PASSWORD PRODUCTION_MYSQL_ROOT_PASSWORD PRODUCTION_YOLP_URL PRODUCTION_YOLP_GEOCODE_URL PRODUCTION_JAPAN_POST_POSTAL_CODE_URL; do
+            if [ -z "${!required_value}" ]; then
+              echo "The Production environment value ${required_value} is required." >&2
+              exit 1
+            fi
+          done
+
+          env_file="$(mktemp)"
+          trap 'rm -f "$env_file"' EXIT
+          umask 077
+          write_dotenv() {
+            local key="$1" value="$2"
+
+            case "$value" in
+              *$'\n'*|*$'\r'*)
+                echo "${key} must not contain a line break." >&2
+                exit 1
+                ;;
+            esac
+
+            value="$(printf '%s' "$value" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/\$/\\$/g')"
+            printf '%s="%s"\n' "$key" "$value"
+          }
+
+          {
+            write_dotenv APP_NAME 'MotoLotz'
+            write_dotenv APP_ENV 'production'
+            write_dotenv APP_KEY "$PRODUCTION_APP_KEY"
+            write_dotenv APP_DEBUG 'false'
+            write_dotenv APP_URL "$PRODUCTION_APP_URL"
+            write_dotenv APP_TIMEZONE 'Asia/Tokyo'
+            write_dotenv APP_LOCALE 'ja'
+            write_dotenv APP_FALLBACK_LOCALE 'ja'
+            write_dotenv DB_CONNECTION 'mysql'
+            write_dotenv DB_HOST 'mysql'
+            write_dotenv DB_PORT '3306'
+            write_dotenv DB_DATABASE "$PRODUCTION_DB_DATABASE"
+            write_dotenv DB_USERNAME "$PRODUCTION_DB_USERNAME"
+            write_dotenv DB_PASSWORD "$PRODUCTION_DB_PASSWORD"
+            write_dotenv MYSQL_ROOT_PASSWORD "$PRODUCTION_MYSQL_ROOT_PASSWORD"
+            write_dotenv SESSION_DRIVER 'database'
+            write_dotenv CACHE_STORE 'database'
+            write_dotenv QUEUE_CONNECTION 'database'
+            write_dotenv FILESYSTEM_DISK 'public'
+            write_dotenv YOLP_URL "$PRODUCTION_YOLP_URL"
+            write_dotenv YOLP_GEOCODE_URL "$PRODUCTION_YOLP_GEOCODE_URL"
+            write_dotenv YOLP_CLIENT_ID "$PRODUCTION_YOLP_CLIENT_ID"
+            write_dotenv JAPAN_POST_POSTAL_CODE_URL "$PRODUCTION_JAPAN_POST_POSTAL_CODE_URL"
+          } > "$env_file"
+
+          scp -P "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes "$env_file" \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/.env"
+          ssh -p "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+            "chmod 600 '$DEPLOY_PATH/.env'"
           scp -P "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes compose.deploy.yml scripts/deploy.sh \
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
           ssh -p "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" \
