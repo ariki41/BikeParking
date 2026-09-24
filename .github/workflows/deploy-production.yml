@@ -54,6 +54,8 @@ jobs:
       PRODUCTION_APP_URL: ${{ vars.PRODUCTION_APP_URL || 'https://motolotz.com' }}
       PRODUCTION_DB_DATABASE: ${{ vars.PRODUCTION_DB_DATABASE || 'motolotz' }}
       PRODUCTION_DB_USERNAME: ${{ vars.PRODUCTION_DB_USERNAME || 'motolotz' }}
+      PRODUCTION_YOLP_URL: ${{ vars.PRODUCTION_YOLP_URL || 'https://map.yahooapis.jp/search/local/V1/localSearch' }}
+      PRODUCTION_YOLP_GEOCODE_URL: ${{ vars.PRODUCTION_YOLP_GEOCODE_URL || 'https://map.yahooapis.jp/geocode/V1/geoCoder' }}
     steps:
       - uses: actions/checkout@v7
       - name: Configure SSH
@@ -119,8 +121,8 @@ jobs:
             write_dotenv CACHE_STORE 'database'
             write_dotenv QUEUE_CONNECTION 'database'
             write_dotenv FILESYSTEM_DISK 'public'
-            write_dotenv YOLP_URL 'https://map.yahooapis.jp/search/local/V1/localSearch'
-            write_dotenv YOLP_GEOCODE_URL 'https://map.yahooapis.jp/geocode/V1/geoCoder'
+            write_dotenv YOLP_URL "$PRODUCTION_YOLP_URL"
+            write_dotenv YOLP_GEOCODE_URL "$PRODUCTION_YOLP_GEOCODE_URL"
             write_dotenv YOLP_CLIENT_ID "$PRODUCTION_YOLP_CLIENT_ID"
           } > "$env_file"
 
