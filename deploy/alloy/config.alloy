@@ -1,0 +1,57 @@
+// This endpoint is reachable only inside the Tailscale tailnet.
+loki.write "raspberry_pi" {
+	endpoint {
+		url = sys.env("LOKI_URL")
+	}
+
+	external_labels = {
+		application = "motolotz",
+		environment = "production",
+	}
+}
+
+// This is a second line of defence for values that can appear in web-server
+// request URLs or errors outside Laravel's logging pipeline.
+loki.process "redact" {
+	forward_to = [loki.write.raspberry_pi.receiver]
+
+	stage.replace {
+		expression = `(?i)(password|passwd|pwd|cookie|token|authorization|api[_-]?key|secret)(=|%3d|"\s*:\s*")[^&\s",}]+`
+		replace    = "[REDACTED]"
+	}
+
+	stage.replace {
+		expression = `(?i)bearer\s+[^\s",}]+`
+		replace    = "Bearer [REDACTED]"
+	}
+}
+
+local.file_match "laravel" {
+	path_targets = [{
+		__path__ = "/var/www/html/storage/logs/*.log",
+		job      = "laravel",
+	}]
+}
+
+loki.source.file "laravel" {
+	targets    = local.file_match.laravel.targets
+	forward_to = [loki.process.redact.receiver]
+}
+
+local.file_match "nginx" {
+	path_targets = [
+		{
+			__path__ = "/var/log/nginx/access.log",
+			job      = "nginx-access",
+		},
+		{
+			__path__ = "/var/log/nginx/error.log",
+			job      = "nginx-error",
+		},
+	]
+}
+
+loki.source.file "nginx" {
+	targets    = local.file_match.nginx.targets
+	forward_to = [loki.process.redact.receiver]
+}

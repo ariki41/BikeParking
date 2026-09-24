@@ -48,6 +48,20 @@ sudo systemctl enable --now certbot.timer
 
 キューとスケジューラはDocker Composeの `worker`・`scheduler` サービスとして常駐します。SupervisorやPHP-FPMの追加設定は不要です。
 
+## ログ監視
+
+Compose の `alloy` サービスは、共有ストレージの Laravel ログとホストの Nginx access/error ログを Raspberry Pi の Loki へ送信します。送信先は GitHub の production 環境変数 `PRODUCTION_LOKI_URL` で管理し、Tailscale URL（例: `http://100.79.190.75:3100/loki/api/v1/push`）を設定します。Alloy の管理ポートはコンテナ内の loopback にだけバインドされます。
+
+Laravel の `single` / `daily` ログは JSON Lines 形式で出力され、コンテキスト内のパスワード、Cookie、トークン、認可ヘッダー、API キー、secret を保存前に `[REDACTED]` へ置換します。Alloy も Nginx ログを含む全送信行へ同等のマスキングを適用します。
+
+デプロイ後は、Pi の Grafana Explore で Loki を選び、次の LogQL で送信を確認します。
+
+```logql
+{application="motolotz", environment="production"}
+```
+
+`job="laravel"`、`job="nginx-access"`、`job="nginx-error"` でログ種別を絞り込めます。Pi の Tailscale IP を変更した場合は、GitHub の `PRODUCTION_LOKI_URL` を更新して再デプロイします。
+
 ## リリースと運用
 
 PRでは **CI** が品質チェック・テスト・アセットビルドを実行します。`main`へのマージ後、**Deploy production** がGHCRイメージを取得してComposeサービスを更新し、マイグレーションと `/up` のヘルスチェックを実行します。必要時は同ワークフローを `main` から手動実行して再デプロイできます。

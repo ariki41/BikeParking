@@ -57,6 +57,7 @@ jobs:
       PRODUCTION_YOLP_URL: ${{ vars.PRODUCTION_YOLP_URL }}
       PRODUCTION_YOLP_GEOCODE_URL: ${{ vars.PRODUCTION_YOLP_GEOCODE_URL }}
       PRODUCTION_JAPAN_POST_POSTAL_CODE_URL: ${{ vars.PRODUCTION_JAPAN_POST_POSTAL_CODE_URL }}
+      PRODUCTION_LOKI_URL: ${{ vars.PRODUCTION_LOKI_URL }}
     steps:
       - uses: actions/checkout@v7
       - name: Configure SSH
@@ -78,7 +79,7 @@ jobs:
           REMOTE
       - name: Upload and activate image
         run: |
-          for required_value in PRODUCTION_APP_KEY PRODUCTION_DB_PASSWORD PRODUCTION_MYSQL_ROOT_PASSWORD PRODUCTION_YOLP_URL PRODUCTION_YOLP_GEOCODE_URL PRODUCTION_JAPAN_POST_POSTAL_CODE_URL; do
+          for required_value in PRODUCTION_APP_KEY PRODUCTION_DB_PASSWORD PRODUCTION_MYSQL_ROOT_PASSWORD PRODUCTION_YOLP_URL PRODUCTION_YOLP_GEOCODE_URL PRODUCTION_JAPAN_POST_POSTAL_CODE_URL PRODUCTION_LOKI_URL; do
             if [ -z "${!required_value}" ]; then
               echo "The Production environment value ${required_value} is required." >&2
               exit 1
@@ -113,6 +114,7 @@ jobs:
             write_dotenv APP_FALLBACK_LOCALE 'ja'
             write_dotenv DB_CONNECTION 'mysql'
             write_dotenv DB_HOST 'mysql'
+            write_dotenv LOKI_URL "$PRODUCTION_LOKI_URL"
             write_dotenv DB_PORT '3306'
             write_dotenv DB_DATABASE "$PRODUCTION_DB_DATABASE"
             write_dotenv DB_USERNAME "$PRODUCTION_DB_USERNAME"
@@ -132,7 +134,11 @@ jobs:
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/.env"
           ssh -p "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" \
             "chmod 600 '$DEPLOY_PATH/.env'"
+          ssh -p "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+            "mkdir -p '$DEPLOY_PATH/deploy/alloy'"
           scp -P "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes compose.deploy.yml scripts/deploy.sh \
             "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+          scp -P "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes deploy/alloy/config.alloy \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/deploy/alloy/config.alloy"
           ssh -p "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" \
             "env IMAGE_NAME='$IMAGE_NAME' IMAGE_DIGEST='$IMAGE_DIGEST' bash '$DEPLOY_PATH/deploy.sh' '$DEPLOY_PATH'"

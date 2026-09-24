@@ -1,4 +1,17 @@
 services:
+  alloy:
+    image: grafana/alloy:v1.10.1
+    command: run --server.http.listen-addr=127.0.0.1:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+    user: "0:0"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - "./deploy/alloy/config.alloy:/etc/alloy/config.alloy:ro"
+      - "app-storage:/var/www/html/storage:ro"
+      - "/var/log/nginx:/var/log/nginx:ro"
+      - "alloy-data:/var/lib/alloy/data"
+    restart: unless-stopped
   app:
     image: "${IMAGE_NAME:?}@${IMAGE_DIGEST:?}"
     env_file: [.env]
@@ -33,4 +46,4 @@ services:
     volumes: ["mysql-data:/var/lib/mysql"]
     healthcheck: { test: ["CMD-SHELL", "mysqladmin ping -h localhost -p\"$$MYSQL_ROOT_PASSWORD\" --silent"], interval: 10s, timeout: 5s, retries: 12 }
     restart: unless-stopped
-volumes: { app-storage: {}, mysql-data: {} }
+volumes: { app-storage: {}, alloy-data: {}, mysql-data: {} }
