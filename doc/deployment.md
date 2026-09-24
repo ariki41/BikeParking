@@ -26,8 +26,8 @@ GitHubの `production` Environment に次を登録します。アプリケーシ
 | Variable | `PRODUCTION_APP_URL` | `https://motolotz.com`（未登録時もこの値） |
 | Variable | `PRODUCTION_DB_DATABASE` | `motolotz`（未登録時もこの値） |
 | Variable | `PRODUCTION_DB_USERNAME` | `motolotz`（未登録時もこの値） |
-| Variable | `PRODUCTION_YOLP_URL` | ローカル検索API URL（未登録時はYahoo!の標準URL） |
-| Variable | `PRODUCTION_YOLP_GEOCODE_URL` | ジオコーダーAPI URL（未登録時はYahoo!の標準URL） |
+| Variable | `PRODUCTION_YOLP_URL` | ローカル検索API URL（必須） |
+| Variable | `PRODUCTION_YOLP_GEOCODE_URL` | ジオコーダーAPI URL（必須） |
 
 Actionsはこれらから `.env` を一時生成して `/opt/motolotz/.env` に転送します。値をログ出力せず、GitHub Actionsランナーの一時ファイルはジョブ終了時に削除されます。
 

@@ -54,8 +54,8 @@ jobs:
       PRODUCTION_APP_URL: ${{ vars.PRODUCTION_APP_URL || 'https://motolotz.com' }}
       PRODUCTION_DB_DATABASE: ${{ vars.PRODUCTION_DB_DATABASE || 'motolotz' }}
       PRODUCTION_DB_USERNAME: ${{ vars.PRODUCTION_DB_USERNAME || 'motolotz' }}
-      PRODUCTION_YOLP_URL: ${{ vars.PRODUCTION_YOLP_URL || 'https://map.yahooapis.jp/search/local/V1/localSearch' }}
-      PRODUCTION_YOLP_GEOCODE_URL: ${{ vars.PRODUCTION_YOLP_GEOCODE_URL || 'https://map.yahooapis.jp/geocode/V1/geoCoder' }}
+      PRODUCTION_YOLP_URL: ${{ vars.PRODUCTION_YOLP_URL }}
+      PRODUCTION_YOLP_GEOCODE_URL: ${{ vars.PRODUCTION_YOLP_GEOCODE_URL }}
     steps:
       - uses: actions/checkout@v7
       - name: Configure SSH
@@ -77,9 +77,9 @@ jobs:
           REMOTE
       - name: Upload and activate image
         run: |
-          for required_secret in PRODUCTION_APP_KEY PRODUCTION_DB_PASSWORD PRODUCTION_MYSQL_ROOT_PASSWORD; do
-            if [ -z "${!required_secret}" ]; then
-              echo "The Production environment secret ${required_secret} is required." >&2
+          for required_value in PRODUCTION_APP_KEY PRODUCTION_DB_PASSWORD PRODUCTION_MYSQL_ROOT_PASSWORD PRODUCTION_YOLP_URL PRODUCTION_YOLP_GEOCODE_URL; do
+            if [ -z "${!required_value}" ]; then
+              echo "The Production environment value ${required_value} is required." >&2
               exit 1
             fi
           done
